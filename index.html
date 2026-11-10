@@ -16,7 +16,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Paisa">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sora:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
 <style>
 /* Layout: one phone-width column; sticky month bar on top, five tabs + floating add at the bottom. */
 :root{
@@ -25,7 +25,7 @@
   --good:#1D7F52; --good-soft:#DDF1E6; --bad:#BF3328; --bad-soft:#FBE3E0; --warn:#9A6411; --warn-soft:#FBEED6;
   --c-income:#7C8A84; --c-savings:#2C47C9; --c-bills:#6E82DA; --c-expenses:#AEB9EA; --c-debt:#15226E;
   --shadow:0 1px 2px rgba(20,32,27,.06),0 8px 24px rgba(20,32,27,.08);
-  --f-display:"Sora",ui-sans-serif,system-ui,sans-serif;
+  --f-display:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --r:14px;
 }
@@ -43,13 +43,13 @@
   --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35); color-scheme:dark}
 *{box-sizing:border-box}
 html,body{height:100%}
-body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.45;-webkit-font-smoothing:antialiased;font-optical-sizing:auto;font-feature-settings:'cv11','ss03'}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:30;background:var(--bg)}
 button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 :focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .num{font-variant-numeric:tabular-nums}
-h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.01em}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:-.022em;font-weight:700}
 .app{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 120px}
 .topbar{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;background:var(--bg);display:flex;align-items:center;gap:8px;padding-block:12px 10px}
 .topbar h1{font-size:19px;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -920,7 +920,7 @@ function donut(m){
   if(!tot)return `<p class="small muted" style="margin:0 0 8px">Nothing spent in ${mLong(VM)} yet.</p>`;
   const r=44,c=2*Math.PI*r;let off=0;
   const segs=parts.map(p=>{const len=p.v/tot*c;const s=`<circle cx="60" cy="60" r="${r}" fill="none" stroke="var(--c-${p.k})" stroke-width="16" stroke-dasharray="${Math.max(0,len-2)} ${c}" stroke-dashoffset="${-off}" transform="rotate(-90 60 60)"/>`;off+=len;return s}).join('');
-  return `<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><svg viewBox="0 0 120 120" width="112" height="112" role="img" aria-label="Spend split">${segs}<text x="60" y="57" text-anchor="middle" font-size="10" fill="var(--muted)">Total</text><text x="60" y="72" text-anchor="middle" font-family="Sora,sans-serif" font-weight="700" font-size="14" fill="var(--ink)">${fmtShort(tot)}</text></svg>
+  return `<div style="display:flex;gap:18px;align-items:center;flex-wrap:wrap"><svg viewBox="0 0 120 120" width="112" height="112" role="img" aria-label="Spend split">${segs}<text x="60" y="57" text-anchor="middle" font-size="10" fill="var(--muted)">Total</text><text x="60" y="72" text-anchor="middle" font-family="Inter,sans-serif" font-weight="700" font-size="14" fill="var(--ink)">${fmtShort(tot)}</text></svg>
   <div style="flex:1;min-width:170px">${parts.map(p=>`<div class="kv small"><span><span class="sw" style="display:inline-block;background:var(--c-${p.k});margin-right:7px"></span>${p.n}</span><span class="num">${fmt(p.v)} <span class="muted">${Math.round(p.v/tot*100)}%</span></span></div>`).join('')}</div></div>`;
 }
 function expBars(m){
@@ -1119,7 +1119,7 @@ function reportsView(){
     <tbody>${rows.map(r=>`<tr><td>${MON[Number(r.k.slice(5))-1]}${r.has?'':' <span class="muted">·</span>'}</td><td>${fmtShort(r.inc)}</td><td>${fmtShort(r.sav)}</td><td>${fmtShort(r.be)}</td><td>${fmtShort(r.emi)}</td><td class="${r.close<0?'over':''}">${fmtShort(r.close)}</td><td>${r.inc?Math.round(r.sav/r.inc*100)+'%':'–'}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:left">No months in ${reportYear}.</td></tr>`}</tbody>
     ${withData.length?`<tfoot><tr><td>Total</td><td>${fmtShort(inc)}</td><td>${fmtShort(sav)}</td><td>${fmtShort(sum(r=>r.be))}</td><td>${fmtShort(sum(r=>r.emi))}</td><td></td><td>${inc?Math.round(sav/inc*100)+'%':'–'}</td></tr></tfoot>`:''}
   </table></div><p class="small muted" style="margin:8px 0 0">Totals and % of plan count only months with entries (marked without a dot).</p></section>
-  ${canAdmin()?`<section class="card"><h2 style="margin-bottom:10px">Export</h2><div class="btns"><button class="btn" data-act="exp-year">${reportYear} to Excel</button><button class="btn" data-act="exp-month">${mLabel(VM)} to Excel</button></div></section>`:''}
+  ${canAdmin()?`<section class="card"><h2 style="margin-bottom:6px">Export</h2><p class="small muted" style="margin:0 0 10px">Excel, CSV, a PDF report or a full backup. Pick the period and what to include.</p><button class="btn primary" data-act="exp-year">Export ${reportYear}…</button></section>`:''}
   </div>`;
 }
 
@@ -1160,14 +1160,7 @@ function planView(){
       </section>`}).join('')||`<div class="card empty-state">Add a credit card to track statements, part payments and limit used.</div>`;
     if(canAdmin())body+=`<button class="btn block" data-act="editcard">+ Add credit card</button>`;
   }else{
-    const m=month(curKey());const monthly=m.sec.bills.b+m.sec.expenses.b+m.sec.debt.b;
-    body=`<section class="card"><div class="label">Suggested emergency fund</div><div class="num" style="font-family:var(--f-display);font-weight:700;font-size:24px">${fmt(monthly*6)}</div><div class="small muted">6 × monthly bills, expenses and EMIs (${fmt(monthly)})</div></section>`+
-    Object.entries(D.goals).map(([id,g])=>{const c=goalCalc(g);return `<section class="card"><div class="card-head"><h2>${esc(g.name)}</h2>${canAdmin()?`<button class="btn sm" data-act="editgoal" data-id="${id}">Edit</button>`:''}</div>
-      <div class="bar" style="height:10px"><i style="width:${c.prog*100}%;background:var(--c-savings)"></i></div>
-      <div class="kv" style="margin-top:6px"><span>${fmt(g.saved)} of ${fmt(g.target)}</span><b>${Math.round(c.prog*100)}%</b></div>
-      <div class="kv"><span>Months to reach</span><b>${c.n===0?'Reached':isFinite(c.n)?c.n+' at '+fmt(g.monthly)+'/mo':'Add a monthly amount'}</b></div>
-      ${g.date?`<div class="kv"><span>Target ${mLabel(g.date.slice(0,7))}</span><span class="pill ${c.on?'p-paid':'p-overdue'}">${c.on?'On track':'Behind'}</span></div>`:''}</section>`}).join('')+
-    (canAdmin()?`<button class="btn block" data-act="editgoal">+ Add savings goal</button>`:'');
+    body=goalsBody();
   }
   return topbar('Plan',{month:planTab==='cards'})+`<div class="stack"><div class="seg" role="group" aria-label="Plan section">${tabs.map(([k,n])=>`<button data-act="plantab" data-k="${k}" aria-pressed="${planTab===k}">${n}</button>`).join('')}</div>${body}</div>`;
 }
@@ -1209,7 +1202,7 @@ function prefsView(){
     <div class="btns"><button class="btn" data-act="setpin">${hasPin?'Change PIN':'Set PIN'}</button>${hasPin?'<button class="btn danger" data-act="clearpin">Remove PIN</button>':''}</div></section>
   ${canAdmin()?`<section class="card"><h2 style="margin-bottom:6px">Import from Excel</h2><p class="small muted" style="margin:0 0 10px">Bring in your tracker: a <b>Budget</b> sheet (Section, Category, Budget, Due day) and an <b>Expense Log</b> sheet (Date, Category, Amount, Mode, Note). You'll see a preview before anything is saved.</p>
     <div class="btns"><label class="btn" for="imp-file" style="display:inline-block">Choose .xlsx or .csv</label><input id="imp-file" type="file" accept=".xlsx,.xls,.csv" hidden><button class="btn" data-act="template">Download template</button></div></section>
-  <section class="card"><h2 style="margin-bottom:10px">Export</h2><div class="btns"><button class="btn" data-act="exp-month">${mLabel(VM)} to Excel</button><button class="btn" data-act="exp-year">${VM.slice(0,4)} to Excel</button></div></section>`:''}
+  <section class="card"><h2 style="margin-bottom:6px">Export</h2><p class="small muted" style="margin:0 0 10px">Excel, CSV, a PDF report or a full backup. Pick the period and what to include.</p><button class="btn primary" data-act="exp-month">Choose what to export…</button></section>`:''}
   <section class="card"><h2 style="margin-bottom:6px">Install the app</h2>
     ${STANDALONE?'<p class="small muted" style="margin:0">Installed. Paisa Planner opens from your home screen and works offline.</p>':INSTALL_EVT?'<p class="small muted" style="margin:0 0 10px">Add Paisa Planner to your home screen. It opens full screen and works offline.</p><button class="btn primary" data-act="install">Install app</button>':IS_IOS?'<p class="small muted" style="margin:0">On iPhone: tap the <b>Share</b> button in Safari, then <b>Add to Home Screen</b>.</p>':'<p class="small muted" style="margin:0">Use your browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>'}
   </section>
@@ -1414,15 +1407,6 @@ function openStmt(id){
     <div class="two"><div class="field"><label for="s-amt">Statement amount (₹)</label><input class="input num" id="s-amt" inputmode="decimal" value="${rupees(st.amt)}" autofocus></div><div class="field"><label for="s-paid">Amount paid (₹)</label><input class="input num" id="s-paid" inputmode="decimal" value="${rupees(st.paid)}"></div></div>
     <button class="btn primary block" data-act="savestmt" data-id="${id}">Save statement</button>`);
 }
-function openGoal(id){
-  const g=id?D.goals[id]:{name:'',target:null,saved:null,monthly:null,date:''};
-  openSheet(`${sheetHead(id?'Edit goal':'Add savings goal')}
-    <div class="field"><label for="g-name">Goal</label><input class="input" id="g-name" value="${esc(g.name)}" placeholder="Emergency fund"></div>
-    <div class="two"><div class="field"><label for="g-t">Target (₹)</label><input class="input num" id="g-t" inputmode="decimal" value="${rupees(g.target)}"></div><div class="field"><label for="g-s">Saved so far (₹)</label><input class="input num" id="g-s" inputmode="decimal" value="${rupees(g.saved)}"></div></div>
-    <div class="two"><div class="field"><label for="g-m">Monthly contribution (₹)</label><input class="input num" id="g-m" inputmode="decimal" value="${rupees(g.monthly)}"></div><div class="field"><label for="g-d">Target month</label><input class="input" id="g-d" type="month" value="${(g.date||'').slice(0,7)}"></div></div>
-    <button class="btn primary block" data-act="savegoal" data-id="${id||''}">Save</button>
-    ${id?`<button class="btn danger block" style="margin-top:8px" data-act="delgoal" data-id="${id}">Delete goal</button>`:''}`);
-}
 const val=id=>{const e=$('#'+id);return e?e.value:''};
 const amtOrNull=id=>{const v=parseAmt(val(id));return isNaN(v)?null:v};
 
@@ -1536,33 +1520,28 @@ async function handleImport(file){
   const bName=find(/budget|categor/i);const lName=find(/expense log|log|transaction|entries/i)||(wb.SheetNames.length===1?wb.SheetNames[0]:null);
   const existing={};catsAll().forEach(c=>existing[c.name.toLowerCase()]=c);
   const newCats={};const budgetRows=[];
-  rowsOf(bName).forEach(r=>{const name=String(col(r,'category','name')).trim();if(!name)return;const sec=secFrom(col(r,'section','type'))||'expenses';const b=parseAmt(col(r,'budget','planned','amount'));const due=parseInt(col(r,'due'),10);
+  rowsOf(bName).forEach(r=>{const name=String(col(r,'category','name')).trim();if(!name)return;const sec=secFrom(col(r,'section','type'))||guessSection(name);const b=parseAmt(col(r,'budget','planned','amount'));const due=parseInt(col(r,'due'),10);
     budgetRows.push({name,sec,b:isNaN(b)?0:b,due:due>=1&&due<=31?due:null});
     if(!existing[name.toLowerCase()])newCats[name.toLowerCase()]={name,sec,b:isNaN(b)?0:b,due:due>=1&&due<=31?due:null}});
   const tx=[];let skipped=0;
   rowsOf(lName===bName?null:lName).forEach(r=>{const date=toISO(col(r,'date'));const name=String(col(r,'category')).trim();const amt=parseAmt(col(r,'amount','actual','spent'));
     if(!date||!name||!(amt>0)){skipped++;return}
     const sec=secFrom(col(r,'section','type'));
-    if(!existing[name.toLowerCase()]&&!newCats[name.toLowerCase()])newCats[name.toLowerCase()]={name,sec:sec||'expenses',b:0,due:null};
+    if(!existing[name.toLowerCase()]&&!newCats[name.toLowerCase()])newCats[name.toLowerCase()]={name,sec:sec||guessSection(name),b:0,due:null};
     const mode=MODES.find(m=>m.toLowerCase()===String(col(r,'mode','payment')).toLowerCase().trim())||(String(col(r,'mode','payment')).toLowerCase().includes('card')?'Card':'UPI');
     tx.push({date,name,amt,mode,note:String(col(r,'note','description','remarks')).slice(0,120)})});
   if(!tx.length&&!budgetRows.length){toast('No Budget or Expense Log rows found. Use the template’s column names.');return}
-  const secOf=n=>(existing[n.toLowerCase()]||{}).section||(newCats[n.toLowerCase()]||{}).sec;
-  const byMonth={};tx.forEach(t=>{const k=keyOf(t.date);const e=byMonth[k]||(byMonth[k]={income:0,savings:0,bills:0,expenses:0,debt:0,n:0});e[secOf(t.name)]+=t.amt;e.n++});
-  IMP={tx,newCats,budgetRows,skipped};
-  const months=Object.keys(byMonth).sort();
-  openSheet(`${sheetHead('Check before importing')}
-    <p class="small" style="margin-top:0">${tx.length} entries${months.length?' across '+months.length+' month'+(months.length>1?'s':''):''} · ${Object.keys(newCats).length} new categories · ${budgetRows.length} budget rows${skipped?` · ${skipped} rows skipped (missing date, category or amount)`:''}</p>
-    ${months.length?`<div class="tablewrap"><table><thead><tr><th>Month</th>${SECTIONS.map(s=>`<th>${s.n.split(' ')[0]}</th>`).join('')}</tr></thead><tbody>${months.map(k=>`<tr><td>${mLabel(k)}</td>${SECTIONS.map(s=>`<td>${fmtShort(byMonth[k][s.k])}</td>`).join('')}</tr>`).join('')}</tbody></table></div>
-    <p class="small muted">Compare each section's totals with your spreadsheet before you import.</p>`:''}
-    ${months.length&&months[0]<S().startMonth?`<label class="check"><input type="checkbox" id="imp-start" checked><span class="small">Start the budget from ${mLabel(months[0])} so balances carry forward from there</span></label>
-    <div class="field" style="margin-top:8px"><label for="imp-open">Opening balance on ${dShort(mStart(months[0]))} ${months[0].slice(0,4)} (₹)</label><input class="input num" id="imp-open" inputmode="decimal" value="0"></div>`:''}
-    <button class="btn primary block" data-act="doimport" style="margin-top:10px">Totals match, import</button>`);
+  tx.forEach(t=>t.k=keyOf(t.date));
+  const months=[...new Set(tx.map(t=>t.k))].sort();
+  const knownCount=new Set(tx.map(t=>t.name.toLowerCase()).filter(n=>existing[n])).size;
+  IMP={tx,newCats,budgetRows,skipped,months,knownCount,skip:{},step:0};
+  openImportStep();
 }
 async function doImport(){
   const I=IMP;if(!I)return;
   const startEl=$('#imp-start');const newOpen=amtOrNull('imp-open');
-  const firstM=I.tx.length?I.tx.map(t=>keyOf(t.date)).sort()[0]:null;
+  const keep=I.tx.filter(t=>!I.skip[t.k]);
+  const firstM=keep.length?keep.map(t=>t.k).sort()[0]:null;
   closeSheet();toast('Importing…',{ms:60000});
   const ids={};catsAll().forEach(c=>ids[c.name.toLowerCase()]=c.id);
   let order=catsAll().length;
@@ -1570,11 +1549,12 @@ async function doImport(){
   for(const k in I.newCats){const c=I.newCats[k];const id=uid();ids[k]=id;await store.set('cats',id,{name:c.name,section:c.sec,order:order++,archived:false,dueDay:c.due,hist:[{from,amt:c.b}]}).catch(()=>{})}
   for(const r of I.budgetRows){const id=ids[r.name.toLowerCase()];if(!id||I.newCats[r.name.toLowerCase()])continue;const c={...D.cats[id]};c.hist=[{from,amt:r.b}];if(r.due)c.dueDay=r.due;await store.set('cats',id,c).catch(()=>{})}
   let n=0;const batch=[];const now=Date.now();
-  for(const t of I.tx){batch.push(store.set('tx',uid()+(n++),{cat:ids[t.name.toLowerCase()],amt:t.amt,date:t.date,mode:t.mode,note:t.note,card:'',src:'import',by:ME||'local',at:now,ub:ME||'local',uat:now}).catch(()=>{}));if(batch.length>=8){await Promise.all(batch);batch.length=0}}
+  for(const t of keep){batch.push(store.set('tx',uid()+(n++),{cat:ids[t.name.toLowerCase()],amt:t.amt,date:t.date,mode:t.mode,note:t.note,card:'',src:'import',by:ME||'local',at:now,ub:ME||'local',uat:now}).catch(()=>{}));if(batch.length>=8){await Promise.all(batch);batch.length=0}}
   await Promise.all(batch);
   if(startEl&&startEl.checked&&firstM){await store.set('settings','main',{...S(),startMonth:firstM,opening:newOpen||0}).catch(()=>{})}
-  log('imported','Excel',`${I.tx.length} entries`);
-  IMP=null;toast(`Imported ${I.tx.length} entries.`);
+  log('imported','Excel',`${keep.length} entries`);
+  IMP=null;$('#toastRoot').innerHTML='';
+  openSheet(`${sheetHead('All in')}<div class="reveal-num num" style="font-size:44px">${keep.length.toLocaleString('en-IN')}</div><p class="onb-q" style="font-size:20px;margin:0 0 14px">entries imported.</p><p class="small muted" style="margin:0 0 16px">Your history is in. Months, balances and charts now include it.</p><button class="btn primary block" data-act="close">See my budget</button>`);
 }
 async function wipe(){
   openSheet(`${sheetHead(MODE==='cloud'?'Delete family budget?':'Delete all data?')}<p class="small">Type <b>DELETE</b> to remove everything${MODE==='cloud'?' for everyone in the family':' from this device'}.</p><div class="field"><input class="input" id="wipe-c" autocomplete="off" aria-label="Type DELETE to confirm"></div><button class="btn danger block" data-act="dowipe">Delete everything</button>`);
@@ -1585,6 +1565,235 @@ async function doWipe(){
   closeSheet();toast('Deleting…',{ms:60000});
   for(const col of COLS){const ids=Object.keys(D[col]);for(let i=0;i<ids.length;i+=8)await Promise.all(ids.slice(i,i+8).map(id=>store.del(col,id).catch(()=>{})))}
   ONB=null;toast('All data deleted.');location.hash='home';
+}
+
+/* ================= goals: save up, or clear a loan ================= */
+let GTYPE='save';
+function loanGoalCalc(g){
+  const l=D.loans[g.loan];if(!l)return null;
+  const P=loanOutstanding(l),i=(l.rate||0)/100/12,E=l.emi||0;
+  const now=loanCalc(P,l.rate||0,E);
+  const prog=l.original?clamp(1-P/l.original,0,1):0;
+  if(!g.date)return{l,P,prog,now};
+  const n=Math.max(1,(()=>{const[y,m]=g.date.slice(0,7).split('-').map(Number);const[cy,cm]=curKey().split('-').map(Number);return(y-cy)*12+(m-cm)})());
+  // EMI needed to finish by the target month
+  const need=i===0?Math.ceil(P/n):Math.ceil(P*i/(1-Math.pow(1+i,-n)));
+  const on=!now.err&&now.n<=n;
+  return{l,P,prog,now,n,need,extra:Math.max(0,need-E),on};
+}
+function goalCardHTML(id,g){
+  const edit=canAdmin()?`<button class="btn sm" data-act="editgoal" data-id="${id}">Edit</button>`:'';
+  if(g.type==='loan'){
+    const c=loanGoalCalc(g);
+    if(!c)return `<section class="sect"><div class="sect-head"><h2>${esc(g.name)}</h2>${edit}</div><p class="small muted">The loan for this goal was deleted.</p></section>`;
+    const payoff=c.now.err?null:addM(curKey(),c.now.n);
+    return `<section class="sect"><div class="sect-head"><h2>${esc(g.name)}</h2>${edit}</div>
+      <div class="pbar" style="height:10px"><i style="width:${c.prog*100}%;background:var(--good)"></i></div>
+      <div class="kv" style="margin-top:8px"><span>${Math.round(c.prog*100)}% repaid</span><b class="num">${fmt(c.P)} left</b></div>
+      <div class="kv"><span>At today's EMI</span><b>${payoff?'Debt-free '+mLabel(payoff):esc(c.now.err)}</b></div>
+      ${g.date?`<div class="kv"><span>Your target · ${mLabel(g.date.slice(0,7))}</span><span class="pill ${c.on?'p-paid':'p-overdue'}">${c.on?'On track':'Behind'}</span></div>
+      <p class="small ${c.on?'muted':''}" style="margin:8px 0 4px">${c.on?`You'll finish ${c.now.n<c.n?(c.n-c.now.n)+' month'+(c.n-c.now.n===1?'':'s')+' early':'right on time'}.`:`Pay <b class="num">${fmt(c.extra)} more a month</b> (EMI of ${fmt(c.need)}) to be debt-free by ${mLabel(g.date.slice(0,7))}.`}</p>`:''}
+    </section>`;
+  }
+  const c=goalCalc(g);
+  return `<section class="sect"><div class="sect-head"><h2>${esc(g.name)}</h2>${edit}</div>
+    <div class="pbar" style="height:10px"><i style="width:${c.prog*100}%;background:var(--accent)"></i></div>
+    <div class="kv" style="margin-top:8px"><span>${fmt(g.saved)} of ${fmt(g.target)}</span><b>${Math.round(c.prog*100)}%</b></div>
+    <div class="kv"><span>Months to go</span><b>${c.n===0?'Reached':isFinite(c.n)?c.n+' at '+fmt(g.monthly)+' a month':'Add a monthly amount'}</b></div>
+    ${g.date?`<div class="kv"><span>Target ${mLabel(g.date.slice(0,7))}</span><span class="pill ${c.on?'p-paid':'p-overdue'}">${c.on?'On track':'Behind'}</span></div>`:''}</section>`;
+}
+function goalsBody(){
+  const m=month(curKey());const monthly=m.sec.bills.b+m.sec.expenses.b+m.sec.debt.b;
+  const gs=Object.entries(D.goals);
+  return `<section class="bsum"><div class="label">Suggested emergency fund</div><div class="num" style="font-weight:700;font-size:26px;letter-spacing:-.02em">${fmt(monthly*6)}</div><div class="small muted">6 months of bills, spending and EMIs (${fmt(monthly)} a month)</div></section>
+  ${gs.map(([id,g])=>goalCardHTML(id,g)).join('')||'<p class="small muted" style="margin:0">No goals yet. Save up for something, or set a date to be free of a loan.</p>'}
+  ${canAdmin()?`<div class="btns"><button class="btn primary" data-act="newgoal" data-k="save">+ Savings goal</button><button class="btn" data-act="newgoal" data-k="loan">+ Clear a loan</button></div>`:''}`;
+}
+function openGoal(id,type){
+  const g=id?D.goals[id]:{name:'',target:null,saved:null,monthly:null,date:'',type:type||'save'};
+  GTYPE=g.type||'save';
+  const loans=Object.entries(D.loans);
+  const seg=id?'':`<div class="seg" role="group" style="margin-bottom:14px"><button data-act="gtype" data-k="save" aria-pressed="${GTYPE==='save'}">Save up</button><button data-act="gtype" data-k="loan" aria-pressed="${GTYPE==='loan'}">Clear a loan</button></div>`;
+  let body;
+  if(GTYPE==='loan'){
+    body=loans.length?`<div class="field"><label for="g-loan">Which loan?</label><select class="input" id="g-loan">${loans.map(([lid,l])=>`<option value="${lid}" ${g.loan===lid?'selected':''}>${esc(l.name)} · ${fmt(loanOutstanding(l))} left</option>`).join('')}</select></div>
+      <div class="field"><label for="g-d">Debt-free by</label><input class="input" id="g-d" type="month" value="${(g.date||'').slice(0,7)}"></div>
+      <p class="small muted" style="margin:-4px 0 12px">I'll show whether today's EMI gets you there, and how much extra a month would.</p>
+      <button class="btn primary block" data-act="savegoal" data-id="${id||''}">Save goal</button>`
+      :`<p class="small" style="margin-top:0">Add the loan first: what's left, the interest and the EMI.</p><button class="btn primary block" data-act="editloan">Add a loan</button>`;
+  }else{
+    body=`<div class="field"><label for="g-name">Goal</label><input class="input" id="g-name" value="${esc(g.name)}" placeholder="Emergency fund, Goa trip, new phone"></div>
+    <div class="two"><div class="field"><label for="g-t">Target (₹)</label><input class="input num" id="g-t" inputmode="decimal" value="${rupees(g.target)}"></div><div class="field"><label for="g-s">Saved so far (₹)</label><input class="input num" id="g-s" inputmode="decimal" value="${rupees(g.saved)}"></div></div>
+    <div class="two"><div class="field"><label for="g-m">Each month (₹)</label><input class="input num" id="g-m" inputmode="decimal" value="${rupees(g.monthly)}"></div><div class="field"><label for="g-d">By when</label><input class="input" id="g-d" type="month" value="${(g.date||'').slice(0,7)}"></div></div>
+    <button class="btn primary block" data-act="savegoal" data-id="${id||''}">Save goal</button>`;
+  }
+  openSheet(`${sheetHead(id?'Edit goal':'New goal')}${seg}${body}${id?`<button class="btn danger block" style="margin-top:8px" data-act="delgoal" data-id="${id}">Delete goal</button>`:''}`);
+}
+function saveGoal(id){
+  if(GTYPE==='loan'){
+    const lid=val('g-loan');if(!lid||!D.loans[lid]){toast('Pick a loan.');return}
+    const o={type:'loan',loan:lid,name:'Clear '+D.loans[lid].name,date:val('g-d')};
+    closeSheet();store.set('goals',id||uid(),o).then(()=>log(id?'edited':'added','goal',o.name)).catch(()=>{});return;
+  }
+  const name=val('g-name').trim();if(!name){toast('Give the goal a name.');return}
+  const o={type:'save',name,target:amtOrNull('g-t')||0,saved:amtOrNull('g-s')||0,monthly:amtOrNull('g-m')||0,date:val('g-d')};
+  closeSheet();store.set('goals',id||uid(),o).then(()=>log(id?'edited':'added','goal',name)).catch(()=>{});
+}
+
+/* ================= import: a step-by-step check ================= */
+const SEC_GUESS=[[/salary|income|bonus|interest received|dividend|refund|freelance/,'income'],[/sip|mutual|invest|\brd\b|\bfd\b|ppf|nps|deposit|saving|gold|stock/,'savings'],
+  [/emi|loan|credit card/,'debt'],[/\brent\b|electric|power|water|gas|internet|wifi|broadband|mobile|phone|dth|maid|help|society|maintenance|insurance|school|fee|tuition/,'bills']];
+function guessSection(n){n=n.toLowerCase();for(const[re,s]of SEC_GUESS)if(re.test(n))return s;return'expenses'}
+function impSteps(){const I=IMP;return['intro',...(Object.keys(I.newCats).length?['cats']:[]),...I.months.map(k=>'m:'+k),'final']}
+function impSecOf(name){const c=catsAll().find(x=>x.name.toLowerCase()===name.toLowerCase());if(c)return c.section;const n=IMP.newCats[name.toLowerCase()];return n?n.sec:'expenses'}
+function impMonthStats(k){
+  const rows=IMP.tx.filter(t=>t.k===k);const sec={income:0,savings:0,bills:0,expenses:0,debt:0};const byCat={};
+  rows.forEach(t=>{const s=impSecOf(t.name);sec[s]+=t.amt;if(s!=='income')byCat[t.name]=(byCat[t.name]||0)+t.amt});
+  const top=Object.entries(byCat).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  return{rows,sec,out:OUT.reduce((s,x)=>s+sec[x],0),top};
+}
+function openImportStep(){
+  const I=IMP;const steps=impSteps();const st=steps[I.step];const dots=`<div class="onb-dots" style="justify-content:flex-start">${steps.map((_,i)=>`<i class="${i<=I.step?'on':''}" style="width:${Math.max(8,Math.min(22,240/steps.length))}px"></i>`).join('')}</div>`;
+  const head=`<div class="sheet-h">${dots}<button class="x" data-act="close" aria-label="Cancel import">×</button></div>`;
+  const kept=I.tx.filter(t=>!I.skip[t.k]);
+  if(st==='intro'){
+    const span=I.months.length?(I.months.length===1?mLabel(I.months[0]):`${mLabel(I.months[0])} to ${mLabel(I.months[I.months.length-1])}`):'';
+    return openSheet(`${head}<p class="label" style="margin:0">I read your sheet</p>
+      <div class="reveal-num num" style="font-size:44px">${I.tx.length.toLocaleString('en-IN')}</div>
+      <p class="onb-q" style="font-size:20px;margin:0 0 10px">entries${span?' from '+span:''}.</p>
+      <div class="kv small"><span>Categories already in the app</span><b>${I.knownCount}</b></div>
+      <div class="kv small"><span>New categories</span><b>${Object.keys(I.newCats).length}</b></div>
+      ${I.budgetRows.length?`<div class="kv small"><span>Budget rows</span><b>${I.budgetRows.length}</b></div>`:''}
+      ${I.skipped?`<div class="kv small"><span>Rows I couldn't read</span><b class="over">${I.skipped}</b></div><p class="small muted" style="margin:6px 0 0">These had no date, category or amount, and won't be imported.</p>`:''}
+      <p class="small muted" style="margin:14px 0 0">Nothing is saved until you confirm. It takes about a minute to check.</p>
+      <button class="btn primary block" style="margin-top:16px" data-act="impnext">Let's check it</button>`);
+  }
+  if(st==='cats'){
+    const nc=Object.values(I.newCats);
+    return openSheet(`${head}<p class="label" style="margin:0">New categories</p><h2 class="onb-q" style="font-size:22px;margin:4px 0 6px">Where should these go?</h2>
+      <p class="small muted" style="margin:0 0 10px">I've guessed from the names. Change any that are wrong.</p>
+      ${nc.map(c=>{const n=I.tx.filter(t=>t.name.toLowerCase()===c.name.toLowerCase());return `<div class="erow">${icon({name:c.name,section:c.sec})}<span class="n">${esc(c.name)}<span class="small muted">${n.length?n.length+' entries · '+fmt(n.reduce((s,t)=>s+t.amt,0)):'budget only'}</span></span>
+        <select class="input rolesel" data-impsec="${esc(c.name.toLowerCase())}" aria-label="Section for ${esc(c.name)}">${SECTIONS.map(s=>`<option value="${s.k}" ${c.sec===s.k?'selected':''}>${s.n.split(' ')[0].replace('Savings','Savings')}</option>`).join('')}</select></div>`}).join('')}
+      <button class="btn primary block" style="margin-top:14px" data-act="impnext">These look right</button>`);
+  }
+  if(st.startsWith('m:')){
+    const k=st.slice(2);const s=impMonthStats(k);const mi=I.months.indexOf(k);
+    return openSheet(`${head}<p class="label" style="margin:0">Month ${mi+1} of ${I.months.length}</p>
+      <h2 class="onb-q" style="font-size:24px;margin:4px 0 2px">${mLong(k)} ${k.slice(0,4)}</h2><p class="small muted" style="margin:0 0 12px">${s.rows.length} entries</p>
+      <div class="two" style="margin-bottom:10px"><div><div class="label">Money in</div><div class="num" style="font-size:24px;font-weight:700;color:var(--good)">${fmt(s.sec.income)}</div></div><div><div class="label">Money out</div><div class="num" style="font-size:24px;font-weight:700">${fmt(s.out)}</div></div></div>
+      ${OUT.filter(x=>s.sec[x]).map(x=>`<div class="kv small"><span>${SECN[x]}</span><span class="num">${fmt(s.sec[x])}</span></div>`).join('')}
+      ${s.top.length?`<p class="small muted" style="margin:10px 0 0">Biggest: ${s.top.map(([n,v])=>esc(n)+' '+fmt(v)).join(' · ')}</p>`:''}
+      <p class="onb-q" style="font-size:17px;margin:16px 0 10px">Does this match your sheet?</p>
+      <div class="btns"><button class="btn primary" data-act="impnext">Looks right</button><button class="btn" data-act="impskipm" data-k="${k}">Leave out ${MON[Number(k.slice(5))-1]}</button></div>
+      ${I.months.length-mi>2?`<button class="link small" style="margin-top:12px" data-act="impallok">The rest look right too</button>`:''}`);
+  }
+  // final
+  const months=I.months.filter(k=>!I.skip[k]);const first=months[0];
+  const needStart=first&&S()&&first<S().startMonth;
+  return openSheet(`${head}<p class="label" style="margin:0">Ready</p>
+    <div class="reveal-num num" style="font-size:44px">${kept.length.toLocaleString('en-IN')}</div>
+    <p class="onb-q" style="font-size:20px;margin:0 0 10px">entries from ${months.length} month${months.length===1?'':'s'}${Object.keys(I.skip).length?`, leaving out ${Object.keys(I.skip).map(k=>mLabel(k)).join(', ')}`:''}.</p>
+    ${needStart?`<label class="check" style="border:0"><input type="checkbox" id="imp-start" checked><span class="small">Start the budget from ${mLabel(first)} so balances carry forward</span></label>
+      <div class="field" style="margin-top:6px"><label for="imp-open">Money in your account on ${dShort(mStart(first))} ${first.slice(0,4)} (₹)</label><input class="input num" id="imp-open" inputmode="decimal" value="0"></div>`:''}
+    <button class="btn primary block" style="margin-top:14px" data-act="doimport" ${kept.length||I.budgetRows.length?'':'disabled'}>Import ${kept.length.toLocaleString('en-IN')} entries</button>`);
+}
+
+/* ================= export: pick exactly what you want ================= */
+let EXP=null;
+const EXP_PARTS=[['entries','Entries'],['summary','Monthly summary'],['budget','Budget vs actual'],['bills','Bills & EMIs'],['loans','Loans'],['cards','Credit cards'],['goals','Goals']];
+const EXP_FORMATS=[['xlsx','Excel'],['csv','CSV'],['pdf','PDF report'],['json','Full backup']];
+function openExport(preset={}){
+  if(!EXP||preset.reset!==false)EXP={period:'month',month:VM,year:Number(VM.slice(0,4)),from:mStart(VM),to:todayISO(),inc:{entries:true,summary:true,budget:true,bills:false,loans:false,cards:false,goals:false},format:'xlsx',cat:'',mode:'',who:'',filters:false,...preset};
+  renderExport();
+}
+function expKeys(){
+  const E=EXP;
+  if(E.period==='month')return[E.month];
+  if(E.period==='year')return Array.from({length:12},(_,i)=>ym(E.year,i+1)).filter(k=>txIndex()[k]||(S()&&k>=S().startMonth&&k<=curKey()));
+  if(E.period==='range'){const a=keyOf(E.from||todayISO()),b=keyOf(E.to||todayISO());const out=[];let k=a;while(k<=b&&out.length<240){out.push(k);k=addM(k,1)}return out}
+  return[...new Set([...chainKeys(),...Object.keys(txIndex())])].sort();
+}
+function expEntries(){
+  const E=EXP;let list=[];expKeys().forEach(k=>{list.push(...((txIndex()[k]||{}).list||[]))});
+  if(E.period==='range')list=list.filter(t=>t.date>=E.from&&t.date<=E.to);
+  if(E.cat)list=list.filter(t=>t.cat===E.cat);if(E.mode)list=list.filter(t=>t.mode===E.mode);if(E.who)list=list.filter(t=>(t.by||'local')===E.who);
+  return list.sort((a,b)=>a.date.localeCompare(b.date));
+}
+function expPeriodLabel(){const E=EXP,ks=expKeys();if(E.period==='month')return mLabel(E.month);if(E.period==='year')return String(E.year);if(E.period==='range')return dShort(E.from)+' '+E.from.slice(0,4)+' to '+dShort(E.to)+' '+E.to.slice(0,4);return ks.length>1?mLabel(ks[0])+' to '+mLabel(ks[ks.length-1]):ks.length?mLabel(ks[0]):'Everything'}
+function expSummaryLine(){
+  const E=EXP;if(E.format==='json')return'Everything in one backup file you can restore later.';
+  const n=expEntries().length;const parts=EXP_PARTS.filter(([k])=>E.inc[k]);
+  if(E.format==='csv')return`${n.toLocaleString('en-IN')} entries · ${expPeriodLabel()} · one CSV file`;
+  return`${parts.length} section${parts.length===1?'':'s'} · ${n.toLocaleString('en-IN')} entries · ${expPeriodLabel()}`;
+}
+function renderExport(){
+  const E=EXP;const cats=catsAll();
+  const people=[...new Set(Object.values(D.tx).map(t=>t.by||'local'))];
+  const chip=(act,k,on,l)=>`<button class="chip" data-act="${act}" data-k="${k}" aria-pressed="${on}">${l}</button>`;
+  const years=[...new Set([curKey().slice(0,4),...Object.keys(txIndex()).map(k=>k.slice(0,4))])].sort().reverse();
+  openSheet(`${sheetHead('Export')}
+    <div class="flabel" style="margin-bottom:6px">Which period?</div>
+    <div class="chips" style="margin-bottom:10px">${[['month','A month'],['year','A year'],['range','Date range'],['all','Everything']].map(([k,l])=>chip('expper',k,E.period===k,l)).join('')}</div>
+    ${E.period==='month'?`<input class="input" type="month" id="exp-m" value="${E.month}" style="margin-bottom:14px">`:''}
+    ${E.period==='year'?`<select class="input" id="exp-y" style="margin-bottom:14px">${years.map(y=>`<option ${String(E.year)===y?'selected':''}>${y}</option>`).join('')}</select>`:''}
+    ${E.period==='range'?`<div class="two" style="margin-bottom:6px"><div class="field"><label for="exp-from">From</label><input class="input" type="date" id="exp-from" value="${E.from}"></div><div class="field"><label for="exp-to">To</label><input class="input" type="date" id="exp-to" value="${E.to}"></div></div>`:''}
+    <div class="flabel" style="margin:4px 0 6px">Format</div>
+    <div class="chips" style="margin-bottom:14px">${EXP_FORMATS.map(([k,l])=>chip('expfmt',k,E.format===k,l)).join('')}</div>
+    ${E.format==='json'?'':E.format==='csv'?'<p class="small muted" style="margin:-6px 0 14px">CSV holds one table, so it includes entries only. Pick Excel for everything else.</p>':`
+    <div class="flabel" style="margin-bottom:6px">What to include</div>
+    <div class="chips" style="margin-bottom:14px">${EXP_PARTS.map(([k,l])=>chip('expinc',k,!!E.inc[k],l)).join('')}</div>`}
+    ${E.format==='json'?'':`<button class="link small" data-act="expfilt" style="padding:0 0 10px">${E.filters?'Hide filters':'Only some entries? Filter by category, payment mode or person'}</button>
+    ${E.filters?`<div class="filters" style="margin-bottom:14px">
+      <select class="input" id="exp-cat" aria-label="Category"><option value="">All categories</option>${cats.map(c=>`<option value="${c.id}" ${E.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select>
+      <select class="input" id="exp-mode" aria-label="Payment mode"><option value="">All payment modes</option>${MODES.map(x=>`<option ${E.mode===x?'selected':''}>${x}</option>`).join('')}</select>
+      ${people.length>1?`<select class="input" id="exp-who" style="grid-column:1/-1" aria-label="Added by"><option value="">Everyone</option>${people.map(p=>`<option value="${esc(p)}" ${E.who===p?'selected':''}>${esc(who(p))}</option>`).join('')}</select>`:''}</div>`:''}`}
+    <p class="small" id="exp-sum" style="margin:4px 0 12px;color:var(--muted)">${expSummaryLine()}</p>
+    <button class="btn primary block" data-act="expgo">${E.format==='pdf'?'Create PDF':E.format==='json'?'Save backup':'Export'}</button>`);
+}
+function expReadInputs(){const E=EXP;const g=id=>{const e=$('#'+id);return e?e.value:null};
+  if(g('exp-m'))E.month=g('exp-m');if(g('exp-y'))E.year=Number(g('exp-y'));if(g('exp-from'))E.from=g('exp-from');if(g('exp-to'))E.to=g('exp-to');
+  if(g('exp-cat')!==null)E.cat=g('exp-cat');if(g('exp-mode')!==null)E.mode=g('exp-mode');if(g('exp-who')!==null)E.who=g('exp-who');}
+function expTables(){
+  const E=EXP,ks=expKeys(),T={};
+  const ents=expEntries();
+  if(E.inc.entries||E.format==='csv')T['Entries']=[['Date','Section','Category','Amount (₹)','Paid by','Card','Note','Added by'],...ents.map(t=>{const c=D.cats[t.cat]||{};return[t.date,SECN[c.section]||'',c.name||'',t.amt/100,t.mode||'',t.card&&D.cards[t.card]?D.cards[t.card].name:'',t.note||'',who(t.by)]})];
+  if(E.format==='csv')return T;
+  if(E.inc.summary)T['Monthly summary']=[['Month','Opening','Income','Savings','Bills','Spending','EMIs','Closing','Savings rate'],...ks.map(k=>{const m=month(k);return[mLabel(k),m.open/100,m.income/100,m.sec.savings.a/100,m.sec.bills.a/100,m.sec.expenses.a/100,m.sec.debt.a/100,m.close/100,m.income?Math.round(m.sec.savings.a/m.income*100)+'%':'']})];
+  if(E.inc.budget)T['Budget vs actual']=[['Month','Section','Category','Budget (₹)','Actual (₹)','Left (₹)'],...ks.flatMap(k=>month(k).cats.filter(c=>!E.cat||c.id===E.cat).map(c=>[mLabel(k),SECN[c.section],c.name,c.budget/100,c.actual/100,c.left/100]))];
+  if(E.inc.bills)T['Bills & EMIs']=[['Month','Bill or EMI','Due date','Budget (₹)','Paid (₹)','Status'],...ks.flatMap(k=>billsFor(k).map(b=>[mLabel(k),b.name,b.due,b.budget/100,b.actual/100,b.label]))];
+  if(E.inc.loans)T['Loans']=[['Loan','Lender','Interest %','EMI (₹)','Outstanding (₹)','Months left','Payoff','Interest still to pay (₹)'],...Object.values(D.loans).map(l=>{const P=loanOutstanding(l),c=loanCalc(P,l.rate||0,l.emi||0);return[l.name,l.lender||'',l.rate||0,(l.emi||0)/100,P/100,c.err?'':c.n,c.err?c.err:mLabel(addM(curKey(),c.n)),c.err?'':c.interest/100]})];
+  if(E.inc.cards)T['Credit cards']=[['Card','Bank','Limit (₹)','Month','Statement (₹)','Paid (₹)','Status'],...Object.values(D.cards).flatMap(cd=>ks.filter(k=>cd.stmts&&cd.stmts[k]).map(k=>{const st=cd.stmts[k],s=cardStatus(st);return[cd.name,cd.bank||'',(cd.limit||0)/100,mLabel(k),st.amt/100,(st.paid||0)/100,s==='full'?'Paid in full':s==='part'?'Part paid':'Not paid']}))];
+  if(E.inc.goals)T['Goals']=[['Goal','Type','Target or loan','Progress','By when','Status'],...Object.values(D.goals).map(g=>{if(g.type==='loan'){const c=loanGoalCalc(g);return[g.name,'Clear a loan',c?fmt(c.P)+' left':'',c?Math.round(c.prog*100)+'%':'',g.date||'',c&&g.date?(c.on?'On track':'Behind'):'']}const c=goalCalc(g);return[g.name,'Save up',g.target/100,Math.round(c.prog*100)+'%',g.date||'',g.date?(c.on?'On track':'Behind'):'']})];
+  return T;
+}
+async function runExport(){
+  expReadInputs();const E=EXP;const name='Paisa Planner '+expPeriodLabel().replace(/[^\w\- ]+/g,'');
+  if(E.format==='json'){closeSheet();return backup()}
+  if(E.format!=='csv'&&!EXP_PARTS.some(([k])=>E.inc[k])){toast('Pick at least one thing to include.');return}
+  const T=expTables();
+  if(E.format==='csv'){
+    const csv=T['Entries'].map(r=>r.map(v=>{const s=String(v??'');return/[",\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s}).join(',')).join('\n');
+    closeSheet();await saveFile(name+'.csv',new Blob(['﻿'+csv],{type:'text/csv'}));log('exported','CSV',expPeriodLabel());return;
+  }
+  if(E.format==='pdf'){closeSheet();return printReport(T,name)}
+  let X;try{X=await loadXLSX()}catch(e){toast("Couldn't load the Excel tools. Check your connection.");return}
+  const wb=X.utils.book_new();for(const[n,rows]of Object.entries(T))X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(rows),n.slice(0,31));
+  closeSheet();await saveFile(name+'.xlsx',X.write(wb,{type:'array',bookType:'xlsx'}));
+  log('exported','Excel',expPeriodLabel()+' · '+Object.keys(T).join(', '));
+}
+function printReport(T,name){
+  const s=S()||{};const fmtCell=v=>typeof v==='number'?INR.format(v):esc(v);
+  const html=`<!doctype html><html><head><meta charset="utf-8"><title>${esc(name)}</title><style>
+    body{font-family:Inter,system-ui,sans-serif;color:#14201B;margin:28px;font-size:11px}h1{font-size:20px;margin:0}h2{font-size:14px;margin:22px 0 6px}
+    .sub{color:#5B6863;margin:4px 0 14px}table{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}th,td{padding:4px 6px;border-bottom:1px solid #D9E0DC;text-align:left}th{font-size:9px;text-transform:uppercase;letter-spacing:.05em;color:#5B6863}
+    td:not(:first-child){white-space:nowrap}@page{margin:14mm}</style></head><body>
+    <h1>${esc(s.name||'Paisa Planner')}</h1><div class="sub">${esc(expPeriodLabel())} · exported ${new Date().toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} · amounts in ₹</div>
+    ${Object.entries(T).map(([n,rows])=>`<h2>${esc(n)}</h2><table><thead><tr>${rows[0].map(h=>`<th>${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.slice(1).map(r=>`<tr>${r.map(v=>`<td>${fmtCell(v)}</td>`).join('')}</tr>`).join('')}</tbody></table>`).join('')}
+    </body></html>`;
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);
+  f.contentDocument.open();f.contentDocument.write(html);f.contentDocument.close();
+  setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();toast('Choose "Save as PDF" in the print window.')}catch(e){toast("This browser can't create PDFs here. Try Excel instead.")}setTimeout(()=>f.remove(),60000)},400);
+  log('exported','PDF',expPeriodLabel());
 }
 
 /* ================= events ================= */
@@ -1664,9 +1873,9 @@ document.addEventListener('click',async e=>{
     case 'stmt':openStmt(id);break;
     case 'savestmt':{const o=JSON.parse(JSON.stringify(D.cards[id]));o.stmts=o.stmts||{};o.stmts[VM]={amt:amtOrNull('s-amt')||0,paid:amtOrNull('s-paid')||0};closeSheet();store.set('cards',id,o).then(()=>log('updated','card statement',o.name+' '+mLabel(VM))).catch(()=>{});break}
     case 'editgoal':openGoal(id);break;
-    case 'savegoal':{const name=val('g-name').trim();if(!name){toast('Give the goal a name.');break}
-      const o={name,target:amtOrNull('g-t')||0,saved:amtOrNull('g-s')||0,monthly:amtOrNull('g-m')||0,date:val('g-d')};
-      closeSheet();store.set('goals',id||uid(),o).then(()=>log(id?'edited':'added','goal',name)).catch(()=>{});break}
+    case 'savegoal':saveGoal(id);break;
+    case 'newgoal':openGoal(null,el.dataset.k);break;
+    case 'gtype':openGoal(null,el.dataset.k);break;
     case 'delgoal':closeSheet();store.del('goals',id).catch(()=>{});break;
     case 'saveprefs':{const op=amtOrNull('p-op');const o={...S(),name:val('p-name').trim()||S().name,startDay:Number(val('p-sd'))||1,startMonth:val('p-sm')||S().startMonth,opening:op==null?S().opening:op};
       store.set('settings','main',o).then(()=>{log('changed','settings','');toast('Settings saved.')}).catch(()=>{});break}
@@ -1676,8 +1885,16 @@ document.addEventListener('click',async e=>{
     case 'pincancel':$('#lockRoot').innerHTML='';break;
     case 'template':downloadTemplate();break;
     case 'doimport':doImport();break;
-    case 'exp-month':exportMonth(VM);break;
-    case 'exp-year':exportYear(route==='reports'?reportYear:Number(VM.slice(0,4)));break;
+    case 'impnext':IMP.step++;openImportStep();break;
+    case 'impskipm':IMP.skip[el.dataset.k]=true;IMP.step++;openImportStep();break;
+    case 'impallok':IMP.step=impSteps().length-1;openImportStep();break;
+    case 'exp-month':openExport({period:'month',month:VM});break;
+    case 'exp-year':openExport({period:'year',year:route==='reports'?reportYear:Number(VM.slice(0,4))});break;
+    case 'expper':expReadInputs();EXP.period=el.dataset.k;renderExport();break;
+    case 'expfmt':expReadInputs();EXP.format=el.dataset.k;renderExport();break;
+    case 'expinc':expReadInputs();EXP.inc[el.dataset.k]=!EXP.inc[el.dataset.k];renderExport();break;
+    case 'expfilt':expReadInputs();EXP.filters=!EXP.filters;renderExport();break;
+    case 'expgo':runExport();break;
     case 'wipe':wipe();break;
     case 'dowipe':doWipe();break;
     case 'install':if(INSTALL_EVT){INSTALL_EVT.prompt();const r=await INSTALL_EVT.userChoice.catch(()=>null);INSTALL_EVT=null;if(r&&r.outcome==='accepted')toast('Installed. Find Paisa Planner on your home screen.');render()}break;
@@ -1721,6 +1938,8 @@ document.addEventListener('input',e=>{
 document.addEventListener('change',e=>{
   const t=e.target;
   if(t.id==='onb-sd'){ONB.startDay=Number(t.value);render()}
+  else if(t.dataset.impsec&&IMP){IMP.newCats[t.dataset.impsec].sec=t.value}
+  else if(t.id&&t.id.startsWith('exp-')&&EXP){expReadInputs();const s=$('#exp-sum');if(s)s.textContent=expSummaryLine()}
   else if(t.id==='q-note'&&QA){QA.note=t.value.trim();const mm=merchantMemory()[QA.note.toLowerCase()];if(mm&&(!QA.cat||QA.guessed)){QA.date=val('q-date')||QA.date;Object.assign(QA,{cat:mm.cat,guessed:true,mode:mm.mode||QA.mode,card:mm.card||QA.card});renderQuick()}}
   else if(t.id==='imp-file'&&t.files[0]){handleImport(t.files[0]);t.value=''}
   else if(t.id==='restore-file'&&t.files[0]){handleRestore(t.files[0]);t.value=''}
