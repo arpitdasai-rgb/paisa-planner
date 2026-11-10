@@ -5,6 +5,6 @@
 // The anon key is meant to be public: row-level security in supabase/schema.sql protects the data.
 // Never put the service_role key here.
 window.PAISA_CONFIG = {
-  supabaseUrl: "",      // e.g. "https://abcdefghijklmnop.supabase.co"
-  supabaseAnonKey: ""   // e.g. "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  supabaseUrl: "https://acymqvrelmxcgjxjfdni.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjeW1xdnJlbG14Y2dqeGpmZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQyODgxNzEsImV4cCI6MjEwOTg2NDE3MX0.kaokb1W3eGVYnNss377yKTO2wv7gTKHQF9YmDHiNbz4"
 };
