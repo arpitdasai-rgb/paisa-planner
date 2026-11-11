@@ -1405,9 +1405,12 @@ function openSheet(html,{onClose}={}){
   if(ex){const y=ex.scrollTop;ex.innerHTML=html;ex.scrollTop=y}
   else $('#sheetRoot').innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
   sheetClose=onClose||null;
+  // a field left focused on the page behind keeps the iPhone keyboard up and scrolls the page under the sheet
+  const a=document.activeElement;if(a&&a!==document.body&&!$('#sheetRoot').contains(a)&&a.blur)a.blur();
+  for(const id of ['app','tabs']){const n=document.getElementById(id);if(n)n.inert=true}
   const f=$('#sheetRoot [autofocus]');if(f)f.focus();
 }
-function closeSheet(){$('#sheetRoot').innerHTML='';const c=sheetClose;sheetClose=null;QA=null;if(c)c()}
+function closeSheet(){$('#sheetRoot').innerHTML='';for(const id of ['app','tabs']){const n=document.getElementById(id);if(n)n.inert=false}const c=sheetClose;sheetClose=null;QA=null;if(c)c()}
 const sheetHead=t=>`<div class="sheet-h"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`;
 
 /* ---- Quick add ---- */
@@ -2738,7 +2741,7 @@ document.addEventListener('click',async e=>{
     case 'wrapnext':WRAP.step++;openWrap(WRAP.prev);break;
     case 'wrapclose':closeWrap();break;
     case 'wrapraise':wrapRaise(id,el.dataset.k);break;
-    case 'key':quickKey(el.dataset.k);break;
+    case 'key':{const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))a.blur()}quickKey(el.dataset.k);break;
     case 'qcat':qSync();QA.cat=id;QA.guessed=false;renderQuick();break;
     case 'qtype':qSync();QA.type=el.dataset.k;QA.guessed=false;QA.split=null;QA.cat=QA.type==='in'?lastIncomeCat():null;if(QA.type==='xfer'){QA.from=QA.from||defaultAcct();QA.to=''}else if(!QA.acct)QA.acct=defaultAcct(QA.mode);if(QA.type==='in'&&QA.mode==='Card')QA.mode='Net banking';if(QA.type==='in'&&QA.mode==='UPI'&&!QA.amt)QA.mode='Net banking';renderQuick();break;
     case 'qmore':qSync();QA.more=!QA.more;renderQuick();if(QA.more){const n=$('#q-note');if(n&&!QA.note)n.focus()}break;
