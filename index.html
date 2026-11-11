@@ -505,6 +505,21 @@ a.trow{text-decoration:none}
 .swipe.selecting.picked .rowbtn::after{content:"";position:absolute;left:16px;top:50%;width:5px;height:10px;margin-top:-7px;border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg);z-index:3}
 .swipe.selecting .rowbtn{position:relative;padding-left:36px}
 .swipe.selecting[data-can="0"]{opacity:.45}
+.faqs{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}
+.faq{border-bottom:1px solid var(--line)}
+.faq:last-child{border-bottom:0}
+.faq summary{list-style:none;display:flex;align-items:center;gap:12px;padding:15px 16px;font-weight:600;font-size:15.5px;line-height:1.35;cursor:pointer;min-height:56px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary span{flex:1}
+.faq summary svg{flex:none;transition:transform .2s;color:var(--muted)}
+.faq[open] summary svg{transform:rotate(90deg)}
+.faq .fa{padding:0 16px 16px;color:var(--muted);font-size:15px;line-height:1.55}
+.faq .fa p{margin:0 0 12px}
+.faq .fa b{color:var(--ink)}
+.faq mark{background:color-mix(in srgb,var(--warn) 30%,transparent);color:inherit;border-radius:3px;padding:0 1px}
+#help-q{font-size:16px}
+input[type=search]::-webkit-search-cancel-button{filter:grayscale(1) brightness(.4)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) input[type=search]::-webkit-search-cancel-button{filter:grayscale(1) invert(1)}}
 details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
 details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
 details.more>summary::-webkit-details-marker{display:none}
@@ -589,7 +604,7 @@ const SECN=Object.fromEntries(SECTIONS.map(s=>[s.k,s.n]));
 const OUT=['savings','bills','expenses','debt'];
 const MODES=['UPI','Card','Cash','Net banking','Auto-debit'];
 const COLS=['settings','cats','tx','months','bills','loans','cards','goals','log','accounts','recurring','assets','trash'];
-const ROUTES=['home','transactions','budget','plan','more','family','bills','reports','prefs','pushsetup'];
+const ROUTES=['home','transactions','budget','plan','more','family','bills','reports','prefs','pushsetup','help'];
 const STARTER={
   income:[['Salary',120000],['Other income',0]],
   savings:[['SIP / mutual funds',15000],['Recurring deposit',5000],['Emergency fund',5000]],
@@ -812,7 +827,7 @@ function render(){
   if(!VM)VM=curKey();
   $('#tabs').hidden=false;$('#fab').hidden=!canWrite();
   renderTabs();
-  const v={home:homeView,transactions:txView,budget:budgetView,plan:planView,family:MODE==='cloud'?familyCloudView:familyView,pushsetup:pushSetupView,more:moreView,bills:billsView,reports:reportsView,prefs:prefsView}[route]||homeView;
+  const v={home:homeView,transactions:txView,budget:budgetView,plan:planView,family:MODE==='cloud'?familyCloudView:familyView,pushsetup:pushSetupView,more:moreView,bills:billsView,reports:reportsView,prefs:prefsView,help:helpView}[route]||homeView;
   const keepY=LAST_ROUTE===route?window.scrollY:0;
   app.innerHTML=v();
   if(LAST_ROUTE===route&&keepY)window.scrollTo(0,keepY);LAST_ROUTE=route;
@@ -2461,7 +2476,7 @@ const UI={
 const ui=(n,s=22)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${UI[n]||NAVI[n]||''}</svg>`;
 
 function renderTabs(){
-  const cur=['transactions','bills'].includes(route)?'home':['family','prefs','reports','pushsetup'].includes(route)?'more':route;
+  const cur=['transactions','bills'].includes(route)?'home':['family','prefs','reports','pushsetup','help'].includes(route)?'more':route;
   const item=([k,n])=>`<a href="#${k}" ${cur===k?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVI[k]}</svg><span>${n}</span></a>`;
   $('#tabs').innerHTML='<nav>'+[['home','Home'],['budget','Budget']].map(item).join('')+'<span class="navgap" aria-hidden="true"></span>'+[['plan','Wallet'],['more','More']].map(item).join('')+'</nav>';
 }
@@ -2588,7 +2603,7 @@ function openWalletDetail(key){
 /* ---- More: search and everything else ---- */
 const FEATURES=[['Bills & EMIs','go','bills','receipt'],['Budget','go','budget','budget'],['Entries','go','transactions','list'],['Yearly report','go','reports','report'],['Family','go','family','users'],['Settings','go','prefs','gear'],
   ['Bank accounts','goplan','accounts','bank'],['Credit cards','goplan','cards','card'],['Loans','goplan','loans','bank'],['Goals','goplan','goals','target'],['Repeats','goplan','recurring','repeat'],['Net worth','goplan','networth','chart'],
-  ['Export','exp-month','','download'],['Import from Excel','prefsec','data','upload'],['Reminders','prefsec','reminders','bell'],['App lock','prefsec','lock','lock'],['Back up','prefsec','data','backup'],['Delete data','deldata','','shield'],['Recently deleted','prefsec','trash','backup'],['Install the app','prefsec','install','download'],['Budget setup','prefsec','budget','budget'],['Privacy policy','link','privacy.html','shield'],['Terms','link','terms.html','doc']];
+  ['Export','exp-month','','download'],['Import from Excel','prefsec','data','upload'],['Reminders','prefsec','reminders','bell'],['App lock','prefsec','lock','lock'],['Back up','prefsec','data','backup'],['Delete data','deldata','','shield'],['Help & FAQ','go','help','doc'],['Recently deleted','prefsec','trash','backup'],['Install the app','prefsec','install','download'],['Budget setup','prefsec','budget','budget'],['Privacy policy','link','privacy.html','shield'],['Terms','link','terms.html','doc']];
 const recentQ=()=>{try{return JSON.parse(lsGet('paisa-recent-q')||'[]')}catch(e){return[]}};
 function featBtn([n,a,k,ic],cls='chip'){return a==='link'?`<a class="${cls}" href="${k}">${ui(ic,18)}<span>${n}</span></a>`:`<button class="${cls}" data-act="${a}" ${k?`data-k="${k}"`:''}>${ui(ic,18)}<span>${n}</span></button>`}
 function moreSearch(q){
@@ -2601,6 +2616,7 @@ function moreSearch(q){
   box.innerHTML=(feats.length?`<section class="sect nob"><span class="eyebrow">Go to</span><div class="chips" style="margin-top:10px">${feats.map(f=>featBtn(f)).join('')}</div></section>`:'')
     +(cats.length?`<section class="sect nob"><span class="eyebrow">Categories</span>${cats.map(c=>{const m=month(curKey()).cats.find(x=>x.id===c.id);return `<button class="rowbtn" data-act="catentries" data-id="${c.id}"><div class="row">${icon(c)}<div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${SECN[c.section]}</div></div><div class="amt num">${m?fmt(m.actual):''}</div>${CHEV}</div></button>`}).join('')}</section>`:'')
     +(ents.length?`<section class="sect nob"><span class="eyebrow">Entries</span>${ents.map(t=>{const c=D.cats[t.cat]||{};return `<button class="rowbtn" data-act="edittx" data-id="${t.id}"><div class="row">${icon(c.name?c:{section:'expenses'})}<div class="grow"><div class="t">${esc(t.note||c.name||'')}</div><div class="s">${dShort(t.date)} · ${esc(c.name||'')}</div></div><div class="amt num">${fmt(t.amt)}</div></div></button>`}).join('')}</section>`:'')
+    +((h=>h.length?`<section class="sect nob"><span class="eyebrow">Help</span>${h.map(i=>`<button class="rowbtn" data-act="helpopen" data-k="${esc(q)}"><div class="row"><span class="ti" style="width:36px;height:36px">${ui('doc',18)}</span><div class="grow"><div class="t">${esc(FAQ[i][1])}</div></div>${CHEV}</div></button>`).join('')}</section>`:'')(helpHits(q)))
     ||`<p class="empty-state">Nothing matches "${esc(q)}".</p>`;
 }
 function saveRecentQ(q){q=q.trim();if(q.length<2)return;const a=recentQ().filter(x=>x.toLowerCase()!==q.toLowerCase());a.unshift(q);lsSet('paisa-recent-q',JSON.stringify(a.slice(0,6)))}
@@ -2667,7 +2683,7 @@ function prefTiles(s,hasPin){
   ${tgroup('Security',[trow('prefsec','lock','lock','App lock',hasPin?'On · 4-digit PIN':'Off'),
     trow('prefsec','install','download','Install the app',STANDALONE?'Installed':'Add to home screen')])}
   ${tgroup('Data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data'),canWrite()?trow('deldata','','shield','Delete data','Choose what, which period, which category'):'',trow('prefsec','trash','backup','Recently deleted',(n=>n?n+' item'+(n>1?'s':'')+' you can restore':'Restore anything deleted in the last 30 days')(Object.keys(trashAll()).length))])}
-  ${tgroup('About',[trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),IS_OWNER&&CLOUD&&!CFG.vapidPublicKey?trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner'):''])}
+  ${tgroup('About',[trow('go','help','doc','Help & FAQ','Search answers to common questions'),trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),IS_OWNER&&CLOUD&&!CFG.vapidPublicKey?trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner'):''])}
   ${IS_OWNER?`<section class="tgroup"><div class="tcard"><button class="trow danger" data-act="prefsec" data-k="danger"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>${MODE==='cloud'?'Delete family budget':'Delete all data'}</b><small>Can't be undone</small></span>${CHEV}</button></div></section>`:''}`;
 }
 
@@ -2727,7 +2743,8 @@ function moreView(){
     trow('goplan','recurring','repeat','Repeats',`${recList().length} every month`),
     trow('goplan','cards','card','Credit cards',Object.keys(D.cards).length?Object.keys(D.cards).length+' added':'Track statements and dues'),
     trow('prefsec','data','upload','Import & export','Excel, CSV, PDF, backup'),
-    trow('go','prefs','gear','Settings','Reminders, app lock, budget setup')])}
+    trow('go','prefs','gear','Settings','Reminders, app lock, budget setup'),
+    trow('go','help','doc','Help & FAQ','Answers to common questions')])}
   <p class="small center muted" style="margin:6px 0 0"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
   </div>`;
 }
@@ -3037,6 +3054,108 @@ function selBar(){
   if(!SEL||route!=='transactions')return'';
   return`<div class="selbar" role="toolbar" aria-label="Selected entries"><button class="link" data-act="selcancel">Cancel</button><b>${SEL.size} selected</b><button class="link" data-act="selall">All shown</button><button class="btn danger sm" data-act="seldel" ${SEL.size?'':'disabled'}>Delete</button></div>`;
 }
+/* ================= Help & FAQ ================= */
+// [topic, question, answer (simple HTML), extra search words, [button label, data-act, data-k]]
+const FAQ_TOPICS=[['start','Getting started','home'],['add','Adding entries','list'],['budget','Budget & months','budget'],['bills','Bills & reminders','bell'],['wallet','Wallet','card'],['family','Family & sharing','users'],['data','Import, export & backup','upload'],['delete','Deleting & restoring','backup'],['privacy','Privacy & security','shield'],['app','App & troubleshooting','gear']];
+const FAQ=[
+ ['start','What does "Left to spend" mean?','It is the money you started the month with, plus income received, minus everything paid out so far. Tap the big number on Home to see exactly how it adds up.','left to spend balance home number how calculated',['See how it adds up','breakdown','']],
+ ['start','How is the "a day" amount worked out?','Paisa takes what\'s left, adds income still to come, subtracts bills, EMIs and budgets you haven\'t paid yet, then divides by the days left in the month. It\'s what you can spend each day without missing a planned payment.','per day daily amount safe to spend',null],
+ ['start','What should I do first?','Log what you spend with the <b>+</b> button, mark bills paid when they go out, and check Home once a day. Paisa shows what needs you under <b>Needs you</b>, so you don\'t have to look everywhere.','first steps begin setup tutorial',['Add an entry','fab','']],
+ ['start','What does "Needs you" show?','Only things that need an action: overdue bills, budgets that have gone over, and repeats waiting for a tap. Heads-ups you don\'t need can be hidden for the month with ×.','needs you attention alerts warnings red dot badge',null],
+ ['start','What is the monthly wrap?','At the start of a new month Paisa shows a short summary of last month: what you saved, where you went over, and a one-tap way to raise a budget that was too low.','wrap summary last month recap',null],
+
+ ['add','How do I add an expense or income?','Tap <b>+</b>, type the amount on the keypad and pick a category. Switch between <b>Expense</b>, <b>Income</b> and <b>Self transfer</b> at the top. Tap the line under the categories to change the date, payment mode, account or note.','add entry log spend record salary',['Add an entry','fab','']],
+ ['add','How do I edit or delete an entry?','Open <b>Entries</b> and tap the entry to edit it. On a phone you can also swipe it right to edit, or left to delete. Deleted entries can be restored from Recently deleted for 30 days.','edit change fix wrong mistake swipe remove',['Open Entries','go','transactions']],
+ ['add','Why does Paisa pick a category for me?','It remembers the category you used for the same amount, time of day or note (like "Swiggy"). The guess is only a suggestion. Tap another category to change it.','guess auto category suggestion merchant memory',null],
+ ['add','How do I split one payment across categories?','In Add entry, open the details line under the categories and tap <b>Split across categories</b>. Add each part. The parts must add up to the total before you can save.','split multiple categories one bill',null],
+ ['add','What is a Self transfer?','Money moved between your own accounts, like salary account to savings, or paying your credit card. It changes account balances but not what\'s left to spend.','self transfer move money between accounts own',null],
+ ['add','How do I record a credit card bill without counting it twice?','If you log card purchases as expenses, pay the card bill as a <b>Self transfer</b> to the card, not as an expense. Paisa warns you if you try, with a one-tap <b>Pay card instead</b>, and marks the Credit card bill paid.','credit card bill payment double count twice',null],
+ ['add','How do I make an entry repeat every month?','In Add entry, open the details and tick <b>Repeats every month</b>. On that day each month it appears on Home for a one-tap confirm. Manage repeats in Wallet → Repeats.','repeat recurring monthly salary sip rent automatic',['Open Repeats','goplan','recurring']],
+ ['add','Can I share an SMS or UPI message to Paisa?','On Android, after installing the app, use your phone\'s Share button and pick Paisa. It reads the amount and merchant for you. iPhone doesn\'t let web apps receive shares, so copy the amount instead.','share sms upi message android iphone',null],
+
+ ['budget','How do I change my budgets?','Open <b>Budget</b> and tap <b>Edit budgets</b> to plan the whole month at once, or tap a category to change just that one. You can apply a change to one month only, or to this and future months.','change budget limit plan amount',['Open Budget','go','budget']],
+ ['budget','My month starts on salary day, not the 1st. Can I change that?','Yes. In Settings → Budget setup, set <b>Month starts on day</b> (for example 25). Every screen, report and export follows it.','start day month salary date 25th cycle',['Budget setup','prefsec','budget']],
+ ['budget','What is "Money at the start" and how do I correct it?','It is what you had when the month began, carried over from last month. If it doesn\'t match your bank, open Budget and tap <b>Starting money</b> to set it for that month.','opening balance starting money carry over correct',['Open Budget','go','budget']],
+ ['budget','How do I add, rename, archive or delete a category?','On Budget, tap <b>+ Add a category</b> under a section, or tap a category to rename it, set a due day or archive it. <b>Delete</b> lets you move its entries to another category or delete them too.','category add rename archive remove delete move',['Open Budget','go','budget']],
+ ['budget','What are the sections Income, Savings, Bills, Expenses and Debt?','They group your categories. Savings and Debt/EMIs count as money going out, so "left to spend" stays honest. Bills and Debt can have due days for reminders.','sections savings debt emi expenses bills income',null],
+ ['budget','Where can I see the whole year?','Tap the chart icon at the top left of Home for the Yearly report: income, outflow, savings rate and month-by-month totals. You can export it from there.','year yearly report annual savings rate chart',['Yearly report','go','reports']],
+
+ ['bills','How do I track a bill or EMI?','Give a Bills or Debt category a due day on the Budget tab. It then appears in Bills & EMIs with its status, and on Home when it\'s due or overdue. Tap <b>Paid</b> when it goes out.','bill emi due date track rent electricity',['Bills & EMIs','go','bills']],
+ ['bills','How do I skip a bill this month?','In Bills & EMIs tap <b>Skip</b> next to it. It won\'t count as overdue and you can undo it any time that month.','skip bill not this month',['Bills & EMIs','go','bills']],
+ ['bills','How do reminders work?','Turn them on in Settings → Reminders. You can get bill reminders before due dates, an evening nudge to log the day\'s spending, and a weekly summary, each at a time you choose.','reminder notification push alert time',['Reminders','prefsec','reminders']],
+ ['bills','Reminders don\'t work on my iPhone. Why?','On iPhone, notifications only work when Paisa is installed: open it in Safari, tap Share → <b>Add to Home Screen</b>, open it from the home screen, then turn on reminders. You need iOS 16.4 or later.','iphone ios notification not working safari home screen',['Install the app','prefsec','install']],
+ ['bills','Reminders say "Blocked in phone settings".','Notifications were turned off for Paisa in your phone or browser settings. Turn them back on there (on iPhone: Settings → Notifications → Paisa), then reopen the app.','blocked denied notification permission',['Reminders','prefsec','reminders']],
+
+ ['wallet','How do I add my bank account?','Wallet → <b>+ Add</b> → Bank account. Pick the bank and type the balance your bank app shows today. Only the last 4 digits are kept, never the full account number.','bank account add savings salary',['Open Wallet','go','plan']],
+ ['wallet','My account balance doesn\'t match the bank. What do I do?','Open the account and tap <b>Check balance</b>. If it differs, type what your bank shows and Paisa adjusts. Small gaps usually mean an entry wasn\'t logged.','balance wrong mismatch check correct',['Open Wallet','go','plan']],
+ ['wallet','How do I track a credit card?','Wallet → <b>+ Add</b> → Credit card, with the statement and due days. Each month tap <b>Add statement</b> with the amount, and Paisa shows the due date and what\'s unpaid.','credit card statement due limit',['Credit cards','goplan','cards']],
+ ['wallet','How do loans and payoff dates work?','Add a loan with what\'s still owed, the interest rate and the EMI. Paisa works out when it ends and the interest left, and updates as you log EMIs.','loan emi payoff interest home personal',['Loans','goplan','loans']],
+ ['wallet','What kinds of goals can I set?','Savings goals (a target by a date), yearly payments like insurance (it tells you what to set aside each month), and loan payoff goals (pay off by a date).','goal save target insurance yearly payoff',['Goals','goplan','goals']],
+ ['wallet','What is Net worth?','Your bank balances plus investments (FDs, mutual funds, PPF, gold…) minus loans and card dues. Update investment values when they change. Paisa saves a snapshot each month so you can see the trend.','net worth investments assets fd mutual fund',['Net worth','goplan','networth']],
+
+ ['family','How do I share the budget with my family?','Sign in with Google, then open Family and tap the <b>+</b> circle to invite someone by their Gmail address. They sign in with that Gmail and accept. Everyone sees the same budget live.','share family invite partner spouse gmail',['Open Family','go','family']],
+ ['family','What can each role do?','<b>Owner</b>: everything, including deleting the budget. <b>Admin</b>: manage budgets, categories and members. <b>Member</b>: add entries and edit or delete their own. <b>Viewer</b>: look only.','role owner admin member viewer permissions',['Open Family','go','family']],
+ ['family','Can I hide our income from members?','Yes. In Settings → Budget setup the Owner can turn on <b>Hide income, net worth and yearly reports from Members and Viewers</b>. They still see spending and budgets.','hide income salary private member',['Budget setup','prefsec','budget']],
+ ['family','Someone wants their own budget, not ours.','Ask them to open the app link and sign in with their own Gmail without accepting your invite. They get a separate, private budget.','own separate budget brother friend',null],
+ ['family','How do I change a role, remove someone, or leave?','In Family, tap a person to change their role or remove them. To hand over the budget, make someone else the Owner first. Anyone can leave from the bottom of the Family page.','remove member leave family change role owner transfer',['Open Family','go','family']],
+
+ ['data','How do I import from Excel?','Settings → Import, export & backup → Import. Pick an Excel or CSV file with date, category and amount columns. Paisa shows what it found and asks you to confirm before adding anything.','import excel csv sheet upload old data',['Import & export','prefsec','data']],
+ ['data','What can I export?','Excel (several sheets), CSV (entries only), a PDF report, or a full backup file. Pick a month, a year, a date range or everything, and filter by category, payment mode or person.','export excel csv pdf report download',['Export','exp-month','']],
+ ['data','How do I back up and move to a new phone?','Settings → Import, export & backup → Back up saves one file with everything. On the new phone, open the same section and restore it. With Google sign-in your data syncs automatically, so no file is needed.','backup restore new phone move transfer',['Back up','prefsec','data']],
+
+ ['delete','How do I delete entries for a period or category?','Settings → Data → <b>Delete data</b>. Choose what (entries, budgets, bill marks, cards…), which period, and narrow it down by category, account, person, amount or how it was added. You see a preview before anything is deleted.','delete remove clear period category bulk many',['Delete data','deldata','']],
+ ['delete','I imported the wrong file. How do I undo it?','Delete data → Entries → pick the period → under "How it was added" choose <b>Imported</b>. Only imported entries are removed.','wrong import undo remove imported',['Delete data','deldata','']],
+ ['delete','Can I get deleted data back?','Yes, for 30 days. Settings → Data → <b>Recently deleted</b> lists every delete; tap Restore. Right after deleting you can also tap Undo.','restore undo recover deleted trash bin',['Recently deleted','prefsec','trash']],
+ ['delete','Will deleting old entries change this month\'s numbers?','Not by default. "Keep later months and bank balances as they are" is on, so only the period you delete changes. Turn it off to recalculate every month after it.','balance change later months recalculate carry',null],
+ ['delete','How do I select several entries and delete them?','Open Entries, tap <b>Select</b>, tick the entries (or <b>All shown</b>) and tap Delete.','select multiple entries bulk',['Open Entries','go','transactions']],
+ ['delete','How do I start over?','Delete data → <b>Start fresh</b> clears every entry, bill mark, card, loan, goal, account and investment, but keeps your categories, budgets and family. It can be restored from Recently deleted for 30 days.','start fresh reset clear everything over',['Delete data','deldata','']],
+
+ ['privacy','Where is my data stored?','Without sign-in, only on this phone. With Google sign-in, in your family\'s private database, which only your family members can read. Amounts are stored exactly, in paise.','data stored where cloud privacy safe',['Privacy policy','link','privacy.html']],
+ ['privacy','Do you store my bank account number?','No. Only the bank name and the last 4 digits, so you can tell accounts apart.','account number bank details safe',null],
+ ['privacy','How do I lock the app?','Settings → App lock. Set a PIN and Paisa asks for it each time it opens.','lock pin password secure',['App lock','prefsec','lock']],
+ ['privacy','How do I delete my account?','Settings → Account → Delete my account. If you own a family with other members, make someone else the Owner first. Your past entries stay with the family under your name.','delete account remove me sign out',['Account','prefsec','account']],
+
+ ['app','How do I install Paisa on my phone?','Android (Chrome): menu → <b>Install app</b>. iPhone (Safari): Share → <b>Add to Home Screen</b>. It then opens full screen like any app and works offline.','install home screen app download android iphone',['Install the app','prefsec','install']],
+ ['app','Does it work without internet?','Yes. Entries you add offline are saved on the phone and sync automatically when you\'re back online.','offline no internet sync',null],
+ ['app','I don\'t see the latest changes. How do I update?','Close Paisa fully (swipe it away) and open it again. If it still looks old, do it once more: the first open loads the update in the background.','update latest version old refresh',null],
+ ['app','Is Paisa free?','Yes. There\'s nothing to buy and no ads.','free cost price paid',null],
+];
+let HELPQ='',HELPT='';
+function faqNorm(s){return String(s).toLowerCase().replace(/<[^>]+>/g,'').replace(/[^a-z0-9₹ ]+/g,' ')}
+function faqFind(q,topic){
+  const words=faqNorm(q).split(/\s+/).filter(w=>w.length>1&&!['how','do','i','the','my','to','a','is','can','what','does','and','of','in','an','it','for'].includes(w));
+  return FAQ.map((f,i)=>{const[t,qq,a,tags]=f;if(topic&&t!==topic)return null;if(!words.length)return{i,s:0};
+    const Q=faqNorm(qq),A=faqNorm(a),T=faqNorm(tags);let s=0;
+    for(const w of words){const stem=w.length>4?w.replace(/(ing|ed|es|s)$/,''):w;let hit=0;if(Q.includes(stem))hit=3;else if(T.includes(stem))hit=2;else if(A.includes(stem))hit=1;if(!hit)return null;s+=hit}
+    return{i,s}}).filter(Boolean).sort((x,y)=>y.s-x.s);
+}
+function faqMark(html,q){
+  const words=faqNorm(q).split(/\s+/).filter(w=>w.length>2);if(!words.length)return html;
+  return html.replace(/(^|>)([^<]+)/g,(m,a,txt)=>a+words.reduce((s,w)=>s.replace(new RegExp('('+w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+')','ig'),'<mark>$1</mark>'),txt));
+}
+function faqItem(i,open){
+  const[t,q,a,,act]=FAQ[i];
+  const btn=act?(act[1]==='link'?`<a class="pillbtn sm" href="${act[2]}">${act[0]} ›</a>`:`<button class="pillbtn sm" data-act="${act[1]}" data-k="${act[2]}">${act[0]} ›</button>`):'';
+  return`<details class="faq" ${open?'open':''}><summary><span>${faqMark(esc(q),HELPQ)}</span>${CHEV}</summary><div class="fa"><p>${faqMark(a,HELPQ)}</p>${btn}</div></details>`;
+}
+function helpView(){
+  return topbar('Help & FAQ',{month:false,back:'more'})+`<div class="stack">
+  <label class="msearch">${ui('search',20)}<input id="help-q" type="search" placeholder="Search, e.g. reminders, import, delete" value="${esc(HELPQ)}" data-helpq autocomplete="off" aria-label="Search help"></label>
+  <div class="hscroll" style="margin-top:-4px">${[['','All'],...FAQ_TOPICS.map(([k,l])=>[k,l])].map(([k,l])=>`<button class="chip ${HELPT===k?'':'outline'}" data-act="helptopic" data-k="${k}" aria-pressed="${HELPT===k}">${l}</button>`).join('')}</div>
+  <div id="helpres">${helpResults()}</div></div>`;
+}
+function helpResults(){
+  const q=HELPQ.trim();
+  if(q){const r=faqFind(q,HELPT);
+    if(!r.length)return`<div class="empty-state" style="padding:28px 8px"><p style="margin:0 0 6px"><b>No answers for "${esc(q)}"</b></p><p class="small muted" style="margin:0 0 14px">Try a shorter word, like "bill", "card" or "family".</p><div class="chips" style="justify-content:center">${['reminders','import','delete','family','balance'].map(w=>`<button class="chip outline" data-act="helpq" data-k="${w}">${w}</button>`).join('')}</div></div>`;
+    return`<p class="small muted" style="margin:0 2px 8px">${r.length} answer${r.length>1?'s':''}</p><div class="faqs">${r.map((x,j)=>faqItem(x.i,j===0&&r.length<=3)).join('')}</div>`}
+  const topics=FAQ_TOPICS.filter(([k])=>!HELPT||k===HELPT);
+  return topics.map(([k,l,ic])=>`<section class="tgroup"><div class="eyebrow">${l}</div><div class="faqs">${FAQ.map((f,i)=>f[0]===k?faqItem(i,false):'').join('')}</div></section>`).join('')
+    +`<p class="small muted center" style="margin:6px 0 0">Still stuck? Ask your family Owner, or check <a href="privacy.html">Privacy</a> and <a href="terms.html">Terms</a>.</p>`;
+}
+function helpRefresh(){const r=$('#helpres');if(r)r.innerHTML=helpResults()}
+// the More search shows the best help answers too
+function helpHits(q){return faqFind(q,'').slice(0,3).map(x=>x.i)}
 /* ================= events ================= */
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
@@ -3137,6 +3256,9 @@ document.addEventListener('click',async e=>{
     case 'selall':document.querySelectorAll('#txlist .swipe[data-can="1"]').forEach(s=>SEL.add(s.dataset.id));render();break;
     case 'seldel':if(SEL&&SEL.size)openDelete({ids:[...SEL],step:3});break;
     case 'deldata':openDelete();break;
+    case 'helptopic':HELPT=el.dataset.k;render();break;
+    case 'helpq':HELPQ=el.dataset.k;HELPT='';render();break;
+    case 'helpopen':HELPQ=el.dataset.k||'';HELPT='';location.hash='help';break;
     case 'clearmonth':openDelete({what:{entries:true,budgets:true,bills:true},period:'month',month:VM,step:1});break;
     case 'acctdel':closeSheet();openDelete({what:{entries:true,accounts:true},pick:{accounts:[id]},period:'all',f:{acct:id},step:2});break;
     case 'carddel':closeSheet();openDelete({what:{entries:true,cards:true},pick:{cards:[id]},period:'all',f:{acct:'card:'+id},step:2});break;
@@ -3245,6 +3367,7 @@ document.addEventListener('input',e=>{
   else if(t.dataset.onbamt){ONB.sel[t.dataset.onbamt].amt=t.value}
   else if(t.dataset.filter){F[t.dataset.filter]=t.value;renderTxList()}
   else if('delf' in t.dataset){delLive()}
+  else if('helpq' in t.dataset){HELPQ=t.value;helpRefresh()}
   else if('frtype' in t.dataset){const g=$('#fr-go');if(g)g.disabled=t.value.trim().toUpperCase()!=='FRESH'}
   else if(t.dataset.msearch!=null){moreSearch(t.value)}
   else if(t.dataset.splitAmt!=null&&QA&&QA.split){qSyncSplit();const tot=parseAmt(QA.amt)||0,sum=QA.split.reduce((s,r)=>{const v=parseAmt(r.amt);return s+(isNaN(v)?0:v)},0);const l=$('#split-left');if(l){l.textContent=sum===tot?'Adds up':(tot-sum>0?fmt(tot-sum)+' left to assign':fmt(sum-tot)+' too much');l.className='small '+(sum===tot?'':'over')}const b=document.querySelector('[data-act=qsave]');if(b)b.disabled=sum!==tot||!tot}
