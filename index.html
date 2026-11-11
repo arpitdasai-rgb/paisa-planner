@@ -251,6 +251,18 @@ button.brow:hover{background:var(--sunk)}
 .swipe-fg{position:relative;display:block;background:var(--bg);transition:transform .18s ease-out;touch-action:pan-y}
 .filters .input{background:var(--surface)}
 .qrep{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px;scrollbar-width:none}
+.hscroll{display:flex;gap:6px;overflow-x:auto;padding:2px 0 6px;margin:0 0 8px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.hscroll::-webkit-scrollbar{display:none}
+.hscroll .chip{white-space:nowrap;flex:none}
+.chip.ghost{background:transparent;border-style:dashed}
+.qtype{flex:1;max-width:240px}
+.amtdisp.is-in{color:var(--good)}
+.qmeta{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;border:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line);background:none;padding:12px 2px;font-size:14px;color:var(--ink);text-align:left}
+.qmeta span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.qmeta[aria-expanded="true"] .chev{transform:rotate(90deg)}
+.qdetails{padding-top:12px}
+.trow{display:flex;align-items:center;gap:8px;padding:2px 0 10px 0;border-bottom:1px solid var(--line)}
+.tsel{width:auto;padding:6px 10px;font-size:14px}
 .qrep::-webkit-scrollbar{display:none}
 .qrep .chip{white-space:nowrap;background:var(--surface)}
 .chip .ci{width:16px;height:16px;vertical-align:-3px;margin-right:6px}
@@ -995,7 +1007,7 @@ function deleteTx(id){
 function openEditTx(id){
   const t=D.tx[id];if(!t)return;
   if(!canEditTx(t)){openSheet(`${sheetHead('Entry')}<div class="kv"><span>${esc((D.cats[t.cat]||{}).name||'')}</span><b class="num">${fmt(t.amt)}</b></div><div class="kv"><span>Date</span><span>${dLabel(t.date)}</span></div><div class="kv"><span>Paid by</span><span>${esc(t.mode)}</span></div>${t.note?`<div class="kv"><span>Note</span><span>${esc(t.note)}</span></div>`:''}<div class="kv"><span>Added by</span><span>${esc(who(t.by))}</span></div><p class="small muted">Only the person who added this, an Admin or the Owner can change it.</p>`);return}
-  QA={...t,id,amt:String(t.amt/100),all:false};renderQuick();
+  QA={...t,id,amt:String(t.amt/100),all:false,more:false,type:D.cats[t.cat]&&D.cats[t.cat].section==='income'?'in':'out'};renderQuick();
 }
 
 /* ================= BUDGET ================= */
@@ -1229,7 +1241,10 @@ function prefsView(){
 /* ================= sheets ================= */
 let sheetClose=null;
 function openSheet(html,{onClose}={}){
-  $('#sheetRoot').innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const ex=$('#sheetRoot .sheet');
+  // already open: swap the content in place (no replayed animation, scroll kept)
+  if(ex)ex.innerHTML=html;
+  else $('#sheetRoot').innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
   sheetClose=onClose||null;
   const f=$('#sheetRoot [autofocus]');if(f)f.focus();
 }
@@ -1253,34 +1268,47 @@ function recentRepeats(){
 function defaultCard(){const ids=Object.keys(D.cards);if(!ids.length)return'';const last=lsGet('paisa-lastcard');return ids.includes(last)?last:(ids.length===1?ids[0]:'')}
 function openQuick(pre={}){
   const k=keyOf(todayISO());
-  QA={amt:'',cat:null,date:VM===k?todayISO():mStart(VM),mode:'UPI',note:'',card:'',all:false,...pre};
+  QA={amt:'',cat:null,date:VM===k?todayISO():mStart(VM),mode:'UPI',note:'',card:'',all:false,more:false,...pre};
+  QA.type=QA.cat&&D.cats[QA.cat]&&D.cats[QA.cat].section==='income'?'in':(pre.type||'out');
   renderQuick();
   QA.t0=performance.now();
 }
+function qSync(){if(!QA)return;const n=$('#q-note'),d=$('#q-date');if(n)QA.note=n.value.trim();if(d&&d.value)QA.date=d.value}
+function lastIncomeCat(){const t=Object.values(D.tx).filter(x=>D.cats[x.cat]&&D.cats[x.cat].section==='income'&&!D.cats[x.cat].archived).sort((a,b)=>(b.at||0)-(a.at||0))[0];if(t)return t.cat;const c=catsAll().find(x=>x.section==='income'&&!x.archived);return c?c.id:null}
 function renderQuick(){
   if(!QA)return;
-  const editing0=!!QA.id;
-  if(!editing0&&QA.amt&&(!QA.cat||QA.guessed)){const g=guessCat(parseAmt(QA.amt),QA.note);if(g){QA.cat=g;QA.guessed=true}}
-  const rec=recentCats();const cats=catsAll().filter(c=>!c.archived);
-  const top=[...rec,...cats.filter(c=>c.section==='expenses').map(c=>c.id)].filter((v,i,a)=>a.indexOf(v)===i).slice(0,8);
+  const editing=!!QA.id;const inc=QA.type==='in';
+  if(!editing&&!inc&&QA.amt&&(!QA.cat||QA.guessed)){const g=guessCat(parseAmt(QA.amt),QA.note);if(g){QA.cat=g;QA.guessed=true}}
+  const cats=catsAll().filter(c=>!c.archived&&(inc?c.section==='income':c.section!=='income'));
+  let top;
+  if(inc)top=cats.map(c=>c.id);
+  else{const rec=recentCats().filter(id=>D.cats[id].section!=='income');top=[...rec,...cats.filter(c=>c.section==='expenses').map(c=>c.id)].filter((v,i,a)=>a.indexOf(v)===i).slice(0,8)}
   if(QA.cat&&!top.includes(QA.cat))top.unshift(QA.cat);
   const chip=id=>{const c=D.cats[id];return c?`<button class="chip" data-act="qcat" data-id="${id}" aria-pressed="${QA.cat===id}"><svg class="ci" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${GLYPH[glyphFor(c)]}</svg>${esc(c.name)}</button>`:''};
-  const reps=editing0?[]:recentRepeats();QA.reps=reps;
+  const reps=!editing&&!inc&&!QA.amt?recentRepeats().slice(0,5):[];QA.reps=reps;
   const cardsL=Object.entries(D.cards);
-  const editing=!!QA.id;
-  openSheet(`${sheetHead(editing?'Edit entry':QA.title||'Add entry')}
-    <div class="amtdisp num ${QA.amt?'':'empty'}" id="q-amt">₹${QA.amt?INR.format(Number(QA.amt.split('.')[0]))+(QA.amt.includes('.')?'.'+QA.amt.split('.')[1]:''):'0'}</div>
-    ${reps.length?`<div class="flabel" style="margin-bottom:6px">Again</div><div class="qrep">${reps.map((r,i)=>`<button class="chip" data-act="qrep" data-i="${i}">${esc(r.label)} <b class="num">${fmt(r.amt)}</b></button>`).join('')}</div>`:''}
+  const t=todayISO();const dl=QA.date===t?'Today':QA.date===addDays(t,-1)?'Yesterday':dShort(QA.date);
+  const cardName=QA.mode==='Card'&&QA.card&&D.cards[QA.card]?' · '+esc(D.cards[QA.card].name):'';
+  const amtTxt=QA.amt?INR.format(Number(QA.amt.split('.')[0]))+(QA.amt.includes('.')?'.'+QA.amt.split('.')[1]:''):'0';
+  const head=QA.title||editing
+    ?`<div class="sheet-h"><h2>${editing?'Edit entry':esc(QA.title)}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`
+    :`<div class="sheet-h"><div class="seg qtype" role="group" aria-label="Entry type"><button data-act="qtype" data-k="out" aria-pressed="${!inc}">Expense</button><button data-act="qtype" data-k="in" aria-pressed="${inc}">Income</button></div><button class="x" data-act="close" aria-label="Close">×</button></div>`;
+  openSheet(`${head}
+    <div class="amtdisp num ${QA.amt?'':'empty'} ${inc?'is-in':''}" id="q-amt">${inc&&QA.amt?'+':''}₹${amtTxt}</div>
+    ${reps.length?`<div class="hscroll">${reps.map((r,i)=>`<button class="chip ghost" data-act="qrep" data-i="${i}">${esc(r.label)} <b class="num">${fmt(r.amt)}</b></button>`).join('')}</div>`:''}
     <div class="keypad">${['1','2','3','4','5','6','7','8','9','.','0','⌫'].map(x=>`<button data-act="key" data-k="${x}" aria-label="${x==='⌫'?'Delete digit':x}">${x}</button>`).join('')}</div>
-    <div class="flabel" style="margin-bottom:6px">Category${QA.guessed&&QA.cat?' <span class="muted" style="font-weight:400">· picked from your past entries</span>':''}</div>
-    <div class="chips" style="margin-bottom:8px">${top.map(chip).join('')}<button class="chip" data-act="qall">${QA.all?'Fewer':'All categories'}</button></div>
-    ${QA.all?SECTIONS.map(s=>`<div class="small muted" style="margin:8px 0 4px;font-weight:600">${s.n}</div><div class="chips">${cats.filter(c=>c.section===s.k).map(c=>chip(c.id)).join('')}</div>`).join(''):''}
-    <div class="two" style="margin-top:12px"><div class="field"><label for="q-date">Date</label><input class="input" type="date" id="q-date" value="${QA.date}"></div>
-    <div class="field"><label for="q-note">Note (optional)</label><input class="input" id="q-note" value="${esc(QA.note)}" placeholder="e.g. Swiggy" list="merchants" autocomplete="off"><datalist id="merchants">${Object.values(merchantMemory()).slice(-60).reverse().map(m=>`<option value="${esc(m.note)}"></option>`).join('')}</datalist></div></div>
-    <div class="flabel" style="margin-bottom:6px">Paid by</div>
-    <div class="chips" style="margin-bottom:${QA.mode==='Card'&&cardsL.length?'8':'16'}px">${MODES.map(x=>`<button class="chip" data-act="qmode" data-k="${x}" aria-pressed="${QA.mode===x}">${x}</button>`).join('')}</div>
-    ${QA.mode==='Card'&&cardsL.length?`<div class="chips" style="margin-bottom:16px">${cardsL.map(([id,c])=>`<button class="chip" data-act="qcard" data-id="${id}" aria-pressed="${QA.card===id}">${esc(c.name)}</button>`).join('')}</div>`:''}
-    <button class="btn primary block" data-act="qsave" ${(!QA.amt||!QA.cat)?'disabled':''}>${editing?'Save changes':'Save'}${QA.amt&&QA.cat?' '+esc(D.cats[QA.cat].name):''}</button>
+    <div class="hscroll">${top.map(chip).join('')}${!inc&&cats.length>top.length?`<button class="chip ghost" data-act="qall">${QA.all?'Less':'More'}</button>`:''}</div>
+    ${QA.all&&!inc?SECTIONS.filter(s=>s.k!=='income').map(s=>{const cs=cats.filter(c=>c.section===s.k&&!top.includes(c.id));return cs.length?`<div class="small muted" style="margin:6px 0 4px;font-weight:600">${s.n}</div><div class="chips">${cs.map(c=>chip(c.id)).join('')}</div>`:''}).join(''):''}
+    <button class="qmeta" data-act="qmore" aria-expanded="${!!QA.more}"><span>${dl} · ${QA.mode}${cardName} · ${QA.note?esc(QA.note):'<span class="muted">Add a note</span>'}</span>${CHEV}</button>
+    ${QA.more?`<div class="qdetails">
+      <div class="two"><div class="field"><label for="q-date">Date</label><input class="input" type="date" id="q-date" value="${QA.date}"></div>
+      <div class="field"><label for="q-note">Note</label><input class="input" id="q-note" value="${esc(QA.note)}" placeholder="${inc?'e.g. November salary':'e.g. Swiggy'}" list="merchants" autocomplete="off"><datalist id="merchants">${Object.values(merchantMemory()).slice(-60).reverse().map(m=>`<option value="${esc(m.note)}"></option>`).join('')}</datalist></div></div>
+      <div class="flabel" style="margin-bottom:6px">${inc?'Received by':'Paid by'}</div>
+      <div class="chips" style="margin-bottom:${QA.mode==='Card'&&cardsL.length?'8':'4'}px">${(inc?MODES.filter(x=>x!=='Card'):MODES).map(x=>`<button class="chip" data-act="qmode" data-k="${x}" aria-pressed="${QA.mode===x}">${x}</button>`).join('')}</div>
+      ${QA.mode==='Card'&&cardsL.length?`<div class="chips">${cardsL.map(([id,c])=>`<button class="chip" data-act="qcard" data-id="${id}" aria-pressed="${QA.card===id}">${esc(c.name)}</button>`).join('')}</div>`:''}
+    </div>`:''}
+    <button class="btn primary block" style="margin-top:14px" data-act="qsave" ${(!QA.amt||!QA.cat)?'disabled':''}>${editing?'Save changes':inc?'Save income':'Save expense'}${QA.amt&&QA.cat?' · '+esc(D.cats[QA.cat].name):''}</button>
+    ${QA.guessed&&QA.cat&&!editing?'<p class="small muted" style="text-align:center;margin:6px 0 0">Category picked from your past entries. Tap another to change it.</p>':''}
     ${editing&&canEditTx(QA)?`<button class="btn danger block" style="margin-top:8px" data-act="qdel">Delete entry</button>`:''}
     ${editing&&QA.by?`<p class="small muted" style="text-align:center;margin:10px 0 0">Added by ${esc(who(QA.by))}${QA.ub&&QA.ub!==QA.by?' · last changed by '+esc(who(QA.ub)):''}${QA.at?' · '+new Date(QA.uat||QA.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):''}</p>`:''}
   `);
@@ -1294,7 +1322,7 @@ function quickKey(k){
 }
 async function quickSave(){
   const q=QA;if(!q)return;
-  q.date=$('#q-date').value||q.date;q.note=$('#q-note').value.trim();
+  qSync();
   const amt=parseAmt(q.amt);if(!(amt>0)||!q.cat)return;
   const id=q.id||uid();const now=Date.now();
   if(q.mode==='Card'&&q.card)lsSet('paisa-lastcard',q.card);
@@ -1830,7 +1858,11 @@ function planBannerHTML(k){
 
 /* ================= scheduled reminders (web push) ================= */
 const PUSH_READY=()=>CLOUD&&!!CFG.vapidPublicKey&&'PushManager' in window&&'serviceWorker' in navigator;
-const pushPrefs=()=>({bills:lsGet('paisa-remind')!=='off',evening:lsGet('paisa-evening')==='on',weekly:lsGet('paisa-weekly')==='on'});
+const RH=(k,d)=>{const v=parseInt(lsGet(k),10);return v>=0&&v<=23?v:d};
+const pushPrefs=()=>({bills:lsGet('paisa-remind')!=='off',evening:lsGet('paisa-evening')==='on',weekly:lsGet('paisa-weekly')==='on',
+  billsHour:RH('paisa-h-bills',8),eveningHour:RH('paisa-h-eve',21),weeklyHour:RH('paisa-h-week',19),weeklyDay:(()=>{const v=parseInt(lsGet('paisa-d-week'),10);return v>=0&&v<=6?v:0})()});
+const hourLabel=h=>(h%12||12)+(h<12?' am':' pm');
+const hourSelect=(id,val,from=0,to=23)=>`<select class="input tsel" id="${id}" aria-label="Time">${Array.from({length:to-from+1},(_,i)=>from+i).map(h=>`<option value="${h}" ${h===val?'selected':''}>${hourLabel(h)}</option>`).join('')}</select>`;
 const b64uToBytes=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
 const bytesToB64u=b=>btoa(String.fromCharCode(...b)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 let PUSH_ON=false;
@@ -1867,10 +1899,14 @@ function remindersCardHTML(){
     ${tog('rem-on',p.bills,'Bills & EMIs','Checked when you open the app, at most once a day: anything due within 3 days or overdue.')}
     <div class="btns" style="margin-top:8px"><button class="btn sm" data-act="testnotif">Send a test</button></div>
     <p class="small muted" style="margin:10px 0 0">${CLOUD?(IS_OWNER?'To get reminders even when the app is closed, finish the one-time <a href="#pushsetup">reminder setup</a>.':'Reminders while the app is closed will start once the family Owner finishes setup.'):'Reminders while the app is closed need family sync (Supabase) to be set up.'}</p></section>`;
+  const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   return `<section class="card">${head}
-    ${tog('rem-on',p.bills,'Bills & EMIs · 8 am','3 days before, on the day, and the next morning if still unpaid.')}
-    ${tog('rem-eve',p.evening,'Evening nudge · 9 pm','Only on days you haven\'t logged anything.')}
-    ${tog('rem-week',p.weekly,'Weekly check-in · Sunday 7 pm','What you spent this week, in one line.')}
+    ${tog('rem-on',p.bills,'Bills & EMIs','3 days before, on the day, and the next morning if still unpaid.')}
+    ${p.bills?`<div class="trow"><span class="small muted">Send at</span>${hourSelect('h-bills',p.billsHour)}</div>`:''}
+    ${tog('rem-eve',p.evening,'Evening nudge','Only on days you haven\'t logged anything.')}
+    ${p.evening?`<div class="trow"><span class="small muted">Send at</span>${hourSelect('h-eve',p.eveningHour,12,23)}</div>`:''}
+    ${tog('rem-week',p.weekly,'Weekly check-in','What you spent this week, in one line.')}
+    ${p.weekly?`<div class="trow"><span class="small muted">Every</span><select class="input tsel" id="d-week" aria-label="Day">${days.map((d,i)=>`<option value="${i}" ${i===p.weeklyDay?'selected':''}>${d}</option>`).join('')}</select><span class="small muted">at</span>${hourSelect('h-week',p.weeklyHour)}</div>`:''}
     <div class="btns" style="margin-top:10px"><button class="btn sm" data-act="servertest">Send a test</button></div>
     <p class="small muted" style="margin:10px 0 0">These arrive even when the app is closed.${IS_OWNER?' <a href="#pushsetup">Reminder setup</a>':''}</p></section>`;
 }
@@ -1894,13 +1930,12 @@ function cronSQL(){
     headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','${sec}'),
     body := jsonb_build_object('kind','${kind}'))
 $job$);`;
-  return `-- Paisa Planner reminder schedule (times are India time; cron runs in UTC)
+  return `-- Paisa Planner reminder schedule: runs at the top of every hour (India time);
+-- each person gets reminders at the times they picked in Settings → Reminders.
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 select cron.unschedule(jobname) from cron.job where jobname like 'paisa-%';
-${job('paisa-morning','30 2 * * *','morning')}  -- 8:00 am IST daily
-${job('paisa-evening','30 15 * * *','evening')} -- 9:00 pm IST daily
-${job('paisa-weekly','30 13 * * 0','weekly')}   -- 7:00 pm IST Sunday`;
+${job('paisa-hourly','30 * * * *','auto')}`;
 }
 async function psLoadFiles(){
   if(PS.sql&&PS.fn)return;
@@ -1911,7 +1946,7 @@ function pushSetupView(){
   const code=(id,txt,rows=6)=>`<textarea class="input mono" id="${id}" rows="${rows}" readonly>${esc(txt)}</textarea><button class="btn sm" data-act="pscopy" data-k="${id}" style="margin-top:6px">Copy</button>`;
   const step=(n,t,body)=>`<section class="sect"><h2 style="margin-bottom:8px"><span class="stepn">${n}</span>${t}</h2>${body}</section>`;
   return topbar('Reminder setup',{month:false,back:'prefs'})+`<div class="stack">
-  <p class="heroline" style="margin:0">One-time setup so bill reminders reach every family member's phone at 8 am, even with the app closed. About 10 minutes, in your Supabase dashboard. Your brother's family and yours share it automatically.</p>
+  <p class="heroline" style="margin:0">One-time setup so reminders reach every family member's phone at the time they choose, even with the app closed. About 10 minutes, in your Supabase dashboard. Your brother's family and yours share it automatically.</p>
   ${!CLOUD?'<div class="planwarn"><div class="small">Family sync (Supabase) isn\'t set up in this copy of the app, so scheduled reminders can\'t work yet.</div></div>':''}
   ${step(1,'Create the reminders table',`<p class="small muted" style="margin:0 0 8px">Supabase → <b>SQL Editor</b> → New query → paste → <b>Run</b>.</p>${PS.sql?code('ps-sql',PS.sql,8):'<p class="small muted">Loading…</p>'}`)}
   ${step(2,'Make your keys',`<p class="small muted" style="margin:0 0 8px">These are made on this phone and never sent anywhere. Keep this page open until step 5.</p>
@@ -1972,10 +2007,12 @@ document.addEventListener('click',async e=>{
     case 'wrapclose':closeWrap();break;
     case 'wrapraise':wrapRaise(id,el.dataset.k);break;
     case 'key':quickKey(el.dataset.k);break;
-    case 'qcat':QA.note=val('q-note');QA.date=val('q-date')||QA.date;QA.cat=id;QA.guessed=false;renderQuick();break;
-    case 'qall':QA.note=val('q-note');QA.date=val('q-date')||QA.date;QA.all=!QA.all;renderQuick();break;
-    case 'qmode':QA.note=val('q-note');QA.date=val('q-date')||QA.date;QA.mode=el.dataset.k;if(QA.mode==='Card'&&!QA.card)QA.card=defaultCard();renderQuick();break;
-    case 'qcard':QA.note=val('q-note');QA.date=val('q-date')||QA.date;QA.card=id;renderQuick();break;
+    case 'qcat':qSync();QA.cat=id;QA.guessed=false;renderQuick();break;
+    case 'qtype':qSync();QA.type=el.dataset.k;QA.guessed=false;QA.cat=QA.type==='in'?lastIncomeCat():null;if(QA.type==='in'&&QA.mode==='Card')QA.mode='Net banking';if(QA.type==='in'&&QA.mode==='UPI'&&!QA.amt)QA.mode='Net banking';renderQuick();break;
+    case 'qmore':qSync();QA.more=!QA.more;renderQuick();if(QA.more){const n=$('#q-note');if(n&&!QA.note)n.focus()}break;
+    case 'qall':qSync();QA.all=!QA.all;renderQuick();break;
+    case 'qmode':qSync();QA.mode=el.dataset.k;if(QA.mode==='Card'&&!QA.card)QA.card=defaultCard();renderQuick();break;
+    case 'qcard':qSync();QA.card=id;renderQuick();break;
     case 'qsave':quickSave();break;
     case 'qdel':quickDelete();break;
     case 'edittx':if(SWIPED){SWIPED=false;break}openEditTx(id);break;
@@ -2031,7 +2068,7 @@ document.addEventListener('click',async e=>{
     case 'wipe':wipe();break;
     case 'dowipe':doWipe();break;
     case 'install':if(INSTALL_EVT){INSTALL_EVT.prompt();const r=await INSTALL_EVT.userChoice.catch(()=>null);INSTALL_EVT=null;if(r&&r.outcome==='accepted')toast('Installed. Find Paisa Planner on your home screen.');render()}break;
-    case 'allownotif':{const p=await Notification.requestPermission();if(p==='granted'){lsSet('paisa-remind','on');const s=await syncPush();toast(s?'Reminders on. You\'ll hear about bills at 8 am.':'Reminders on.');if(!s)checkReminders(true)}render();break}
+    case 'allownotif':{const p=await Notification.requestPermission();if(p==='granted'){lsSet('paisa-remind','on');const s=await syncPush();toast(s?'Reminders on. Pick your times below.':'Reminders on.');if(!s)checkReminders(true)}render();break}
     case 'servertest':serverTest(el);break;
     case 'psgen':psGenerate();break;
     case 'pscopy':{const ta=$('#'+el.dataset.k);if(ta){navigator.clipboard.writeText(ta.value).then(()=>toast('Copied.'),()=>{ta.select();toast('Selected. Copy it from the menu.')})}break}
@@ -2076,13 +2113,14 @@ document.addEventListener('change',e=>{
   if(t.id==='onb-sd'){ONB.startDay=Number(t.value);render()}
   else if(t.dataset.impsec&&IMP){IMP.newCats[t.dataset.impsec].sec=t.value}
   else if(t.id&&t.id.startsWith('exp-')&&EXP){expReadInputs();const s=$('#exp-sum');if(s)s.textContent=expSummaryLine()}
-  else if(t.id==='q-note'&&QA){QA.note=t.value.trim();const mm=merchantMemory()[QA.note.toLowerCase()];if(mm&&(!QA.cat||QA.guessed)){QA.date=val('q-date')||QA.date;Object.assign(QA,{cat:mm.cat,guessed:true,mode:mm.mode||QA.mode,card:mm.card||QA.card});renderQuick()}}
+  else if(t.id==='q-note'&&QA&&QA.type!=='in'){QA.note=t.value.trim();const mm=merchantMemory()[QA.note.toLowerCase()];if(mm&&(!QA.cat||QA.guessed)){QA.date=val('q-date')||QA.date;QA.date=QA.date;Object.assign(QA,{cat:mm.cat,guessed:true,mode:mm.mode||QA.mode,card:mm.card||QA.card});renderQuick()}}
   else if(t.id==='imp-file'&&t.files[0]){handleImport(t.files[0]);t.value=''}
   else if(t.id==='restore-file'&&t.files[0]){handleRestore(t.files[0]);t.value=''}
   else if(t.dataset.role){setRole(t.dataset.role,t.value,t)}
-  else if(t.id==='rem-on'){lsSet('paisa-remind',t.checked?'on':'off');syncPush();toast(t.checked?'Bill reminders on.':'Bill reminders off.')}
-  else if(t.id==='rem-eve'){lsSet('paisa-evening',t.checked?'on':'off');syncPush();toast(t.checked?'Evening nudge on.':'Evening nudge off.')}
-  else if(t.id==='rem-week'){lsSet('paisa-weekly',t.checked?'on':'off');syncPush();toast(t.checked?'Weekly check-in on.':'Weekly check-in off.')}
+  else if(['h-bills','h-eve','h-week','d-week'].includes(t.id)){lsSet({'h-bills':'paisa-h-bills','h-eve':'paisa-h-eve','h-week':'paisa-h-week','d-week':'paisa-d-week'}[t.id],t.value);syncPush();toast('Saved. Reminders will come at the new time.')}
+  else if(t.id==='rem-on'){lsSet('paisa-remind',t.checked?'on':'off');syncPush();render();toast(t.checked?'Bill reminders on.':'Bill reminders off.')}
+  else if(t.id==='rem-eve'){lsSet('paisa-evening',t.checked?'on':'off');syncPush();render();toast(t.checked?'Evening nudge on.':'Evening nudge off.')}
+  else if(t.id==='rem-week'){lsSet('paisa-weekly',t.checked?'on':'off');syncPush();render();toast(t.checked?'Weekly check-in on.':'Weekly check-in off.')}
 });
 document.addEventListener('keydown',e=>{
   if($('#lockRoot').innerHTML&&/^[0-9]$|^Backspace$/.test(e.key)){pinKey(e.key==='Backspace'?'⌫':e.key);e.preventDefault();return}

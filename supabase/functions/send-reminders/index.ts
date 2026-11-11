@@ -3,6 +3,7 @@
 //   kind=morning  8:00 am IST  bills and EMIs due in 3 days, due today, or missed yesterday
 //   kind=evening  9:00 pm IST  "Spent anything today?" if the person logged nothing (opt-in)
 //   kind=weekly   Sunday 7 pm  this week's spending in one line (opt-in)
+//   kind=auto     run every hour; each person gets reminders at the times they chose in Settings
 //   kind=test     sent from the app's Settings to the signed-in person only
 // Scheduled kinds need the x-cron-secret header; "test" needs the person's sign-in token.
 // Secrets to set in Supabase: VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_SUBJECT, CRON_SECRET.
@@ -80,7 +81,8 @@ Deno.serve(async (req) => {
   } catch (e) { return json({ error: "VAPID keys missing or invalid: " + (e as Error).message }, 500); }
   const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } });
   let body: any = {}; try { body = await req.json(); } catch (_) { /* empty body */ }
-  const kind = new URL(req.url).searchParams.get("kind") || body.kind || "morning";
+  const kind = new URL(req.url).searchParams.get("kind") || body.kind || "auto";
+  const nowIst = istNow(); const hour = nowIst.getUTCHours(); const dow = nowIst.getUTCDay();
 
   // who may call: the schedule (secret header) or a signed-in person testing their own phone
   let onlyUser: string | null = null;
@@ -137,14 +139,20 @@ Deno.serve(async (req) => {
   for (const s of subs) {
     const f = fams[famOf[s.user_id]]; const prefs = s.prefs || {};
     if (!f || !f.settings) { skipped++; continue; }
-    let msg: any = null;
-    if (kind === "morning" && prefs.bills !== false) msg = morningMessage(morningDues(f, today));
-    if (kind === "evening" && prefs.evening) {
+    // which reminders are due for this person right now (fixed kinds, or their own chosen hours when kind=auto)
+    const at = (h: unknown, def: number) => (typeof h === "number" && h >= 0 && h <= 23 ? h : def);
+    const wantBills = prefs.bills !== false && (kind === "morning" || (kind === "auto" && hour === at(prefs.billsHour, 8)));
+    const wantEvening = !!prefs.evening && (kind === "evening" || (kind === "auto" && hour === at(prefs.eveningHour, 21)));
+    const wantWeekly = !!prefs.weekly && (kind === "weekly" || (kind === "auto" && dow === at(prefs.weeklyDay, 0) && hour === at(prefs.weeklyHour, 19)));
+    const msgs: any[] = [];
+    if (wantBills) { const m = morningMessage(morningDues(f, today)); if (m) msgs.push(m); }
+    if (wantEvening) {
       const loggedToday = f.txRaw.some((r: any) => r.created_by === s.user_id && r.updated_at >= startOfTodayUtc);
-      if (!loggedToday) msg = { title: "Spent anything today?", body: "Tap to log it. It takes a few seconds and keeps your daily number right.", url: "./#add", tag: "paisa-evening" };
+      if (!loggedToday) msgs.push({ title: "Spent anything today?", body: "Tap to log it. It takes a few seconds and keeps your daily number right.", url: "./#add", tag: "paisa-evening" });
     }
-    if (kind === "weekly" && prefs.weekly) msg = weeklyMessage(f.cats, f.tx, today);
-    if (msg) sent += await send(s, msg); else skipped++;
+    if (wantWeekly) msgs.push(weeklyMessage(f.cats, f.tx, today));
+    if (!msgs.length) { skipped++; continue; }
+    for (const m of msgs) sent += await send(s, m);
   }
   return json({ kind, sent, skipped });
 });
