@@ -370,7 +370,7 @@ a{color:var(--ink)}
 .hbar{display:grid;grid-template-columns:44px 1fr 44px;align-items:center;gap:8px;margin-bottom:22px}
 .ibtn{flex:none;width:44px;height:44px;border-radius:50%;display:grid;place-items:center;color:var(--ink);border:1.5px solid var(--ink);text-decoration:none}
 .ibtn.lg{width:52px;height:52px;border-color:var(--line);background:var(--surface)}
-.ptoggle{display:flex;background:var(--sunk);border-radius:999px;padding:4px;justify-self:center;max-width:320px;width:100%}
+.ptoggle{min-width:0;display:flex;background:var(--sunk);border-radius:999px;padding:4px;justify-self:center;max-width:320px;width:100%}
 .ptoggle button{white-space:nowrap;padding:0 10px;flex:1;border:0;background:none;border-radius:999px;min-height:40px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--muted);display:inline-flex;align-items:center;justify-content:center;gap:6px}
 .ptoggle button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 2px 8px rgba(0,0,0,.08)}
 .badge{display:inline-grid;place-items:center;min-width:18px;height:18px;border-radius:9px;background:var(--bad);color:#fff;font-size:11px;font-style:normal;letter-spacing:0;padding:0 5px}
@@ -464,6 +464,25 @@ a.trow{text-decoration:none}
 .msuggest{display:none;padding:6px 0 12px}
 .msearchwrap:focus-within:has(#m-q:placeholder-shown) .msuggest{display:block}
 .subpage .card{border-radius:18px}
+.bacts{margin-top:8px;flex-wrap:nowrap}
+.mswitch b{font-weight:600}.mswitch .ms{display:none}
+@media (max-width:400px){
+  .mswitch button{width:34px}
+  .mswitch span{min-width:0;font-size:13px;padding:0 2px}
+  .topbar h1{font-size:20px}
+  .mswitch .ml{display:none}.mswitch .ms{display:inline}
+}
+@media (max-width:360px){
+  .ptoggle button{letter-spacing:.05em;font-size:11px;padding:0 6px}
+  .hbar{gap:4px}
+  .brow-top{flex-wrap:wrap;row-gap:2px}
+  .brow-top .n{flex-basis:calc(100% - 80px)}
+  .brow-top .v{order:5;flex-basis:100%;text-align:left;padding-left:48px}
+  .qtype button{padding:0 6px;font-size:13px;letter-spacing:0}
+  .sheet-h{gap:6px}
+  .topbar h1{font-size:18px}
+  .mswitch button{width:30px}
+}
 details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
 details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
 details.more>summary::-webkit-details-marker{display:none}
@@ -679,7 +698,9 @@ function month(k){
   const planned=OUT.reduce((t,x)=>t+sec[x].b,0);
   const close=open+income-spent;
   // still to pay = budget not yet used on outflow categories
-  const toPay=cats.filter(c=>OUT.includes(c.section)).reduce((t,c)=>t+Math.max(0,c.left),0);
+  // a card bill already paid by transfer to the card isn't still to pay (its purchases are counted as spent)
+  const cardPaid=ti.list.some(x=>x.type==='xfer'&&String(x.to||'').startsWith('card:'));
+  const toPay=cats.filter(c=>OUT.includes(c.section)&&!(cardPaid&&/credit card/i.test(c.name))).reduce((t,c)=>t+Math.max(0,c.left),0);
   const incomeToCome=Math.max(0,sec.income.b-sec.income.a);
   return memo.m[k]={key:k,cats,sec,open,income,spent,planned,close,toPay,incomeToCome,list:ti.list,
     available:open+income,left:open+income-spent,projected:open+income+incomeToCome-spent-toPay};
@@ -694,7 +715,8 @@ function billsFor(k){
   const m=month(k),t=todayISO(),skip=(D.bills[k]&&D.bills[k].skip)||{};
   return m.cats.filter(c=>(c.section==='bills'||c.section==='debt')&&c.dueDay&&!c.archived).map(c=>{
     const due=dueDate(c,k);let st,label;
-    if(c.actual>0){st='paid';label='Paid'}
+    const viaCard=/credit card/i.test(c.name)?m.list.filter(x=>isXfer(x)&&String(x.to||'').startsWith('card:')).reduce((s,x)=>s+x.amt,0):0;
+    if(c.actual>0||viaCard>0){st='paid';label='Paid';if(!c.actual)return{...c,actual:viaCard,due,st,label}}
     else if(skip[c.id]){st='skip';label='Skipped'}
     else{const dd=daysBetween(t,due);
       if(dd<0){st='overdue';label='Overdue '+(-dd)+'d'}
@@ -779,7 +801,7 @@ function render(){
 function topbar(title,{month:showM=true,back=null}={}){
   return `<header class="topbar">${back?`<a class="x" href="#${back}" aria-label="Back" style="display:grid;place-items:center;text-decoration:none;color:inherit">‹</a>`:''}<h1>${esc(title)}</h1>${showM?monthSwitch():''}</header>${stale?`<div class="banner" style="margin-bottom:12px">Can't reach your data right now. Figures may be out of date.</div>`:''}${OFFLINE?`<div class="banner" style="margin-bottom:12px">You're offline. Everything still works and is saved on this device.</div>`:''}${PENDING&&MODE==='cloud'?`<div class="banner" style="margin-bottom:12px">${PENDING} change${PENDING>1?'s':''} waiting to sync. ${OFFLINE?'They will upload when you are back online.':'Uploading…'}</div>`:''}${UPDATE?`<div class="banner" style="margin-bottom:12px;display:flex;gap:10px;align-items:center"><span style="flex:1">A new version of the app is ready.</span><button class="btn sm primary" data-act="reload">Update</button></div>`:''}`;
 }
-function monthSwitch(){return `<div class="mswitch"><button data-act="mprev" aria-label="Previous month">‹</button><span class="num">${mLabel(VM)}</span><button data-act="mnext" aria-label="Next month">›</button></div>`}
+function monthSwitch(){return `<div class="mswitch"><button data-act="mprev" aria-label="Previous month">‹</button><span class="num"><b class="ml">${mLabel(VM)}</b><b class="ms">${MON[+VM.slice(5)-1]} ’${VM.slice(2,4)}</b></span><button data-act="mnext" aria-label="Next month">›</button></div>`}
 const ICONS={
   home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
   transactions:'<path d="M4 6h16M4 12h16M4 18h10"/>',
@@ -1093,7 +1115,7 @@ function bvaChart(m){
   const rows=SECTIONS.map(s=>({k:s.k,n:s.n,b:m.sec[s.k].b,a:m.sec[s.k].a}));
   const max=Math.max(1,...rows.map(r=>Math.max(r.b,r.a)));
   return rows.map(r=>{const over=r.k!=='income'&&r.b>0&&r.a>r.b;return `<div style="margin-bottom:12px">
-    <div style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><span>${r.n}</span><span class="num">${over?`<span class="over">${fmt(r.a-r.b)} over</span> · `:''}${fmt(r.a)} <span class="muted">of ${fmt(r.b)}</span></span></div>
+    <div style="display:flex;justify-content:space-between;gap:8px;font-size:13px"><span>${r.n}</span><span class="num">${over?`<span class="over">${fmt(r.a-r.b)} over</span> · `:''}${r.b?`${fmt(r.a)} <span class="muted">of ${fmt(r.b)}</span>`:`${fmt(r.a)} <span class="muted">spent</span>`}</span></div>
     <div class="pbar" style="margin-top:5px"><i style="width:${r.a/max*100}%;background:${over?'var(--bad)':r.k==='income'?'var(--good)':'var(--ink)'}"></i><span class="tick" style="left:calc(${r.b/max*100}% - 1px)"></span></div></div>`}).join('')+`<div class="legend"><span><span class="sw" style="background:var(--ink)"></span>Actual</span><span><span class="sw" style="width:2px;background:var(--muted)"></span>Plan</span></div>`;
 }
 function donut(m){
@@ -1205,7 +1227,7 @@ function budgetView(){
     ${canAdmin()?`<div class="btns" style="margin-top:12px"><button class="btn primary" data-act="bedit">Edit budgets</button><button class="btn" data-act="editopen">Starting money</button></div>`:''}
   </section>
   ${SECTIONS.filter(s=>!(hideInc()&&s.k==='income')).map(s=>{const cs=m.cats.filter(c=>c.section===s.k);const st=m.sec[s.k];const over=s.k!=='income'&&st.b>0&&st.a>st.b;
-    return `<section class="sect"><div class="sect-head"><h2>${s.n}</h2><span class="small num">${over?`<span class="over">${fmt(st.a-st.b)} over</span> · `:''}${fmt(st.a)} <span class="muted">of ${fmt(st.b)}</span></span></div>
+    return `<section class="sect"><div class="sect-head"><h2>${s.n}</h2><span class="small num">${over?`<span class="over">${fmt(st.a-st.b)} over</span> · `:''}${st.b?`${fmt(st.a)} <span class="muted">of ${fmt(st.b)}</span>`:`${fmt(st.a)} <span class="muted">${s.k==='income'?'received':'spent'}</span>`}</span></div>
     ${cs.map(c=>budgetRow(c,VM)).join('')||`<p class="small muted" style="margin:4px 0">No categories yet.</p>`}
     ${canAdmin()?`<button class="link small" data-act="addcat" data-sec="${s.k}" style="padding:8px 0 4px">+ Add ${s.k==='income'?'an income source':s.k==='debt'?'a loan or EMI':'a category'}</button>`:''}
     </section>`}).join('')}
@@ -1266,7 +1288,7 @@ function billsView(){
     if(b.st==='paid')sub=`Paid ${fmt(b.actual)}`;else if(b.st==='skip')sub='Skipped this month';
     else if(b.st==='overdue')sub=`Was due ${relDay(b.due)}`;else{const r=relDay(b.due);sub=`Goes out ${r}${r.startsWith('on ')?'':' · '+dShort(b.due)}`}
     const acts=!canWrite()||b.st==='paid'?'':b.st==='skip'?`<button class="btn sm" data-act="unskip" data-id="${b.id}">Undo</button>`:`<button class="btn sm ${b.st==='overdue'?'primary':''}" data-act="paybill" data-id="${b.id}">Paid</button><button class="btn sm" data-act="skip" data-id="${b.id}">Skip</button>`;
-    return `<div class="row ${b.st==='paid'||b.st==='skip'?'done':''}">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s ${b.st==='overdue'?'over':''}">${sub}</div></div><div class="amt num">${fmt(b.st==='paid'?b.actual:b.budget)}</div>${acts?`<div class="btns" style="flex-wrap:nowrap">${acts}</div>`:''}</div>`;
+    return `<div class="row ${b.st==='paid'||b.st==='skip'?'done':''}">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s ${b.st==='overdue'?'over':''}">${sub}</div>${acts?`<div class="btns bacts">${acts}</div>`:''}</div><div class="amt num" style="align-self:flex-start;margin-top:2px">${fmt(b.st==='paid'?b.actual:b.budget)}</div></div>`;
   };
   return topbar('Bills & EMIs',{back:'home'})+`<div class="stack">
   <p class="heroline" style="margin:0">${bl.length?`${paid} of ${bl.length} paid. <b class="num">${fmt(toGo)}</b> still to go out in ${mLong(VM)}.`:'Give Bills or Debt categories a due day on the Budget tab to track them here.'}</p>
@@ -1494,13 +1516,17 @@ function renderQuick(){
       ${canAdmin()&&!editing&&!QA.split?`<label class="check" style="border:0;padding:0"><input type="checkbox" id="q-repeat" ${QA.repeat?'checked':''}><span class="small">Repeats every month</span></label>`:''}</div>
     </div>`:''}
     <button class="btn primary block" style="margin-top:14px" data-act="qsave" ${(!QA.amt||(!QA.split&&!QA.cat)||(QA.split&&splitSum!==total))?'disabled':''}>${editing?'Save changes':inc?'Save income':QA.split?'Save split':'Save expense'}${QA.amt&&QA.cat&&!QA.split?' · '+esc(D.cats[QA.cat].name):''}</button>
-    ${QA.guessed&&QA.cat&&!editing&&!QA.split?'<p class="small muted" style="text-align:center;margin:6px 0 0">Category picked from your past entries. Tap another to change it.</p>':''}`;
+    ${QA.guessed&&QA.cat&&!editing&&!QA.split?'<p class="small muted" style="text-align:center;margin:6px 0 0">Category picked from your past entries. Tap another to change it.</p>':''}
+    ${ccDouble(QA)?`<div class="insight" style="margin-top:10px"><span class="grow small">You already log card purchases as expenses, so paying the card bill here counts them twice.</span><button class="pillbtn" data-act="qpaycard">Pay card instead</button></div>`:''}`;
   }
   openSheet(`${head}${body}
     ${editing&&canEditTx(QA)?`<button class="btn danger block" style="margin-top:8px" data-act="qdel">Delete ${xf?'transfer':'entry'}</button>`:''}
     ${editing&&QA.by?`<p class="small muted" style="text-align:center;margin:10px 0 0">Added by ${esc(who(QA.by))}${QA.ub&&QA.ub!==QA.by?' · last changed by '+esc(who(QA.ub)):''}${QA.at?' · '+new Date(QA.uat||QA.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}):''}</p>`:''}
   `);
 }
+// paying a card bill as an expense double-counts purchases already logged with mode Card
+function ccDouble(q){if(!q||q.type==='xfer'||q.split||!q.cat||!D.cats[q.cat]||!/credit card/i.test(D.cats[q.cat].name))return false;
+  const from=addDays(todayISO(),-62);return Object.values(D.tx).some(t=>t&&t.mode==='Card'&&!isXfer(t)&&t.date>=from)}
 function qSyncSplit(){if(!QA||!QA.split)return;document.querySelectorAll('[data-split-cat]').forEach(s=>{QA.split[+s.dataset.splitCat].cat=s.value});document.querySelectorAll('[data-split-amt]').forEach(s=>{QA.split[+s.dataset.splitAmt].amt=s.value})}
 function quickKey(k){
   if(!QA)return;let a=QA.amt;
@@ -1541,10 +1567,11 @@ async function quickSave(){
   if(!q.id&&!q.repeat)setTimeout(()=>{if(!$('#sheetRoot').innerHTML)afterSaveAsk({...obj})},900);
 }
 function quickDelete(){
-  const q=QA;if(!q||!q.id)return;const old=D.tx[q.id];const c=D.cats[old.cat];
+  const q=QA;if(!q||!q.id)return;const old=D.tx[q.id];if(!old){closeSheet();return}const c=D.cats[old.cat];
+  const what=isXfer(old)?`${acctName(old.from)} → ${acctName(old.to)}`:(c?c.name:'entry');const kind=isXfer(old)?'transfer':'entry';
   closeSheet();
-  store.del('tx',q.id).then(()=>log('deleted','entry',`${c?c.name:''} ${fmt(old.amt)}`)).catch(()=>{});
-  toast(`Deleted ${fmt(old.amt)} · ${c?c.name:''}`,{action:'Undo',ms:5000,fn:()=>{store.set('tx',q.id,old).then(()=>log('restored','entry',`${c?c.name:''} ${fmt(old.amt)}`)).catch(()=>{})}});
+  store.del('tx',q.id).then(()=>log('deleted',kind,`${what} ${fmt(old.amt)}`)).catch(()=>{});
+  toast(`Deleted ${fmt(old.amt)} · ${what}.`,{action:'Undo',ms:5000,fn:()=>{store.set('tx',q.id,old).then(()=>log('restored',kind,`${what} ${fmt(old.amt)}`)).catch(()=>{})}});
 }
 
 /* ---- category editor ---- */
@@ -1710,7 +1737,7 @@ async function saveFile(filename,data,type){
 function monthRows(k){
   const m=month(k);
   return{budget:[['Section','Category','Budget (₹)','Actual (₹)','Left (₹)'],...m.cats.map(c=>[SECN[c.section],c.name,c.budget/100,c.actual/100,c.left/100])],
-    tx:m.list.map(t=>{const c=D.cats[t.cat]||{};return[t.date,SECN[c.section]||'',c.name||'',t.amt/100,t.mode||'',t.note||'',who(t.by)]}),
+    tx:m.list.map(t=>{if(isXfer(t))return[t.date,'Self transfer',acctName(t.from)+' → '+acctName(t.to),t.amt/100,'Transfer',t.note||'',who(t.by)];const c=D.cats[t.cat]||{};return[t.date,SECN[c.section]||'',c.name||'',t.amt/100,t.mode||'',t.note||'',who(t.by)]}),
     summary:[['Month',mLabel(k)],['Opening balance',m.open/100],['Income',m.income/100],...OUT.map(x=>[SECN[x],m.sec[x].a/100]),['Closing balance',m.close/100]]};
 }
 async function exportMonth(k){
@@ -2212,6 +2239,7 @@ function acctBalance(id){
   const a=D.accounts[id];if(!a)return 0;let b=(a.opening||0)+(a.adj||0);const since=a.asOf||'0000-00-00';
   for(const t of Object.values(D.tx)){
     if(!t||t.date<since)continue;
+    if(t.date===since&&a.createdAt&&(t.at||0)<a.createdAt)continue;
     if(isXfer(t)){if(t.to===id)b+=t.amt;if(t.from===id)b-=t.amt;continue}
     if(t.acct!==id||t.mode==='Card')continue;
     const c=D.cats[t.cat];if(!c)continue;b+=c.section==='income'?t.amt:-t.amt;
@@ -2253,7 +2281,7 @@ async function saveAccount(id){
   if(def)acctList().forEach(x=>{if(x.id!==id&&x.isDefault){const o={...D.accounts[x.id],isDefault:false};writes.push(store.set('accounts',x.id,o))}});
   let o;
   if(id){o={...D.accounts[id],bank,type:ACTYPE,nick:val('ac-nick').trim(),last4,isDefault:def};if(bal!=null){const cur=acctBalance(id);if(bal!==cur){o.adj=(o.adj||0)+(bal-cur);o.checkedAt=todayISO()}}}
-  else o={bank,type:ACTYPE,nick:val('ac-nick').trim(),last4,isDefault:def,opening:bal||0,asOf:todayISO(),adj:0,checkedAt:todayISO(),archived:false};
+  else o={bank,type:ACTYPE,nick:val('ac-nick').trim(),last4,isDefault:def,opening:bal||0,asOf:todayISO(),createdAt:Date.now(),adj:0,checkedAt:todayISO(),archived:false};
   const nid=id||uid();closeSheet();writes.push(store.set('accounts',nid,o));
   await Promise.allSettled(writes);log(id?'edited':'added','account',acctLabel(o));toast(id?'Account saved.':'Account added. Pick it on your next entry.');
 }
@@ -2433,9 +2461,10 @@ function homeView(){
   const bills=billsFor(VM);const urgent=bills.find(b=>b.st==='overdue')||bills.find(b=>b.st==='due');
   const cta=!canWrite()?'':urgent?`<button class="pillbtn" data-act="paybill" data-id="${urgent.id}">Mark ${esc(urgent.name)} paid</button>`:`<button class="pillbtn" data-act="fab">Add expense</button>`;
   const dues=bills.filter(b=>b.st==='due'||b.st==='up').slice(0,2);
+  const skipKey=urgent&&canWrite()?'bill.overdue:'+urgent.id:null;const badgeN=needs.filter(n=>n.key!==skipKey).length;
   const hero=`<section class="hero2 hero3" aria-label="Left to spend">
     <div class="hbar"><a class="ibtn" href="#reports" aria-label="Yearly report">${ui('chart')}</a>
-      <div class="ptoggle" role="tablist"><button role="tab" data-act="hview" data-k="spend" aria-pressed="${HVIEW==='spend'}">This month${needs.length?`<i class="badge">${needs.length}</i>`:''}</button><button role="tab" data-act="hview" data-k="recent" aria-pressed="${HVIEW==='recent'}">Recent</button></div>
+      <div class="ptoggle" role="tablist"><button role="tab" data-act="hview" data-k="spend" aria-pressed="${HVIEW==='spend'}">This month${badgeN?`<i class="badge">${badgeN}</i>`:''}</button><button role="tab" data-act="hview" data-k="recent" aria-pressed="${HVIEW==='recent'}">Recent</button></div>
       <a class="ibtn" href="#prefs" aria-label="Settings">${ui('gear')}</a></div>
     <div class="heyebrow"><button class="ar" data-act="mprev" aria-label="Previous month">‹</button><span>Left to spend · ${isCur?(daysLeft+' day'+(daysLeft===1?'':'s')+' to go'):mLabel(VM)}</span><button class="ar" data-act="mnext" aria-label="Next month">›</button></div>
     <button class="bigbtn" data-act="breakdown" aria-label="How this is worked out"><span class="big num ${m.left<0&&!waitInc?'neg':''}">${fmt(m.left)}</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
@@ -2451,7 +2480,7 @@ function homeView(){
       </section></div>`;
   }
   return `<div class="home">${topbar(S().name)}${hero}<div class="stack">
-  ${attentionHTML(VM,urgent&&canWrite()?'bill.overdue:'+urgent.id:null)}
+  ${attentionHTML(VM,skipKey)}
   ${isCur&&!needs.length&&!nextStep()?insightHTML(VM):''}
   <section class="sect"><div class="sect-head"><h2>Coming up</h2><a class="link small" href="#bills">All bills ›</a></div>
     ${dues.length?dues.map(b=>`<div class="row">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s">Goes out ${relDay(b.due)}</div></div><div class="amt num">${fmt(b.budget)}</div>${canWrite()?`<button class="btn sm" data-act="paybill" data-id="${b.id}">Paid</button>`:''}</div>`).join('')
@@ -2741,6 +2770,7 @@ document.addEventListener('click',async e=>{
     case 'wrapnext':WRAP.step++;openWrap(WRAP.prev);break;
     case 'wrapclose':closeWrap();break;
     case 'wrapraise':wrapRaise(id,el.dataset.k);break;
+    case 'qpaycard':{qSync();const cid=Object.keys(D.cards)[0];QA.type='xfer';QA.cat=null;QA.from=QA.acct||defaultAcct();QA.to=cid?'card:'+cid:'';renderQuick();break}
     case 'key':{const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))a.blur()}quickKey(el.dataset.k);break;
     case 'qcat':qSync();QA.cat=id;QA.guessed=false;renderQuick();break;
     case 'qtype':qSync();QA.type=el.dataset.k;QA.guessed=false;QA.split=null;QA.cat=QA.type==='in'?lastIncomeCat():null;if(QA.type==='xfer'){QA.from=QA.from||defaultAcct();QA.to=''}else if(!QA.acct)QA.acct=defaultAcct(QA.mode);if(QA.type==='in'&&QA.mode==='Card')QA.mode='Net banking';if(QA.type==='in'&&QA.mode==='UPI'&&!QA.amt)QA.mode='Net banking';renderQuick();break;
