@@ -1865,7 +1865,7 @@ const hourLabel=h=>(h%12||12)+(h<12?' am':' pm');
 const hourSelect=(id,val,from=0,to=23)=>`<select class="input tsel" id="${id}" aria-label="Time">${Array.from({length:to-from+1},(_,i)=>from+i).map(h=>`<option value="${h}" ${h===val?'selected':''}>${hourLabel(h)}</option>`).join('')}</select>`;
 const b64uToBytes=s=>{s=s.replace(/-/g,'+').replace(/_/g,'/');s+='='.repeat((4-s.length%4)%4);return Uint8Array.from(atob(s),c=>c.charCodeAt(0))};
 const bytesToB64u=b=>btoa(String.fromCharCode(...b)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
-let PUSH_ON=false;
+let PUSH_ON=null;
 async function syncPush(){
   if(!PUSH_READY()||!SB||!ME||!NOTIF_SUPPORT||Notification.permission!=='granted')return false;
   try{
@@ -1884,7 +1884,8 @@ async function serverTest(el){
   const {data,error}=await SB.functions.invoke('send-reminders',{body:{kind:'test'}});
   el.disabled=false;
   if(error)toast("The reminder service isn't answering yet. The family Owner may need to finish setup.");
-  else toast(data&&data.sent?'Sent. It should arrive in a few seconds.':'No phone found. Turn reminders off and on, then try again.');
+  else if(data&&data.sent){lsSet('paisa-push-ok','1');toast('Sent. It should arrive in a few seconds.');render()}
+  else toast('No phone found. Turn reminders off and on, then try again.');
 }
 function remindersCardHTML(){
   const perm=NOTIF_SUPPORT?Notification.permission:'unsupported';
@@ -1898,7 +1899,7 @@ function remindersCardHTML(){
   const p=pushPrefs();
   if(!sched)return `<section class="card">${head}
     ${tog('rem-on',p.bills,'Bills & EMIs','Checked when you open the app, at most once a day: anything due within 3 days or overdue.')}
-    <div class="btns" style="margin-top:8px"><button class="btn sm" data-act="testnotif">Send a test</button></div>
+    ${lsGet('paisa-local-ok')?'':'<div class="btns" style="margin-top:8px"><button class="btn sm" data-act="testnotif">Send a test</button></div>'}
     ${setup||`<p class="small muted" style="margin:10px 0 0">${CLOUD?'Reminders while the app is closed will start once the app\'s reminder setup is finished.':'Reminders while the app is closed need family sync (Supabase) to be set up.'}</p>`}</section>`;
   const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   return `<section class="card">${head}
@@ -1908,7 +1909,9 @@ function remindersCardHTML(){
     ${p.evening?`<div class="trow"><span class="small muted">Send at</span>${hourSelect('h-eve',p.eveningHour,12,23)}</div>`:''}
     ${tog('rem-week',p.weekly,'Weekly check-in','What you spent this week, in one line.')}
     ${p.weekly?`<div class="trow"><span class="small muted">Every</span><select class="input tsel" id="d-week" aria-label="Day">${days.map((d,i)=>`<option value="${i}" ${i===p.weeklyDay?'selected':''}>${d}</option>`).join('')}</select><span class="small muted">at</span>${hourSelect('h-week',p.weeklyHour)}</div>`:''}
-    <div class="btns" style="margin-top:10px"><button class="btn sm" data-act="servertest">Send a test</button></div>
+    ${!(p.bills||p.evening||p.weekly)?'':!lsGet('paisa-push-ok')?'<div class="btns" style="margin-top:10px"><button class="btn sm" data-act="servertest">Send a test</button></div>'
+      :PUSH_ON===false?'<div class="planwarn" style="margin-top:10px"><div class="grow small">Reminders aren\'t reaching this phone right now.</div><button class="btn sm" data-act="servertest">Fix it</button></div>'
+      :'<p class="small" style="margin:12px 0 0;color:var(--good)">● On for this phone</p>'}
     <p class="small muted" style="margin:10px 0 0">These arrive even when the app is closed.</p></section>`;
 }
 
@@ -2074,7 +2077,7 @@ document.addEventListener('click',async e=>{
     case 'servertest':serverTest(el);break;
     case 'psgen':psGenerate();break;
     case 'pscopy':{const ta=$('#'+el.dataset.k);if(ta){navigator.clipboard.writeText(ta.value).then(()=>toast('Copied.'),()=>{ta.select();toast('Selected. Copy it from the menu.')})}break}
-    case 'testnotif':notify('Paisa Planner','Reminders are working. You will hear about dues 3 days ahead.');break;
+    case 'testnotif':lsSet('paisa-local-ok','1');setTimeout(render,300);notify('Paisa Planner','Reminders are working. You will hear about dues 3 days ahead.');break;
     case 'backup':backup();break;
     case 'dorestore':doRestore();break;
     case 'reload':location.reload();break;
@@ -2317,7 +2320,7 @@ async function startCloud(){
     if(!DOCS_READY){STARTED=null;return screen(`<div class="empty-state" style="padding-top:26vh"><h2>Can't load your family budget</h2><p>${esc(isNetErr(e)?'Check your internet connection.':errMsg(e))}</p><button class="btn" data-act="reload">Try again</button></div>`)}
     stale=true;scheduleRender();
   }
-  await loadMembers();flushOut();syncPush().then(on=>{if(!on)setTimeout(()=>checkReminders(),1200)});
+  await loadMembers();flushOut();syncPush().then(on=>{if(route==='prefs')scheduleRender();if(!on)setTimeout(()=>checkReminders(),1200)});
 }
 window.addEventListener('online',()=>{if(MODE==='cloud'){flushOut().then(()=>loadAllDocs().catch(()=>{}))}});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&MODE==='cloud'&&navigator.onLine){loadMembers();flushOut()}});
