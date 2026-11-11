@@ -10,6 +10,7 @@ Installable, offline-first version of the monthly finance tracker.
 - `config.js`: your Supabase URL and anon key (leave empty for device-only mode)
 - `supabase/schema.sql`: database tables, row-level security and family functions (run once in Supabase)
 - `SETUP-SUPABASE.md`: step-by-step Supabase and Google sign-in setup
+- `supabase/push.sql` and `supabase/functions/send-reminders/`: scheduled reminders (8 am bills, optional 9 pm nudge and Sunday check-in). Follow the in-app guide at `#pushsetup` (Settings → Reminders → Reminder setup, Owner only).
 - `manifest.webmanifest`: install name, icons, colours, shortcuts
 - `sw.js`: service worker (offline cache, reminder taps open the Bills screen)
 - `icons/`: app icons (192, 512, maskable, Apple touch, SVG)

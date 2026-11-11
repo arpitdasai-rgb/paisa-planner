@@ -6,5 +6,7 @@
 // Never put the service_role key here.
 window.PAISA_CONFIG = {
   supabaseUrl: "https://acymqvrelmxcgjxjfdni.supabase.co",
+  // Public key for scheduled reminders, from the app's Reminder setup page (safe to share).
+  vapidPublicKey: "",
   supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFjeW1xdnJlbG14Y2dqeGpmZG5pIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTQyODgxNzEsImV4cCI6MjEwOTg2NDE3MX0.kaokb1W3eGVYnNss377yKTO2wv7gTKHQF9YmDHiNbz4"
 };

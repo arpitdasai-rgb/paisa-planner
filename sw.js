@@ -1,5 +1,5 @@
 /* Paisa Planner service worker: offline app shell + cached fonts and Excel library. */
-const VERSION = 'paisa-v6';
+const VERSION = 'paisa-v7';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './config.js', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 const RUNTIME_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];
 // Supabase API, auth and realtime traffic is never cached: it always goes to the network.
@@ -40,6 +40,16 @@ self.addEventListener('fetch', e => {
       return cached || (await fresh) || new Response('', { status: 504 });
     })());
   }
+});
+
+// Scheduled reminders sent by the send-reminders function arrive here, even when the app is closed.
+self.addEventListener('push', e => {
+  let d = {};
+  try { d = e.data ? e.data.json() : {}; } catch (_) { d = { title: 'Paisa Planner', body: e.data ? e.data.text() : '' }; }
+  e.waitUntil(self.registration.showNotification(d.title || 'Paisa Planner', {
+    body: d.body || '', icon: 'icons/icon-192.png', badge: 'icons/icon-192.png',
+    tag: d.tag || 'paisa', renotify: true, data: { url: d.url || './#home' }
+  }));
 });
 
 // Tapping a reminder opens (or focuses) the app on the Bills screen.
