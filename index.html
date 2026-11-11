@@ -158,7 +158,8 @@ button.catrow:hover{background:var(--sunk)}
 .seg button{flex:1;border:0;background:none;border-radius:8px;padding:7px 6px;font-weight:600;font-size:14px;color:var(--muted)}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.08)}
 /* toast */
-.toast{position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;display:flex;gap:14px;align-items:center;font-size:14px;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
+.toast span{pointer-events:none}.toast button{pointer-events:auto}
+.toast{pointer-events:none;position:fixed;z-index:60;left:50%;transform:translateX(-50%);bottom:calc(140px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--bg);border-radius:12px;padding:10px 14px;display:flex;gap:14px;align-items:center;font-size:14px;max-width:calc(100% - 32px);box-shadow:var(--shadow)}
 .toast button{border:0;background:none;color:var(--bg);font-weight:700;text-decoration:underline}
 /* misc */
 .empty-state{text-align:center;padding:28px 12px;color:var(--muted)}
@@ -483,6 +484,27 @@ a.trow{text-decoration:none}
   .topbar h1{font-size:18px}
   .mswitch button{width:30px}
 }
+.dnav{position:sticky;bottom:calc(-1 * var(--sheet-pad,16px));margin:14px calc(-1 * var(--sheet-pad,16px)) calc(-1 * var(--sheet-pad,16px));padding:12px var(--sheet-pad,16px) calc(12px + env(safe-area-inset-bottom,0px));background:var(--surface);border-top:1px solid var(--line);z-index:3}
+.dsteps{display:flex;gap:6px;margin:-4px 0 16px}
+.dsteps i{flex:1;height:4px;border-radius:4px;background:var(--line)}
+.dsteps i.on{background:var(--ink)}
+.dq{font-size:20px;font-weight:700;letter-spacing:-.01em;margin:0 0 12px}
+.trow .tick{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);flex:none;display:grid;place-items:center}
+.trow[aria-pressed="true"] .tick{background:var(--ink);border-color:var(--ink)}
+.trow[aria-pressed="true"] .tick::after{content:"";width:6px;height:11px;border:solid var(--bg);border-width:0 2px 2px 0;transform:translateY(-1px) rotate(45deg)}
+.dsum{background:var(--sunk);border-radius:16px;padding:14px 16px;margin-bottom:10px;font-weight:600;display:flex;flex-direction:column;gap:4px}
+.dsample{border:1px solid var(--line);border-radius:16px;padding:6px 14px 10px;margin-bottom:10px}
+.dsample .kv span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dimpact{font-size:14px;color:var(--muted);display:flex;flex-direction:column;gap:4px;margin:0 2px 10px}
+.pillbtn.sm{min-height:32px;padding:0 12px;font-size:13px}
+.selbar{position:fixed;left:12px;right:12px;bottom:calc(var(--navh,72px) + 12px + env(safe-area-inset-bottom,0px));z-index:40;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:8px 8px 8px 18px;box-shadow:0 8px 28px rgba(0,0,0,.18);max-width:560px;margin:0 auto}
+.selbar b{flex:1;font-size:14px}
+.swipe.selecting .row .ic,.swipe.selecting .row>svg:first-child{position:relative}
+.swipe.selecting .rowbtn::before{content:"";position:absolute;left:8px;top:50%;width:22px;height:22px;margin-top:-11px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);z-index:2}
+.swipe.selecting.picked .rowbtn::before{background:var(--ink);border-color:var(--ink)}
+.swipe.selecting.picked .rowbtn::after{content:"";position:absolute;left:16px;top:50%;width:5px;height:10px;margin-top:-7px;border:solid var(--bg);border-width:0 2px 2px 0;transform:rotate(45deg);z-index:3}
+.swipe.selecting .rowbtn{position:relative;padding-left:36px}
+.swipe.selecting[data-can="0"]{opacity:.45}
 details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
 details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
 details.more>summary::-webkit-details-marker{display:none}
@@ -566,7 +588,7 @@ const SECTIONS=[
 const SECN=Object.fromEntries(SECTIONS.map(s=>[s.k,s.n]));
 const OUT=['savings','bills','expenses','debt'];
 const MODES=['UPI','Card','Cash','Net banking','Auto-debit'];
-const COLS=['settings','cats','tx','months','bills','loans','cards','goals','log','accounts','recurring','assets'];
+const COLS=['settings','cats','tx','months','bills','loans','cards','goals','log','accounts','recurring','assets','trash'];
 const ROUTES=['home','transactions','budget','plan','more','family','bills','reports','prefs','pushsetup'];
 const STARTER={
   income:[['Salary',120000],['Other income',0]],
@@ -775,7 +797,7 @@ function scheduleRender(){if(typing()){RENDER_WAITING=true;return}if(rq)return;r
 document.addEventListener('focusout',()=>setTimeout(()=>{if(RENDER_WAITING&&!typing()){RENDER_WAITING=false;scheduleRender()}},0));
 let LAST_ROUTE=null;
 let PLAN_KEEP=false;
-function setRoute(){let h=location.hash.slice(1);if(h!=='prefs'||!PREF_KEEP)PREFSEC=PREF_KEEP?PREFSEC:null;if(h==='add'){h='home';history.replaceState(null,'','#home');setTimeout(()=>{if(S()&&canWrite()&&!$('#sheetRoot').innerHTML)openQuick()},500)}route=ROUTES.includes(h)?h:'home';if(route==='plan'&&!PLAN_KEEP)planTab='accounts';PLAN_KEEP=false;PREF_KEEP=false;if(route!=='budget'){BEDIT=false;BDRAFT={}}window.scrollTo(0,0);render()}
+function setRoute(){let h=location.hash.slice(1);if(h!=='transactions')SEL=null;if(h!=='prefs'||!PREF_KEEP)PREFSEC=PREF_KEEP?PREFSEC:null;if(h==='add'){h='home';history.replaceState(null,'','#home');setTimeout(()=>{if(S()&&canWrite()&&!$('#sheetRoot').innerHTML)openQuick()},500)}route=ROUTES.includes(h)?h:'home';if(route==='plan'&&!PLAN_KEEP)planTab='accounts';PLAN_KEEP=false;PREF_KEEP=false;if(route!=='budget'){BEDIT=false;BDRAFT={}}window.scrollTo(0,0);render()}
 window.addEventListener('hashchange',setRoute);
 
 function render(){
@@ -1145,7 +1167,7 @@ function txView(){
     <select class="input" id="f-mode" data-filter="mode" aria-label="Payment mode"><option value="">All modes</option>${MODES.map(x=>`<option ${F.mode===x?'selected':''}>${x}</option>`).join('')}</select>
     ${acctList().length?`<select class="input" style="grid-column:1/-1" id="f-acct" data-filter="acct" aria-label="Account"><option value="">All accounts</option>${acctList().map(a=>`<option value="${a.id}" ${F.acct===a.id?'selected':''}>${esc(acctLabel(a))}</option>`).join('')}</select>`:''}
   </div>
-  <div id="txlist"></div></div>`;
+  <div id="txlist"></div></div>${selBar()}`;
 }
 function renderTxList(){
   const el=$('#txlist');if(!el)return;
@@ -1157,7 +1179,7 @@ function renderTxList(){
   const tot=list.reduce((s,x)=>s+(isInc(x)||isXfer(x)?0:x.amt),0);
   const days={};list.forEach(t=>{const d=days[t.date]||(days[t.date]={out:0,inc:0,items:[]});d.items.push(t);if(isXfer(t))return;if(isInc(t))d.inc+=t.amt;else d.out+=t.amt});
   const touch=matchMedia('(pointer:coarse)').matches;
-  let h=`<div class="small muted" style="padding:0 2px 4px">${list.length} entr${list.length===1?'y':'ies'} · ${fmt(tot)} out</div>`;
+  let h=`<div class="small muted" style="padding:0 2px 4px;display:flex;justify-content:space-between;align-items:center;gap:8px"><span>${list.length} entr${list.length===1?'y':'ies'} · ${fmt(tot)} out</span>${canWrite()&&!SEL?'<button class="link small" data-act="selstart">Select</button>':''}</div>`;
   for(const ds of Object.keys(days)){
     const d=days[ds];
     h+=`<div class="dayh"><span>${dLabel(ds)}</span><span class="num">${d.out?fmt(d.out)+' out':''}${d.out&&d.inc?' · ':''}${d.inc?'+'+fmt(d.inc)+' in':''}</span></div>`;
@@ -1166,7 +1188,7 @@ function renderTxList(){
       else{const c=D.cats[t.cat];const inc=isInc(t);ic=icon(c||{section:'expenses'});title=t.note||(c?c.name:'Unknown category');
         sub=`${t.note&&c?esc(c.name)+' · ':''}${esc(t.mode||'')}${t.acct?' · '+esc(acctName(t.acct)):''}${t.split?' · split':''}${t.rec?' · repeat':''} · ${esc(who(t.by))}${t.src==='import'?' · imported':''}`;
         amtH=`<div class="amt num" style="${inc?'color:var(--good)':''}">${inc?'+':''}${fmt(t.amt)}</div>`}
-      h+=`<div class="swipe" data-id="${t.id}" data-can="${can?1:0}"><div class="swipe-bg"><span class="sw-edit">Edit</span><span class="sw-del">${can?'Delete':''}</span></div>
+      h+=`<div class="swipe ${SEL&&SEL.has(t.id)?'picked':''} ${SEL?'selecting':''}" data-id="${t.id}" data-can="${can?1:0}"><div class="swipe-bg"><span class="sw-edit">Edit</span><span class="sw-del">${can?'Delete':''}</span></div>
       <button class="rowbtn swipe-fg" data-act="edittx" data-id="${t.id}"><div class="row">${ic}<div class="grow"><div class="t">${esc(title)}</div><div class="s">${sub}</div></div>${amtH}${can?CHEV:''}</div></button></div>`});
   }
   if(touch&&canWrite()&&!lsGet('paisa-hint-swipe')){h+=`<p class="small muted" style="text-align:center;margin:14px 0 0">Tip: swipe an entry left to delete it, or right to edit it.</p>`}
@@ -1174,7 +1196,7 @@ function renderTxList(){
 }
 /* swipe to edit / delete */
 let SW=null,SWIPED=false;
-document.addEventListener('pointerdown',e=>{const fg=e.target.closest('.swipe-fg');if(!fg||e.pointerType==='mouse')return;SW={fg,x:e.clientX,y:e.clientY,dx:0,lock:null}});
+document.addEventListener('pointerdown',e=>{const fg=e.target.closest('.swipe-fg');if(!fg||e.pointerType==='mouse'||SEL)return;SW={fg,x:e.clientX,y:e.clientY,dx:0,lock:null}});
 document.addEventListener('pointermove',e=>{if(!SW)return;const dx=e.clientX-SW.x,dy=e.clientY-SW.y;
   if(SW.lock===null){if(Math.abs(dx)<8&&Math.abs(dy)<8)return;SW.lock=Math.abs(dx)>Math.abs(dy)?'x':'y'}
   if(SW.lock!=='x'){SW=null;return}
@@ -1189,8 +1211,7 @@ const swipeEnd=()=>{if(!SW)return;const{fg,dx}=SW;SW=null;const id=fg.parentElem
 document.addEventListener('pointerup',swipeEnd);document.addEventListener('pointercancel',swipeEnd);
 function deleteTx(id){
   const old=D.tx[id];if(!old)return;const c=D.cats[old.cat];
-  store.del('tx',id).then(()=>log('deleted','entry',`${c?c.name:''} ${fmt(old.amt)}`)).catch(()=>{});
-  toast(`Deleted ${fmt(old.amt)} · ${c?c.name:''}`,{action:'Undo',ms:5000,fn:()=>{store.set('tx',id,old).then(()=>log('restored','entry',`${c?c.name:''} ${fmt(old.amt)}`)).catch(()=>{})}});
+  delCommit({dels:[{col:'tx',id}],label:`${fmt(old.amt)} · ${isXfer(old)?acctName(old.from)+' → '+acctName(old.to):(old.note||(c?c.name:'entry'))}`});
 }
 function openEditTx(id){
   const t=D.tx[id];if(!t)return;
@@ -1231,6 +1252,7 @@ function budgetView(){
     ${cs.map(c=>budgetRow(c,VM)).join('')||`<p class="small muted" style="margin:4px 0">No categories yet.</p>`}
     ${canAdmin()?`<button class="link small" data-act="addcat" data-sec="${s.k}" style="padding:8px 0 4px">+ Add ${s.k==='income'?'an income source':s.k==='debt'?'a loan or EMI':'a category'}</button>`:''}
     </section>`}).join('')}
+  ${canAdmin()?`<button class="link small" data-act="clearmonth" style="padding:0 2px">Clear data for ${mLong(VM)}…</button>`:''}
   ${canAdmin()?`<p class="small muted" style="margin:0 2px">Tap a category to rename it, set a due day, move or archive it. Use <b>Edit budgets</b> to plan the whole month at once.</p>`:''}
   </div>`;
 }
@@ -1409,7 +1431,7 @@ function prefsView(){
     <p class="small muted" style="margin:0 0 10px">${MODE==='cloud'?'Your budget syncs to your family\'s database. Back up saves a copy you can keep.':'Your data lives only on this device. Save a backup file regularly, and use it to move to a new phone.'}${lsGet('paisa-backup-at')?' Last backup: '+new Date(Number(lsGet('paisa-backup-at'))).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+'.':''}</p>
     <div class="btns"><button class="btn" data-act="backup">Back up</button>${MODE==='cloud'?'':'<label class="btn" for="restore-file" style="display:inline-block">Restore…</label><input id="restore-file" type="file" accept=".json,application/json" hidden>'}</div>
   </section>
-`,about:`<div class="tcard"><a class="trow" href="privacy.html"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>Privacy policy</b><small>What we store, where, and who can see it</small></span>${CHEV}</a><a class="trow" href="terms.html"><span class="ti">${ui('report',20)}</span><span class="tt"><b>Terms of use</b><small>The rules for using Paisa</small></span>${CHEV}</a></div>
+`,trash:`${trashBody()}`,about:`<div class="tcard"><a class="trow" href="privacy.html"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>Privacy policy</b><small>What we store, where, and who can see it</small></span>${CHEV}</a><a class="trow" href="terms.html"><span class="ti">${ui('report',20)}</span><span class="tt"><b>Terms of use</b><small>The rules for using Paisa</small></span>${CHEV}</a></div>
   <p class="small muted" style="margin:0 4px">Amounts are stored in paise and shown with Indian grouping. ${MODE==='cloud'?'Your budget is stored in your family\'s Supabase database and only family members can read it.':'Your data is stored on this device and never sent anywhere.'}</p>
   <p class="small" style="margin:0 4px"><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms</a></p>
 `,danger:`  ${IS_OWNER?`<section class="card"><h2 style="margin-bottom:6px">${MODE==='cloud'?'Delete family budget':'Delete all data'}</h2><p class="small muted" style="margin:0 0 10px">${MODE==='cloud'?'Deletes the family, its members and every category, entry, loan, card and goal from the database for everyone. Back up first if you might need it.':'Removes every category, entry, loan, card, goal and the activity log from this device. Back up first if you might need it.'}</p><button class="btn danger" data-act="wipe">Delete everything…</button></section>`:''}
@@ -1567,11 +1589,7 @@ async function quickSave(){
   if(!q.id&&!q.repeat)setTimeout(()=>{if(!$('#sheetRoot').innerHTML)afterSaveAsk({...obj})},900);
 }
 function quickDelete(){
-  const q=QA;if(!q||!q.id)return;const old=D.tx[q.id];if(!old){closeSheet();return}const c=D.cats[old.cat];
-  const what=isXfer(old)?`${acctName(old.from)} → ${acctName(old.to)}`:(c?c.name:'entry');const kind=isXfer(old)?'transfer':'entry';
-  closeSheet();
-  store.del('tx',q.id).then(()=>log('deleted',kind,`${what} ${fmt(old.amt)}`)).catch(()=>{});
-  toast(`Deleted ${fmt(old.amt)} · ${what}.`,{action:'Undo',ms:5000,fn:()=>{store.set('tx',q.id,old).then(()=>log('restored',kind,`${what} ${fmt(old.amt)}`)).catch(()=>{})}});
+  const q=QA;if(!q||!q.id)return;closeSheet();deleteTx(q.id);
 }
 
 /* ---- category editor ---- */
@@ -1584,7 +1602,7 @@ function openCat(id,sec){
     ${showDue?`<div class="field"><label for="c-due">Due day (1–31)</label><input class="input num" id="c-due" inputmode="numeric" value="${c.dueDay||''}" placeholder="none"></div>`:'<div></div>'}</div>
     ${id?`<div class="flabel" style="margin-bottom:6px">Apply budget change to</div><div class="seg" style="margin-bottom:14px" role="group"><button data-act="scope" data-k="month" aria-pressed="false">${mLabel(VM)} only</button><button data-act="scope" data-k="future" aria-pressed="true">This & future months</button></div>`:''}
     <button class="btn primary block" data-act="savecat" data-id="${id||''}" data-sec="${c.section}">Save</button>
-    ${id?`<div class="btns" style="margin-top:10px"><button class="btn" data-act="catup" data-id="${id}">Move up</button><button class="btn" data-act="catdown" data-id="${id}">Move down</button><button class="btn ${c.archived?'':'danger'}" data-act="catarch" data-id="${id}">${c.archived?'Restore':'Archive'}</button></div><p class="small muted" style="margin:8px 0 0">Archived categories keep their past entries.</p>`:''}
+    ${id?`<div class="btns" style="margin-top:10px"><button class="btn" data-act="catup" data-id="${id}">Move up</button><button class="btn" data-act="catdown" data-id="${id}">Move down</button><button class="btn" data-act="catarch" data-id="${id}">${c.archived?'Restore':'Archive'}</button><button class="btn danger" data-act="catdel" data-id="${id}">Delete</button></div><p class="small muted" style="margin:8px 0 0">Archive hides it but keeps past entries. Delete lets you move its entries or delete them too.</p>`:''}
   `);
   SCOPE='future';
 }
@@ -1666,6 +1684,7 @@ function openCard(id){
     <div class="field"><label for="k-limit">Credit limit (₹)</label><input class="input num" id="k-limit" inputmode="decimal" value="${rupees(c.limit)}"></div>
     <div class="two"><div class="field"><label for="k-sd">Statement day</label><input class="input num" id="k-sd" inputmode="numeric" value="${c.stmtDay||''}"></div><div class="field"><label for="k-dd">Due day</label><input class="input num" id="k-dd" inputmode="numeric" value="${c.dueDay||''}"></div></div>
     <button class="btn primary block" data-act="savecard" data-id="${id||''}">Save</button>
+    ${id?`<button class="btn block" style="margin-top:8px" data-act="carddel" data-id="${id}">Delete card and its entries…</button>`:''}
     ${id?`<button class="btn danger block" style="margin-top:8px" data-act="delcard" data-id="${id}">Delete card</button>`:''}`);
 }
 function openStmt(id){
@@ -2269,6 +2288,7 @@ function openAccount(id){
     <label class="check" style="border:0"><input type="checkbox" id="ac-def" ${a.isDefault?'checked':''}><span class="small">Use this account by default</span></label>
     <p class="small muted" style="margin:4px 0 12px">Only the last 4 digits are stored, never the full account number.</p>
     <button class="btn primary block" data-act="saveacct" data-id="${id||''}">Save</button>
+    ${id?`<button class="btn block" style="margin-top:8px" data-act="acctdel" data-id="${id}">Delete account and its entries…</button>`:''}
     ${id?`<button class="btn danger block" style="margin-top:8px" data-act="archacct" data-id="${id}">Remove account</button>`:''}`);
   ACTYPE=a.type||'Savings';
 }
@@ -2568,7 +2588,7 @@ function openWalletDetail(key){
 /* ---- More: search and everything else ---- */
 const FEATURES=[['Bills & EMIs','go','bills','receipt'],['Budget','go','budget','budget'],['Entries','go','transactions','list'],['Yearly report','go','reports','report'],['Family','go','family','users'],['Settings','go','prefs','gear'],
   ['Bank accounts','goplan','accounts','bank'],['Credit cards','goplan','cards','card'],['Loans','goplan','loans','bank'],['Goals','goplan','goals','target'],['Repeats','goplan','recurring','repeat'],['Net worth','goplan','networth','chart'],
-  ['Export','exp-month','','download'],['Import from Excel','prefsec','data','upload'],['Reminders','prefsec','reminders','bell'],['App lock','prefsec','lock','lock'],['Back up','prefsec','data','backup'],['Install the app','prefsec','install','download'],['Budget setup','prefsec','budget','budget'],['Privacy policy','link','privacy.html','shield'],['Terms','link','terms.html','doc']];
+  ['Export','exp-month','','download'],['Import from Excel','prefsec','data','upload'],['Reminders','prefsec','reminders','bell'],['App lock','prefsec','lock','lock'],['Back up','prefsec','data','backup'],['Delete data','deldata','','shield'],['Recently deleted','prefsec','trash','backup'],['Install the app','prefsec','install','download'],['Budget setup','prefsec','budget','budget'],['Privacy policy','link','privacy.html','shield'],['Terms','link','terms.html','doc']];
 const recentQ=()=>{try{return JSON.parse(lsGet('paisa-recent-q')||'[]')}catch(e){return[]}};
 function featBtn([n,a,k,ic],cls='chip'){return a==='link'?`<a class="${cls}" href="${k}">${ui(ic,18)}<span>${n}</span></a>`:`<button class="${cls}" data-act="${a}" ${k?`data-k="${k}"`:''}>${ui(ic,18)}<span>${n}</span></button>`}
 function moreSearch(q){
@@ -2632,7 +2652,7 @@ function attentionHTML(k,skip){
 
 /* ================= Settings: tiles → sub-pages ================= */
 let PREFSEC=null,PREF_KEEP=false;
-const PREF_TITLES={account:'Account',budget:'Budget setup',reminders:'Reminders',lock:'App lock',install:'Install the app',data:'Import, export & backup',about:'Privacy & terms',danger:'Danger zone'};
+const PREF_TITLES={trash:'Recently deleted',account:'Account',budget:'Budget setup',reminders:'Reminders',lock:'App lock',install:'Install the app',data:'Import, export & backup',about:'Privacy & terms',danger:'Danger zone'};
 function trow(act,k,ic,title,sub,extra=''){return `<button class="trow" data-act="${act}" ${k?`data-k="${k}"`:''} ${extra}><span class="ti">${ui(ic,20)}</span><span class="tt"><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span>${CHEV}</button>`}
 function tgroup(label,rows){rows=rows.filter(Boolean);return rows.length?`<section class="tgroup">${label?`<div class="eyebrow">${label}</div>`:''}<div class="tcard">${rows.join('')}</div></section>`:''}
 function prefTiles(s,hasPin){
@@ -2646,7 +2666,7 @@ function prefTiles(s,hasPin){
     trow('prefsec','reminders','bell','Reminders',remSub)])}
   ${tgroup('Security',[trow('prefsec','lock','lock','App lock',hasPin?'On · 4-digit PIN':'Off'),
     trow('prefsec','install','download','Install the app',STANDALONE?'Installed':'Add to home screen')])}
-  ${tgroup('Data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data')])}
+  ${tgroup('Data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data'),canWrite()?trow('deldata','','shield','Delete data','Choose what, which period, which category'):'',trow('prefsec','trash','backup','Recently deleted',(n=>n?n+' item'+(n>1?'s':'')+' you can restore':'Restore anything deleted in the last 30 days')(Object.keys(trashAll()).length))])}
   ${tgroup('About',[trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),IS_OWNER&&CLOUD&&!CFG.vapidPublicKey?trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner'):''])}
   ${IS_OWNER?`<section class="tgroup"><div class="tcard"><button class="trow danger" data-act="prefsec" data-k="danger"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>${MODE==='cloud'?'Delete family budget':'Delete all data'}</b><small>Can't be undone</small></span>${CHEV}</button></div></section>`:''}`;
 }
@@ -2712,6 +2732,311 @@ function moreView(){
   </div>`;
 }
 
+/* ================= delete data (choose what, which period, narrow down, preview) ================= */
+// [key, label, hint, icon, tied to dates?]
+const DEL_TYPES=[
+  ['entries','Entries','Expenses, income and self transfers','list',true],
+  ['budgets','One-month budgets','Budget changes made for a single month','budget',true],
+  ['bills','Bill marks','Paid and skipped marks on bills','receipt',true],
+  ['repeats','Repeats','Monthly salary, SIP and rent rules','repeat',false],
+  ['cards','Credit cards','Cards, or just their statements for a period','card',true],
+  ['loans','Loans','Loan details and payoff plans','bank',false],
+  ['goals','Goals','Savings and payoff goals','target',false],
+  ['accounts','Bank accounts','Accounts and their balances','bank',false],
+  ['assets','Net worth','Investments, or just monthly snapshots for a period','chart',true],
+  ['log','Activity history','Who added or changed what','doc',true]];
+const DEL_PERIODS=[['this','This month'],['last','Last month'],['month','Pick a month'],['3m','Last 3 months'],['fy','Financial year'],['range','Date range'],['all','Everything']];
+const DEL_SRC=[['','Any way'],['import','Imported'],['manual','Typed in'],['recurring','From repeats']];
+let DEL=null;
+function delAllowed(k){if(ROLE==='Viewer')return false;if(ROLE==='Member')return k==='entries';return true}
+function openDelete(preset={}){
+  if(!canWrite()){toast("Your role can't delete data.");return}
+  const k=curKey();
+  DEL={step:0,what:{entries:true},period:'this',month:k,fy:Number(k.slice(5))>=4?Number(k.slice(0,4)):Number(k.slice(0,4))-1,from:mStart(k),to:todayISO(),
+    f:{cats:[],kinds:['out','in','xfer'],acct:'',mode:'',who:'',src:'',min:'',max:'',q:''},pick:{},keep:true,typed:'',ids:null,...preset};
+  if(preset.f)DEL.f={...{cats:[],kinds:['out','in','xfer'],acct:'',mode:'',who:'',src:'',min:'',max:'',q:''},...preset.f};
+  renderDelete();
+}
+function delRange(){
+  const D0=DEL,k=curKey();
+  switch(D0.period){
+    case 'this':return[mStart(k),mEnd(k)];
+    case 'last':return[mStart(addM(k,-1)),mEnd(addM(k,-1))];
+    case 'month':return[mStart(D0.month),mEnd(D0.month)];
+    case '3m':return[mStart(addM(k,-2)),mEnd(k)];
+    case 'fy':return[D0.fy+'-04-01',(D0.fy+1)+'-03-31'];
+    case 'range':return[D0.from<=D0.to?D0.from:D0.to,D0.from<=D0.to?D0.to:D0.from];
+    default:return['0000-01-01','9999-12-31'];
+  }
+}
+function delPeriodLabel(){
+  const D0=DEL,k=curKey();
+  if(D0.ids)return'';
+  switch(D0.period){case 'this':return mLong(k)+' '+k.slice(0,4);case 'last':return mLong(addM(k,-1))+' '+addM(k,-1).slice(0,4);case 'month':return mLong(D0.month)+' '+D0.month.slice(0,4);
+    case '3m':return mLabel(addM(k,-2))+' to '+mLabel(k);case 'fy':return'FY '+D0.fy+'–'+String(D0.fy+1).slice(2);case 'range':{const[a,b]=delRange();return dShort(a)+' '+a.slice(0,4)+' to '+dShort(b)+' '+b.slice(0,4)}default:return'all time'}
+}
+function delKeysIn(a,b){const all=new Set([...Object.keys(D.months),...Object.keys(D.bills),...Object.keys(txIndex())]);return[...all].filter(k=>/^\d{4}-\d\d$/.test(k)&&mEnd(k)>=a&&mStart(k)<=b)}
+const delDated=()=>DEL_TYPES.some(([k,,,,d])=>d&&DEL.what[k]);
+const delPicky=()=>['repeats','loans','goals','accounts'].some(k=>DEL.what[k])||(DEL.period==='all'&&(DEL.what.cards||DEL.what.assets));
+function delSteps(){if(DEL.ids)return[3];const s=[0];if(delDated())s.push(1);if(DEL.what.entries||delPicky())s.push(2);s.push(3);return s}
+function delPickList(k){
+  if(k==='repeats')return recList().map(r=>[r.id,(r.note||D.cats[r.cat].name)+' · '+fmt(r.amt)]);
+  if(k==='loans')return Object.entries(D.loans).map(([id,l])=>[id,l.name||'Loan']);
+  if(k==='goals')return Object.entries(D.goals).map(([id,g])=>[id,g.name||'Goal']);
+  if(k==='accounts')return acctList(true).map(a=>[a.id,acctLabel(a)]);
+  if(k==='cards')return Object.entries(D.cards).map(([id,c])=>[id,c.name+' card']);
+  if(k==='assets')return Object.entries(D.assets).filter(([,a])=>a.kind!=='snap').map(([id,a])=>[id,a.name||a.type]);
+  return[];
+}
+const delPicked=(k,id)=>!DEL.pick[k]||DEL.pick[k].includes(id);
+// entries that match the period and filters (and the person's role)
+function delEntries(){
+  const F0=DEL.f;let L=Object.entries(D.tx).filter(([,t])=>t&&t.date).map(([id,t])=>({...t,id}));
+  if(DEL.ids){const s=new Set(DEL.ids);return L.filter(t=>s.has(t.id)&&canEditTx(t))}
+  const[a,b]=delRange();L=L.filter(t=>t.date>=a&&t.date<=b&&canEditTx(t));
+  const kind=t=>isXfer(t)?'xfer':D.cats[t.cat]&&D.cats[t.cat].section==='income'?'in':'out';
+  if(hideInc())L=L.filter(t=>kind(t)!=='in');
+  L=L.filter(t=>F0.kinds.includes(kind(t)));
+  if(F0.cats.length)L=L.filter(t=>F0.cats.includes(t.cat));
+  if(F0.acct)L=L.filter(t=>t.acct===F0.acct||t.from===F0.acct||t.to===F0.acct||(F0.acct.startsWith('card:')&&t.mode==='Card'&&t.card===F0.acct.slice(5)));
+  if(F0.mode)L=L.filter(t=>t.mode===F0.mode);
+  if(F0.who)L=L.filter(t=>(t.by||'local')===F0.who);
+  if(F0.src)L=L.filter(t=>(t.src||'manual')===F0.src);
+  const mn=parseAmt(F0.min),mx=parseAmt(F0.max);if(mn>0)L=L.filter(t=>t.amt>=mn);if(mx>0)L=L.filter(t=>t.amt<=mx);
+  const q=F0.q.trim().toLowerCase();if(q)L=L.filter(t=>(t.note||'').toLowerCase().includes(q));
+  return L.sort((x,y)=>y.date.localeCompare(x.date));
+}
+// what deleting would remove (dels) and change (patches), with a plain summary
+function delPlan(){
+  const dels=[],P={},lines=[];const[a,b]=delRange();const all=DEL.period==='all'&&!DEL.ids;
+  const patch=(col,id,fn)=>{const cur=P[col+'/'+id]?P[col+'/'+id].data:(D[col][id]?JSON.parse(JSON.stringify(D[col][id])):null);P[col+'/'+id]={col,id,data:fn(cur)}};
+  const W=DEL.ids?{entries:true}:DEL.what;let ents=[];
+  if(W.entries){ents=delEntries();ents.forEach(t=>dels.push({col:'tx',id:t.id}));
+    if(ents.length){const isIn=t=>!isXfer(t)&&D.cats[t.cat]&&D.cats[t.cat].section==='income';const out=ents.filter(t=>!isXfer(t)&&!isIn(t)).reduce((s,t)=>s+t.amt,0),inn=ents.filter(isIn).reduce((s,t)=>s+t.amt,0),xf=ents.filter(isXfer).length;
+      lines.push(`${ents.length.toLocaleString('en-IN')} entr${ents.length===1?'y':'ies'}`+[out?` · ${fmt(out)} out`:'',inn?` · ${fmt(inn)} in`:'',xf?` · ${xf} transfer${xf>1?'s':''}`:''].join(''))}}
+  if(W.budgets){let n=0;delKeysIn(a,b).forEach(k=>{const m=D.months[k];if(m&&m.b&&Object.keys(m.b).length){n++;patch('months',k,cur=>{const o={...cur};delete o.b;return o})}});if(n)lines.push(`One-month budgets in ${n} month${n>1?'s':''}`)}
+  if(W.bills){const ks=delKeysIn(a,b).filter(k=>D.bills[k]);ks.forEach(k=>dels.push({col:'bills',id:k}));if(ks.length)lines.push(`Bill marks in ${ks.length} month${ks.length>1?'s':''}`)}
+  for(const k of ['repeats','loans','goals','accounts']){if(!W[k])continue;const col={repeats:'recurring',loans:'loans',goals:'goals',accounts:'accounts'}[k];
+    const ids=delPickList(k).map(x=>x[0]).filter(id=>delPicked(k,id));ids.forEach(id=>dels.push({col,id}));
+    if(ids.length)lines.push(`${ids.length} ${{repeats:'repeat',loans:'loan',goals:'goal',accounts:'bank account'}[k]}${ids.length>1?'s':''}`)}
+  if(W.cards){if(all){const ids=delPickList('cards').map(x=>x[0]).filter(id=>delPicked('cards',id));ids.forEach(id=>dels.push({col:'cards',id}));if(ids.length)lines.push(`${ids.length} credit card${ids.length>1?'s':''}`)}
+    else{let n=0;Object.entries(D.cards).forEach(([id,c])=>{const ks=Object.keys(c.stmts||{}).filter(k=>mEnd(k)>=a&&mStart(k)<=b);if(ks.length){n+=ks.length;patch('cards',id,cur=>{const o={...cur,stmts:{...cur.stmts}};ks.forEach(k=>delete o.stmts[k]);return o})}});if(n)lines.push(`${n} card statement${n>1?'s':''}`)}}
+  if(W.assets){const snaps=Object.entries(D.assets).filter(([,x])=>x.kind==='snap'&&(all||(mEnd(x.month)>=a&&mStart(x.month)<=b))).map(([id])=>id);snaps.forEach(id=>dels.push({col:'assets',id}));
+    let n=0;if(all){const ids=delPickList('assets').map(x=>x[0]).filter(id=>delPicked('assets',id));n=ids.length;ids.forEach(id=>dels.push({col:'assets',id}))}
+    if(n||snaps.length)lines.push([n?`${n} investment${n>1?'s':''}`:'',snaps.length?`${snaps.length} net worth snapshot${snaps.length>1?'s':''}`:''].filter(Boolean).join(' and '))}
+  if(W.log){const ids=Object.entries(D.log).filter(([,l])=>{const d=iso(new Date(l.at||0));return d>=a&&d<=b}).map(([id])=>id);ids.forEach(id=>dels.push({col:'log',id}));if(ids.length)lines.push(`${ids.length} activity line${ids.length>1?'s':''}`)}
+  // money impact of the entries
+  const sign=t=>isXfer(t)?0:D.cats[t.cat]&&D.cats[t.cat].section==='income'?-t.amt:t.amt;   // + means left-to-spend goes up
+  const ck=curKey();const cur=ents.filter(t=>keyOf(t.date)===ck).reduce((s,t)=>s+sign(t),0);const tot=ents.reduce((s,t)=>s+sign(t),0);
+  const lastK=ents.length||W.budgets?keyOf(DEL.ids?ents.reduce((m,t)=>t.date>m?t.date:m,'0000-01-01'):(b>'9000'?todayISO():b)):null;
+  const nk=lastK?addM(lastK,1):null;const later=!!(nk&&nk<=ck&&S()&&nk>S().startMonth&&(ents.length||W.budgets));
+  // keep later months: pin the next month's starting money, and keep bank balances where they are
+  if(later&&DEL.keep&&tot){const open=month(nk).open;if(!(D.months[nk]&&D.months[nk].open!=null))patch('months',nk,c=>({...(c||{}),open}))}
+  const acctFx={};ents.forEach(t=>{const bump=(id,v)=>{const ac=D.accounts[id];if(!ac||t.date<(ac.asOf||'0000'))return;if(t.date===ac.asOf&&ac.createdAt&&(t.at||0)<ac.createdAt)return;acctFx[id]=(acctFx[id]||0)+v};
+    if(isXfer(t)){if(t.to)bump(t.to,-t.amt);if(t.from)bump(t.from,t.amt);return}
+    if(t.mode==='Card'||!t.acct||!D.cats[t.cat])return;bump(t.acct,D.cats[t.cat].section==='income'?-t.amt:t.amt)});
+  const deletingAcct=new Set(dels.filter(d=>d.col==='accounts').map(d=>d.id));
+  if(later&&DEL.keep)Object.entries(acctFx).forEach(([id,v])=>{if(v&&!deletingAcct.has(id))patch('accounts',id,c=>({...c,adj:(c.adj||0)-v}))});
+  const impact=[];
+  if(cur)impact.push(`Left to spend for ${mLong(ck)} goes ${cur>0?'up':'down'} by ${fmt(Math.abs(cur))}.`);
+  if(later&&tot)impact.push(DEL.keep?`Months after ${mLabel(lastK)} and bank balances stay as they are.`:`Every month after ${mLabel(lastK)} starts with ${fmt(Math.abs(tot))} ${tot>0?'more':'less'}.`);
+  if(!(later&&DEL.keep))Object.entries(acctFx).forEach(([id,v])=>{if(v&&!deletingAcct.has(id))impact.push(`${acctName(id)} balance goes ${v>0?'up':'down'} by ${fmt(Math.abs(v))}.`)});
+  // a deleted bank account's entries stay; say so
+  if(deletingAcct.size&&!W.entries)impact.push('Entries made from deleted accounts stay, marked "Removed account".');
+  return{dels,patches:Object.values(P).filter(p=>!dels.some(d=>d.col===p.col&&d.id===p.id)),lines,impact,ents,later,tot};
+}
+function delCountLine(){const p=delPlan();return p.lines.length?p.lines.join(' · '):'Nothing matches yet.'}
+function renderDelete(){
+  const st=delSteps();if(!st.includes(DEL.step))DEL.step=st[0];const i=st.indexOf(DEL.step);
+  const chip=(act,k,on,l,extra='')=>`<button class="chip" data-act="${act}" data-k="${k}" aria-pressed="${on}" ${extra}>${l}</button>`;
+  const head=`<div class="sheet-h"><h2>${DEL.ids?'Delete selected':'Delete data'}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>
+    ${st.length>1?`<div class="dsteps" aria-label="Step ${i+1} of ${st.length}">${st.map((s,j)=>`<i class="${j<=i?'on':''}"></i>`).join('')}</div>`:''}`;
+  let body='';
+  if(DEL.step===0){
+    const types=DEL_TYPES.filter(([k])=>delAllowed(k));
+    body=`<p class="dq">What do you want to delete?</p>
+    <div class="tcard">${types.map(([k,l,h,ic])=>`<button class="trow" data-act="delwhat" data-k="${k}" aria-pressed="${!!DEL.what[k]}"><span class="ti">${ui(ic,20)}</span><span class="tt"><b>${l}</b><small>${h}</small></span><span class="tick" aria-hidden="true"></span></button>`).join('')}</div>
+    ${canAdmin()?`<button class="trow danger" style="border:1px solid var(--line);border-radius:18px;margin-top:10px" data-act="delfresh"><span class="ti">${ui('repeat',20)}</span><span class="tt"><b>Start fresh</b><small>Clear all money data, keep categories, budgets and family</small></span>${CHEV}</button>`:''}
+    ${ROLE==='Member'?'<p class="small muted" style="margin:10px 2px 0">As a Member you can delete entries you added yourself.</p>':''}
+    ${canAdmin()?'<p class="small muted" style="margin:10px 2px 0">To delete a category, open it on the Budget tab.</p>':''}`;
+  }
+  if(DEL.step===1){
+    const years=[...new Set([DEL.fy,...Object.keys(txIndex()).map(k=>Number(k.slice(5))>=4?Number(k.slice(0,4)):Number(k.slice(0,4))-1)])].sort((x,y)=>y-x);
+    body=`<p class="dq">Which period?</p>
+    <div class="chips" style="margin-bottom:12px">${DEL_PERIODS.map(([k,l])=>chip('delper',k,DEL.period===k,l)).join('')}</div>
+    ${DEL.period==='month'?`<input class="input" type="month" id="del-m" value="${DEL.month}" data-delf style="margin-bottom:12px">`:''}
+    ${DEL.period==='fy'?`<select class="input" id="del-fy" data-delf style="margin-bottom:12px">${years.map(y=>`<option value="${y}" ${DEL.fy===y?'selected':''}>April ${y} – March ${y+1}</option>`).join('')}</select>`:''}
+    ${DEL.period==='range'?`<div class="two" style="margin-bottom:6px"><div class="field"><label for="del-from">From</label><input class="input" type="date" id="del-from" value="${DEL.from}" data-delf></div><div class="field"><label for="del-to">To</label><input class="input" type="date" id="del-to" value="${DEL.to}" data-delf></div></div>`:''}
+    ${DEL.period!=='all'&&!DEL.what.entries&&DEL.what.cards?'<p class="small muted" style="margin:0 0 8px">For a period, only card statements are deleted. Pick Everything to delete whole cards.</p>':''}
+    ${delPicky()&&DEL.period!=='all'&&['repeats','loans','goals','accounts'].some(k=>DEL.what[k])?'<p class="small muted" style="margin:0 0 8px">Repeats, loans, goals and accounts aren\'t tied to dates. You\'ll pick them next.</p>':''}
+    <p class="small" id="del-count" style="color:var(--muted);margin:8px 0 0">${delPeriodLabel()} · ${delCountLine()}</p>`;
+  }
+  if(DEL.step===2){
+    const[a,b]=delRange();const F0=DEL.f;
+    const inPeriod=Object.values(D.tx).filter(t=>t&&t.date>=a&&t.date<=b&&canEditTx(t));
+    const cc={};inPeriod.forEach(t=>{if(t.cat&&D.cats[t.cat])cc[t.cat]=(cc[t.cat]||0)+1});
+    const people=[...new Set(inPeriod.map(t=>t.by||'local'))];
+    const accts=[...acctList(true).map(x=>[x.id,acctLabel(x)]),...Object.entries(D.cards).map(([id,c])=>['card:'+id,c.name+' card'])];
+    body=`${DEL.what.entries?`<p class="dq">Which entries?</p>
+      <div class="chips" style="margin-bottom:12px">${[['out','Expenses'],...(hideInc()?[]:[['in','Income']]),['xfer','Self transfers']].map(([k,l])=>chip('delkind',k,F0.kinds.includes(k),l)).join('')}</div>
+      ${Object.keys(cc).length?`<div class="flabel" style="margin-bottom:6px">Categories <span class="muted">· none picked means all</span></div>
+      <div class="chips" style="margin-bottom:12px;max-height:132px;overflow:auto">${catsAll().filter(c=>cc[c.id]).map(c=>chip('delcat',c.id,F0.cats.includes(c.id),`${esc(c.name)} <span class="muted">${cc[c.id]}</span>`)).join('')}</div>`:''}
+      <div class="flabel" style="margin-bottom:6px">How it was added</div>
+      <div class="chips" style="margin-bottom:12px">${DEL_SRC.map(([k,l])=>chip('delsrc',k,F0.src===k,l)).join('')}</div>
+      <button class="link small" data-act="delmore" style="padding:0 0 10px">${DEL.more?'Fewer filters':'More filters: account, payment mode, person, amount, note'}</button>
+      ${DEL.more?`<div class="filters" style="margin-bottom:12px">
+        ${accts.length?`<select class="input" id="del-acct" data-delf style="grid-column:1/-1" aria-label="Account or card"><option value="">Any account or card</option>${accts.map(([id,l])=>`<option value="${id}" ${F0.acct===id?'selected':''}>${esc(l)}</option>`).join('')}</select>`:''}
+        <select class="input" id="del-mode" data-delf aria-label="Payment mode" ${people.length>1?'':'style="grid-column:1/-1"'}><option value="">Any payment mode</option>${MODES.map(x=>`<option ${F0.mode===x?'selected':''}>${x}</option>`).join('')}</select>
+        ${people.length>1?`<select class="input" id="del-who" data-delf aria-label="Added by"><option value="">Anyone</option>${people.map(p=>`<option value="${esc(p)}" ${F0.who===p?'selected':''}>${esc(who(p))}</option>`).join('')}</select>`:''}
+        <input class="input num" id="del-min" data-delf inputmode="decimal" placeholder="Min ₹" value="${esc(F0.min)}" aria-label="Minimum amount">
+        <input class="input num" id="del-max" data-delf inputmode="decimal" placeholder="Max ₹" value="${esc(F0.max)}" aria-label="Maximum amount">
+        <input class="input" id="del-q" data-delf style="grid-column:1/-1" placeholder="Note contains, e.g. Swiggy" value="${esc(F0.q)}" aria-label="Note contains"></div>`:''}`:''}
+      ${[...['repeats','loans','goals','accounts'],...(DEL.period==='all'?['cards','assets']:[])].filter(k=>DEL.what[k]).map(k=>{const L=delPickList(k);const name=DEL_TYPES.find(x=>x[0]===k)[1];
+        return `<div class="flabel" style="margin:6px 0 6px">${name}</div>${L.length?`<div class="chips" style="margin-bottom:12px">${L.map(([id,l])=>chip('delpick',k,delPicked(k,id),esc(l),`data-id="${id}"`)).join('')}</div>`:'<p class="small muted" style="margin:0 0 12px">None added.</p>'}`}).join('')}
+      <p class="small" id="del-count" style="color:var(--muted);margin:4px 0 0">${delPeriodLabel()} · ${delCountLine()}</p>`;
+  }
+  if(DEL.step===3){
+    const p=delPlan();const n=p.dels.length+(p.lines.length&&!p.dels.length?1:0);
+    const big=p.dels.length>=20;
+    body=p.lines.length?`<p class="dq">${DEL.ids?'Delete these?':'Ready to delete'}</p>
+      <div class="dsum">${p.lines.map(l=>`<div>${esc(l)}</div>`).join('')}${DEL.ids?'':`<div class="small muted">${esc(delPeriodLabel())}</div>`}</div>
+      ${p.ents.length?`<div class="dsample">${p.ents.slice(0,5).map(t=>`<div class="kv"><span>${dShort(t.date)} · ${esc(isXfer(t)?acctName(t.from)+' → '+acctName(t.to):(t.note||(D.cats[t.cat]||{}).name||''))}</span><b class="num">${fmt(t.amt)}</b></div>`).join('')}${p.ents.length>5?`<div class="small muted" style="padding-top:6px">and ${p.ents.length-5} more</div>`:''}</div>`:''}
+      ${p.impact.length?`<div class="dimpact">${p.impact.map(x=>`<div>${esc(x)}</div>`).join('')}</div>`:''}
+      ${p.later&&p.tot?`<label class="check" style="border:0;margin:4px 0 6px"><input type="checkbox" id="del-keep" ${DEL.keep?'checked':''} data-act="delkeep"><span class="small">Keep later months and bank balances as they are</span></label>`:''}
+      <button class="btn block" data-act="delbackup" style="margin:6px 0 10px">${ui('download',18)} Download a backup first</button>
+      ${big?`<div class="field"><label for="del-type">Type <b>${p.dels.length}</b> to confirm</label><input class="input num" id="del-type" inputmode="numeric" autocomplete="off" value="${esc(DEL.typed)}" data-delf></div>`:''}
+      <button class="btn danger block" id="del-go" data-act="delgo" ${big&&DEL.typed!==String(p.dels.length)?'disabled':''}>Delete ${p.dels.length?p.dels.length.toLocaleString('en-IN')+' item'+(p.dels.length===1?'':'s'):'now'}</button>
+      <p class="small muted" style="text-align:center;margin:8px 0 0">You can restore it from Recently deleted for 30 days.</p>`
+      :`<p class="dq">Nothing to delete</p><p class="small muted">Nothing matches what you picked. Go back and change the period or filters.</p>`;
+  }
+  const nav=DEL.step===3?(i>0?`<button class="btn block" style="margin-top:10px" data-act="delback">Back</button>`:'')
+    :`<div class="btns dnav">${i>0?'<button class="btn" data-act="delback">Back</button>':''}<button class="btn primary grow" data-act="delnext" ${DEL.step===0&&!Object.values(DEL.what).some(Boolean)?'disabled':''}>Next</button></div>`;
+  openSheet(head+body+nav);
+}
+function delRead(){
+  const g=id=>{const e=$('#'+id);return e?e.value:null};const F0=DEL.f;
+  if(g('del-m'))DEL.month=g('del-m');if(g('del-fy'))DEL.fy=Number(g('del-fy'));if(g('del-from'))DEL.from=g('del-from');if(g('del-to'))DEL.to=g('del-to');
+  for(const k of ['acct','mode','who','min','max','q'])if(g('del-'+k)!==null)F0[k]=g('del-'+k);
+  if(g('del-type')!==null)DEL.typed=g('del-type').trim();
+  const kp=$('#del-keep');if(kp)DEL.keep=kp.checked;
+}
+function delLive(){
+  delRead();const c=$('#del-count');if(c)c.textContent=delPeriodLabel()+' · '+delCountLine();
+  const go=$('#del-go');if(go&&$('#del-type')){const n=delPlan().dels.length;go.disabled=DEL.typed!==String(n)}
+}
+function delLabel(p){return p.lines.join(', ')+(DEL.ids?'':' · '+delPeriodLabel())}
+async function delGo(){
+  delRead();const p=delPlan();if(!p.dels.length&&!p.patches.length)return;
+  if(p.dels.length>=20&&DEL.typed!==String(p.dels.length))return;
+  closeSheet();const label=delLabel(p);
+  await delCommit({dels:p.dels,patches:p.patches,label});
+  if(SEL){SEL=null;render()}
+}
+/* one place that deletes: saves a copy to Recently deleted, writes in batches, offers Undo */
+async function delCommit({dels,patches=[],label}){
+  const before=[];
+  dels.forEach(d=>{const cur=D[d.col][d.id];if(cur!==undefined)before.push({col:d.col,id:d.id,data:cur})});
+  patches.forEach(x=>before.push({col:x.col,id:x.id,data:D[x.col][x.id]===undefined?null:D[x.col][x.id]}));
+  const ops=[...dels.map(d=>({col:d.col,id:d.id,data:null})),...patches.map(x=>({col:x.col,id:x.id,data:x.data}))];
+  const tid='t'+uid();
+  try{await bulkSet(ops)}catch(e){writeErr(e);return}
+  trashSave(tid,{at:Date.now(),by:ME||'local',label,n:dels.length,items:before});
+  log('deleted','data',label);
+  toast(`Deleted ${label}.`,{action:'Undo',ms:10000,fn:()=>restoreTrash(tid)});
+}
+// many writes at once: one upload per 1,000 items, queued if offline
+async function bulkSet(ops){
+  if(!ops.length)return;
+  ops.forEach(o=>{const n={...D[o.col]};if(o.data==null)delete n[o.id];else n[o.id]=o.data;D[o.col]=n});
+  if(MODE==='local'){saveLocal();changed();return}
+  if(MODE!=='cloud'){for(const o of ops)await(o.data==null?store.del(o.col,o.id):store.set(o.col,o.id,o.data)).catch(()=>{});return}
+  cacheSoon();changed();
+  const rows=ops.map(o=>({family_id:FID,col:o.col,id:o.id,data:o.data,deleted:o.data==null}));
+  for(let i=0;i<rows.length;i+=1000){
+    const chunk=rows.slice(i,i+1000);const q=()=>chunk.forEach(r=>queueOut({col:r.col,id:r.id,data:r.data,deleted:r.deleted}));
+    if(!navigator.onLine){q();continue}
+    const {error}=await SB.from('docs').upsert(chunk,{onConflict:'family_id,col,id'});
+    if(error){if(isNetErr(error)){q();continue}chunk.forEach(r=>refetchDoc(r.col,r.id));throw{code:error.code==='42501'?'invalid_argument':'server',message:errMsg(error)}}
+  }
+}
+/* ---- Recently deleted (30 days) ---- */
+const TRASH_DAYS=30;
+const trashLKey=()=>'paisa-trash-'+(FID||'local');
+function trashLocal(){try{return JSON.parse(lsGet(trashLKey())||'{}')}catch(e){return{}}}
+function trashAll(){return{...trashLocal(),...(D.trash||{})}}
+function trashSave(id,obj){
+  if(MODE==='cloud'){
+    D.trash={...D.trash,[id]:obj};cacheSoon();
+    pushDoc({col:'trash',id,data:obj,deleted:false}).catch(()=>{   // database not updated for it yet: keep the copy on this phone
+      const n={...D.trash};delete n[id];D.trash=n;const L=trashLocal();L[id]=obj;try{localStorage.setItem(trashLKey(),JSON.stringify(L))}catch(e){}scheduleRender()});
+    return}
+  store.set('trash',id,obj).catch(()=>{});
+}
+function trashDrop(id){
+  const L=trashLocal();if(L[id]){delete L[id];try{localStorage.setItem(trashLKey(),JSON.stringify(L))}catch(e){}}
+  if(D.trash&&D.trash[id]){if(MODE==='cloud'){const n={...D.trash};delete n[id];D.trash=n;cacheSoon();pushDoc({col:'trash',id,data:null,deleted:true}).catch(()=>{});scheduleRender()}else store.del('trash',id).catch(()=>{})}
+}
+function trashPrune(){const cut=Date.now()-TRASH_DAYS*864e5;Object.entries(trashAll()).forEach(([id,t])=>{if((t.at||0)<cut&&(canAdmin()||t.by===ME))trashDrop(id)})}
+async function restoreTrash(id){
+  const t=trashAll()[id];if(!t){toast('That was already restored or removed.');return}
+  const ops=(t.items||[]).map(x=>({col:x.col,id:x.id,data:x.data}));
+  try{await bulkSet(ops)}catch(e){writeErr(e);return}
+  trashDrop(id);log('restored','data',t.label);toast(`Restored ${t.label}.`);
+}
+function trashBody(){
+  trashPrune();
+  const L=Object.entries(trashAll()).filter(([,t])=>canAdmin()||t.by===ME).sort((a,b)=>(b[1].at||0)-(a[1].at||0));
+  if(!L.length)return`<section class="card"><p class="small muted" style="margin:0">Nothing deleted in the last ${TRASH_DAYS} days. Anything you delete stays here for ${TRASH_DAYS} days so you can bring it back.</p></section>`;
+  return`<p class="small muted" style="margin:0 2px">Deleted items stay here for ${TRASH_DAYS} days, then go for good.</p>
+  <div class="tcard">${L.map(([id,t])=>{const left=Math.max(1,TRASH_DAYS-Math.floor((Date.now()-t.at)/864e5));
+    return`<div class="trow static"><span class="ti">${ui('backup',20)}</span><span class="tt"><b>${esc(t.label)}</b><small>${new Date(t.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${esc(who(t.by))} · ${left} day${left>1?'s':''} left</small></span>
+      <span class="nacts"><button class="pillbtn sm" data-act="trashrestore" data-id="${id}">Restore</button><button class="x sm" data-act="trashdrop" data-id="${id}" aria-label="Delete for good">×</button></span></div>`}).join('')}</div>`;
+}
+/* ---- Start fresh ---- */
+function openFresh(){
+  const left=month(curKey()).left;
+  openSheet(`${sheetHead('Start fresh?')}<p class="small" style="margin-top:0">Clears every entry, bill mark, repeat, card, loan, goal, bank account, investment and the activity history. <b>Categories, budgets and family stay.</b> Your budget restarts in ${mLong(curKey())}.</p>
+    <div class="field"><label for="fr-open">Money you have right now (₹)</label><input class="input num" id="fr-open" inputmode="decimal" value="${rupees(Math.max(0,left))}"></div>
+    <button class="btn block" data-act="delbackup" style="margin:0 0 10px">${ui('download',18)} Download a backup first</button>
+    <div class="field"><label for="fr-type">Type <b>FRESH</b> to confirm</label><input class="input" id="fr-type" autocomplete="off" autocapitalize="characters" data-frtype></div>
+    <button class="btn danger block" id="fr-go" data-act="freshgo" disabled>Start fresh</button>`);
+}
+async function freshGo(){
+  const open=amtOrNull('fr-open');if(open==null){toast('Enter the money you have now, or 0.');return}
+  const dels=[];['tx','months','bills','recurring','loans','cards','goals','accounts','assets','log'].forEach(col=>Object.keys(D[col]).forEach(id=>dels.push({col,id})));
+  const s=S();const patches=[{col:'settings',id:'main',data:{...s,startMonth:curKey(),opening:open}}];
+  closeSheet();await delCommit({dels,patches,label:'Start fresh ('+dels.length+' items)'});
+}
+/* ---- delete a category: move its entries or delete them too ---- */
+function openCatDelete(id){
+  const c=catById(id);if(!c)return;const n=Object.values(D.tx).filter(t=>t.cat===id).length;
+  const others=catsAll().filter(x=>x.id!==id&&!x.archived&&(x.section==='income')===(c.section==='income')).sort((a,b)=>(b.section===c.section)-(a.section===c.section));
+  openSheet(`${sheetHead('Delete '+esc(c.name)+'?')}
+    ${n?`<p class="small" style="margin-top:0">${n} entr${n===1?'y uses':'ies use'} this category. What should happen to ${n===1?'it':'them'}?</p>
+    <div class="seg" role="group" style="margin-bottom:12px"><button data-act="catdelmode" data-k="move" aria-pressed="true">Move ${n===1?'it':'them'}</button><button data-act="catdelmode" data-k="del" aria-pressed="false">Delete ${n===1?'it':'them'} too</button></div>
+    <div class="field" id="cd-movewrap"><label for="cd-to">Move to</label><select class="input" id="cd-to">${others.map(x=>`<option value="${x.id}">${esc(x.name)}</option>`).join('')}</select></div>`
+    :'<p class="small" style="margin-top:0">No entries use it. Its budget and any repeat for it go too.</p>'}
+    <button class="btn danger block" data-act="catdelgo" data-id="${id}">Delete category</button>
+    <p class="small muted" style="text-align:center;margin:8px 0 0">You can restore it from Recently deleted for 30 days.</p>`);
+  CATDEL='move';
+}
+let CATDEL='move';
+async function catDelGo(id){
+  const c=D.cats[id];if(!c)return;const tx=Object.entries(D.tx).filter(([,t])=>t.cat===id);
+  const to=$('#cd-to')?$('#cd-to').value:'';if(tx.length&&CATDEL==='move'&&!to){toast('Pick a category to move them to.');return}
+  const dels=[{col:'cats',id}],patches=[];
+  if(tx.length){if(CATDEL==='del')tx.forEach(([tid])=>dels.push({col:'tx',id:tid}));else tx.forEach(([tid,t])=>patches.push({col:'tx',id:tid,data:{...t,cat:to,ub:ME||'local',uat:Date.now()}}))}
+  recList().filter(r=>r.cat===id).forEach(r=>dels.push({col:'recurring',id:r.id}));
+  Object.entries(D.loans).filter(([,l])=>l.cat===id).forEach(([lid,l])=>patches.push({col:'loans',id:lid,data:{...l,cat:''}}));
+  closeSheet();
+  await delCommit({dels,patches,label:`${c.name} category${tx.length?CATDEL==='del'?` and ${tx.length} entr${tx.length===1?'y':'ies'}`:` (${tx.length} moved to ${D.cats[to]?D.cats[to].name:''})`:''}`});
+}
+/* ---- select mode on Entries ---- */
+let SEL=null;
+function selBar(){
+  if(!SEL||route!=='transactions')return'';
+  return`<div class="selbar" role="toolbar" aria-label="Selected entries"><button class="link" data-act="selcancel">Cancel</button><b>${SEL.size} selected</b><button class="link" data-act="selall">All shown</button><button class="btn danger sm" data-act="seldel" ${SEL.size?'':'disabled'}>Delete</button></div>`;
+}
 /* ================= events ================= */
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
@@ -2804,7 +3129,36 @@ document.addEventListener('click',async e=>{
     case 'qcard':qSync();QA.card=id;renderQuick();break;
     case 'qsave':quickSave();break;
     case 'qdel':quickDelete();break;
-    case 'edittx':if(SWIPED){SWIPED=false;break}openEditTx(id);break;
+    case 'edittx':if(SWIPED){SWIPED=false;break}
+      if(SEL){const t=D.tx[id];if(!t||!canEditTx(t))break;SEL.has(id)?SEL.delete(id):SEL.add(id);const sw=el.closest('.swipe');if(sw)sw.classList.toggle('picked',SEL.has(id));const sb=$('.selbar');if(sb)sb.outerHTML=selBar();break}
+      openEditTx(id);break;
+    case 'selstart':SEL=new Set();render();break;
+    case 'selcancel':SEL=null;render();break;
+    case 'selall':document.querySelectorAll('#txlist .swipe[data-can="1"]').forEach(s=>SEL.add(s.dataset.id));render();break;
+    case 'seldel':if(SEL&&SEL.size)openDelete({ids:[...SEL],step:3});break;
+    case 'deldata':openDelete();break;
+    case 'clearmonth':openDelete({what:{entries:true,budgets:true,bills:true},period:'month',month:VM,step:1});break;
+    case 'acctdel':closeSheet();openDelete({what:{entries:true,accounts:true},pick:{accounts:[id]},period:'all',f:{acct:id},step:2});break;
+    case 'carddel':closeSheet();openDelete({what:{entries:true,cards:true},pick:{cards:[id]},period:'all',f:{acct:'card:'+id},step:2});break;
+    case 'delwhat':{const k=el.dataset.k;DEL.what[k]=!DEL.what[k];if(k==='entries'||k==='cards'||k==='assets')DEL.pick={...DEL.pick};renderDelete();break}
+    case 'delper':delRead();DEL.period=el.dataset.k;DEL.typed='';renderDelete();break;
+    case 'delkind':{delRead();const K=DEL.f.kinds,k=el.dataset.k;DEL.f.kinds=K.includes(k)?K.filter(x=>x!==k):[...K,k];renderDelete();break}
+    case 'delcat':{delRead();const C=DEL.f.cats,k=el.dataset.k;DEL.f.cats=C.includes(k)?C.filter(x=>x!==k):[...C,k];renderDelete();break}
+    case 'delsrc':delRead();DEL.f.src=el.dataset.k;renderDelete();break;
+    case 'delmore':delRead();DEL.more=!DEL.more;renderDelete();break;
+    case 'delpick':{delRead();const k=el.dataset.k,pid=el.dataset.id;const cur=DEL.pick[k]||delPickList(k).map(x=>x[0]);DEL.pick[k]=cur.includes(pid)?cur.filter(x=>x!==pid):[...cur,pid];renderDelete();break}
+    case 'delnext':{delRead();const st=delSteps();DEL.step=st[Math.min(st.length-1,st.indexOf(DEL.step)+1)];DEL.typed='';renderDelete();const sh=$('#sheetRoot .sheet');if(sh)sh.scrollTop=0;break}
+    case 'delback':{delRead();const st=delSteps();DEL.step=st[Math.max(0,st.indexOf(DEL.step)-1)];renderDelete();break}
+    case 'delkeep':setTimeout(()=>{delRead();renderDelete()},0);break;
+    case 'delgo':delGo();break;
+    case 'delbackup':backup();break;
+    case 'delfresh':openFresh();break;
+    case 'freshgo':freshGo();break;
+    case 'trashrestore':restoreTrash(id).then(()=>render());break;
+    case 'trashdrop':confirmSheet('Delete for good?',"This can't be undone.",'Delete for good',async()=>{trashDrop(id);render()});break;
+    case 'catdel':openCatDelete(id);break;
+    case 'catdelmode':CATDEL=el.dataset.k;el.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===el));{const w=$('#cd-movewrap');if(w)w.hidden=CATDEL==='del'}break;
+    case 'catdelgo':catDelGo(id);break;
     case 'paybill':{const c=catById(id);const b=budgetOf(c,VM);const due=dueDate(c,VM);const t=todayISO();
       const rr=recForCat(id);openQuick({cat:id,amt:rr?String(rr.amt/100):b?String(b/100):'',mode:rr&&rr.mode||'Auto-debit',acct:rr&&rr.acct||defaultAcct(),date:VM===curKey()?(t<mStart(VM)?mStart(VM):t):due,title:'Mark '+c.name+' paid'});break}
     case 'skip':case 'unskip':{const d=JSON.parse(JSON.stringify(D.bills[VM]||{}));d.skip=d.skip||{};if(a==='skip')d.skip[id]=true;else delete d.skip[id];store.set('bills',VM,d).then(()=>log(a==='skip'?'skipped':'unskipped','bill',(D.cats[id]||{}).name)).catch(()=>{});break}
@@ -2823,19 +3177,19 @@ document.addEventListener('click',async e=>{
     case 'saveloan':{const name=val('l-name').trim();if(!name){toast('Give the loan a name.');break}
       const o={name,lender:val('l-lender').trim(),original:amtOrNull('l-orig'),rate:parseFloat(val('l-rate'))||0,emi:amtOrNull('l-emi')||0,outstanding:amtOrNull('l-out')||0,cat:val('l-cat'),asOf:todayISO()};
       closeSheet();store.set('loans',id||uid(),o).then(()=>log(id?'edited':'added','loan',name)).catch(()=>{});break}
-    case 'delloan':closeSheet();store.del('loans',id).catch(()=>{});break;
+    case 'delloan':closeSheet();delCommit({dels:[{col:'loans',id}],label:((D.loans[id]||{}).name||'Loan')+' loan'});break;
     case 'editcard':openCard(id);break;
     case 'savecard':{const name=val('k-name').trim();if(!name){toast('Give the card a name.');break}
       const o={...(id?D.cards[id]:{stmts:{}}),name,bank:val('k-bank').trim(),limit:amtOrNull('k-limit')||0,stmtDay:parseInt(val('k-sd'),10)||null,dueDay:parseInt(val('k-dd'),10)||null};
       closeSheet();store.set('cards',id||uid(),o).then(()=>log(id?'edited':'added','card',name)).catch(()=>{});break}
-    case 'delcard':closeSheet();store.del('cards',id).catch(()=>{});break;
+    case 'delcard':closeSheet();delCommit({dels:[{col:'cards',id}],label:((D.cards[id]||{}).name||'')+' card'});break;
     case 'stmt':openStmt(id);break;
     case 'savestmt':{const o=JSON.parse(JSON.stringify(D.cards[id]));o.stmts=o.stmts||{};o.stmts[VM]={amt:amtOrNull('s-amt')||0,paid:amtOrNull('s-paid')||0};closeSheet();store.set('cards',id,o).then(()=>log('updated','card statement',o.name+' '+mLabel(VM))).catch(()=>{});break}
     case 'editgoal':openGoal(id);break;
     case 'savegoal':saveGoal(id);break;
     case 'newgoal':openGoal(null,el.dataset.k);break;
     case 'gtype':openGoal(null,el.dataset.k);break;
-    case 'delgoal':closeSheet();store.del('goals',id).catch(()=>{});break;
+    case 'delgoal':closeSheet();delCommit({dels:[{col:'goals',id}],label:((D.goals[id]||{}).name||'Goal')+' goal'});break;
     case 'saveprefs':{const op=amtOrNull('p-op');const o={...S(),name:val('p-name').trim()||S().name,startDay:Number(val('p-sd'))||1,startMonth:val('p-sm')||S().startMonth,opening:op==null?S().opening:op};const hi=$('#p-hideinc');if(hi)o.hideIncome=hi.checked;
       store.set('settings','main',o).then(()=>{log('changed','settings','');toast('Settings saved.')}).catch(()=>{});break}
     case 'setpin':showLock('set');break;
@@ -2890,6 +3244,8 @@ document.addEventListener('input',e=>{
   else if(t.dataset.onbtile){ONB.sel[t.dataset.onbtile].amt=t.value.replace(/[^0-9]/g,'');const l=$('#onb-left');if(l)l.innerHTML=onbLeftHTML()}
   else if(t.dataset.onbamt){ONB.sel[t.dataset.onbamt].amt=t.value}
   else if(t.dataset.filter){F[t.dataset.filter]=t.value;renderTxList()}
+  else if('delf' in t.dataset){delLive()}
+  else if('frtype' in t.dataset){const g=$('#fr-go');if(g)g.disabled=t.value.trim().toUpperCase()!=='FRESH'}
   else if(t.dataset.msearch!=null){moreSearch(t.value)}
   else if(t.dataset.splitAmt!=null&&QA&&QA.split){qSyncSplit();const tot=parseAmt(QA.amt)||0,sum=QA.split.reduce((s,r)=>{const v=parseAmt(r.amt);return s+(isNaN(v)?0:v)},0);const l=$('#split-left');if(l){l.textContent=sum===tot?'Adds up':(tot-sum>0?fmt(tot-sum)+' left to assign':fmt(sum-tot)+' too much');l.className='small '+(sum===tot?'':'over')}const b=document.querySelector('[data-act=qsave]');if(b)b.disabled=sum!==tot||!tot}
   else if(t.dataset.bedit){BDRAFT[t.dataset.bedit]=t.value;const s=$('#bsum');if(s)s.innerHTML=bsumHTML(month(VM))}
@@ -3150,7 +3506,7 @@ async function createFamily(el){
   if(copy){
     try{
       const o=JSON.parse(lsGet('paisa-local')||'{}');const rows=[];
-      COLS.forEach(c=>Object.entries(o[c]||{}).forEach(([id,d])=>{
+      COLS.filter(c=>c!=='trash').forEach(c=>Object.entries(o[c]||{}).forEach(([id,d])=>{
         if(c==='tx'&&d&&(d.by==='local'||!d.by))d={...d,by:ME,ub:ME,byName:MYNAME};
         if(c==='log'&&d&&(d.user==='local'||!d.user))d={...d,user:ME};
         if(c==='settings'&&d)d={...d,name,owner:ME};
@@ -3236,7 +3592,7 @@ function checkReminders(force){
 }
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)checkReminders()});
 async function backup(){
-  const payload=JSON.stringify({app:'paisa-planner',version:1,exportedAt:new Date().toISOString(),data:D},null,1);
+  const payload=JSON.stringify({app:'paisa-planner',version:1,exportedAt:new Date().toISOString(),data:{...D,trash:{}}},null,1);
   await saveFile('Paisa Planner backup '+todayISO()+'.json',new Blob([payload],{type:'application/json'}));
   lsSet('paisa-backup-at',String(Date.now()));render();
 }
