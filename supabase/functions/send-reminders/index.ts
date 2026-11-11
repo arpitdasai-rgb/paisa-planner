@@ -28,7 +28,7 @@ function dueDate(k: string, day: number, sd: number) {
 }
 const inr = (p: number) => "₹" + Math.round(Math.abs(p) / 100).toLocaleString("en-IN");
 type Cat = { name: string; section: string; dueDay?: number | null; archived?: boolean; hist?: { from: string; amt: number }[] };
-type Tx = { cat: string; amt: number; date: string };
+type Tx = { cat?: string; amt: number; date: string; type?: string; to?: string };
 function budgetOf(c: Cat, id: string, k: string, months: Record<string, any>) {
   const ov = months[k]?.b?.[id]; if (ov != null) return ov;
   const h = (c.hist || []).slice().sort((a, b) => a.from.localeCompare(b.from)); let v = h.length ? h[0].amt : 0;
@@ -43,7 +43,8 @@ function morningDues(fam: { settings: any; cats: Record<string, Cat>; tx: Tx[]; 
       if (c.archived || !c.dueDay || (c.section !== "bills" && c.section !== "debt")) continue;
       const due = dueDate(k, c.dueDay, sd); const dd = daysBetween(today, due);
       if (dd !== 3 && dd !== 0 && dd !== -1) continue;
-      const paid = fam.tx.some((t) => t.cat === id && keyOf(t.date, sd) === k);
+      // a Credit card bill also counts as paid when money was moved to a card that month (same rule as the app)
+      const paid = fam.tx.some((t) => keyOf(t.date, sd) === k && (t.cat === id || (/credit card/i.test(c.name) && t.type === "xfer" && String(t.to || "").startsWith("card:"))));
       const skipped = !!fam.bills[k]?.skip?.[id];
       if (paid || skipped) continue;
       out.push({ name: c.name, amt: budgetOf(c, id, k, fam.months), dd, when: dd === 3 ? "due in 3 days" : dd === 0 ? "due today" : "was due yesterday" });
@@ -59,10 +60,10 @@ function morningMessage(dues: { name: string; when: string; amt: number; dd: num
   return { title, body, url: "./#bills", tag: "paisa-bills" };
 }
 function weeklyMessage(cats: Record<string, Cat>, tx: Tx[], today: string) {
-  const from = addDays(today, -6); const week = tx.filter((t) => t.date >= from && t.date <= today && cats[t.cat] && cats[t.cat].section !== "income");
+  const from = addDays(today, -6); const week = tx.filter((t) => t.date >= from && t.date <= today && t.cat && cats[t.cat] && cats[t.cat].section !== "income");
   if (!week.length) return { title: "Your week in money", body: "Nothing logged this week. Add what you spent to keep your daily number honest.", url: "./#add", tag: "paisa-weekly" };
   const total = week.reduce((s, t) => s + t.amt, 0); const by: Record<string, number> = {};
-  week.forEach((t) => { by[cats[t.cat].name] = (by[cats[t.cat].name] || 0) + t.amt; });
+  week.forEach((t) => { const n = cats[t.cat!].name; by[n] = (by[n] || 0) + t.amt; });
   const top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
   return { title: `This week: ${inr(total)} spent`, body: `${week.length} entries. Biggest: ${top[0]} ${inr(top[1])}.`, url: "./#home", tag: "paisa-weekly" };
 }

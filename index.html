@@ -5,8 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Paisa Planner</title>
 <meta name="description" content="Plan your monthly budget, log spending in seconds and never miss a bill or EMI.">
-<meta name="theme-color" content="#F2F4F3" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#0F1513" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F4F2" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0D0E" media="(prefers-color-scheme: dark)">
 <link rel="manifest" href="manifest.webmanifest">
 <script src="config.js"></script>
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -74,23 +74,18 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .hero{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
 .hero .big{font-family:var(--f-display);font-size:clamp(32px,9vw,42px);font-weight:700;letter-spacing:-.02em;line-height:1.05}
 .hero .big.neg{color:var(--bad)}
-.ring{width:112px;height:112px;cursor:pointer;border:0;background:none;padding:0}
-.ring svg{display:block}
 .kv{display:flex;justify-content:space-between;gap:12px;padding-block:6px;border-bottom:1px dashed var(--line)}
 .kv:last-child{border-bottom:0}
 /* chips + pills */
 .pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;border-radius:999px;padding:2px 9px;white-space:nowrap}
 .p-paid{background:var(--good-soft);color:var(--good)}
-.p-over,.p-overdue{background:var(--bad-soft);color:var(--bad)}
+.p-overdue{background:var(--bad-soft);color:var(--bad)}
 .p-due{background:var(--warn-soft);color:var(--warn)}
 .p-up{background:var(--sunk);color:var(--muted)}
-.p-skip{background:var(--sunk);color:var(--muted);text-decoration:line-through}
 .alerts{display:flex;flex-direction:column;gap:8px}
 .alert{display:flex;gap:10px;align-items:flex-start;border-radius:12px;padding:10px 12px;font-size:14px}
 .alert b{font-weight:600}
 .a-bad{background:var(--bad-soft);color:var(--bad)}
-.a-warn{background:var(--warn-soft);color:var(--warn)}
-.a-good{background:var(--good-soft);color:var(--good)}
 .dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:6px;background:currentColor}
 /* rows */
 .row{display:flex;align-items:center;gap:12px;padding-block:10px;border-bottom:1px solid var(--line)}
@@ -110,22 +105,10 @@ h1,h2,h3{font-family:var(--f-display);text-wrap:balance;margin:0;letter-spacing:
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btns{display:flex;gap:8px;flex-wrap:wrap}
 /* sections */
-.sec-h{display:flex;align-items:center;gap:8px;margin-bottom:4px}
-.sec-h h2{flex:1}
 .sw{width:10px;height:10px;border-radius:3px;flex:none}
 .bar{height:6px;background:var(--sunk);border-radius:999px;overflow:hidden;margin-top:6px}
 .bar i{display:block;height:100%;border-radius:999px}
-.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;text-align:right}
-.grid3 .h{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
-.catrow{display:grid;grid-template-columns:minmax(0,1.3fr) repeat(3,minmax(0,1fr));gap:6px;align-items:center;padding-block:9px;border-bottom:1px solid var(--line);font-size:14px}
-.catrow:last-child{border-bottom:0}
-.catrow .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
-.catrow .v{text-align:right;font-variant-numeric:tabular-nums}
-.catrow.head{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;padding-block:4px}
-.catrow.tot{font-weight:700}
 .over{color:var(--bad);font-weight:600}
-button.catrow{width:100%;background:none;border:0;border-bottom:1px solid var(--line);text-align:left}
-button.catrow:hover{background:var(--sunk)}
 /* tabs */
 .tabs{position:fixed;left:0;right:0;bottom:0;z-index:25;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
 .tabs nav{max-width:560px;margin:0 auto;display:grid;grid-template-columns:repeat(5,1fr)}
@@ -172,11 +155,6 @@ th,td{padding:7px 6px;text-align:right;border-bottom:1px solid var(--line);white
 th:first-child,td:first-child{text-align:left}
 th{font-size:11px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600}
 tfoot td{font-weight:700;border-bottom:0}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center;font-size:12px}
-.cal .d{padding:6px 0;border-radius:8px;position:relative;color:var(--muted)}
-.cal .d.has{color:var(--ink);font-weight:600;background:var(--sunk)}
-.cal .d.today{outline:2px solid var(--accent)}
-.cal .d i{position:absolute;left:50%;bottom:2px;transform:translateX(-50%);width:5px;height:5px;border-radius:50%}
 .legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--muted);margin-top:8px}
 .legend span{display:inline-flex;align-items:center;gap:5px}
 .chart text{fill:var(--muted);font-size:11px;font-family:var(--f-body)}
@@ -424,10 +402,7 @@ a{color:var(--ink)}
 .more-top{display:flex;gap:10px;align-items:center;padding:14px 0 6px}
 .msearch{flex:1;min-width:0;display:flex;align-items:center;gap:10px;border:1.5px solid var(--line);border-radius:999px;padding:0 18px;min-height:54px;color:var(--muted);background:var(--surface)}
 .msearch input{border:0;background:none;flex:1;min-width:0;color:var(--ink);outline:none;font-size:16px}
-.mrow{display:flex;align-items:center;gap:12px;margin:10px 0 4px}
-.mrow .hscroll{margin:0}
 .qchip{background:var(--sunk);border-color:transparent;font-weight:600}
-.sect.tint{background:linear-gradient(90deg,var(--good-soft),transparent);margin:8px calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:16px max(16px,env(safe-area-inset-left,0px));border-top:0}
 .circles{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:14px}
 .circ{display:flex;flex-direction:column;align-items:center;gap:8px;border:0;background:none;color:var(--ink);padding:0}
 .circ-i{width:66px;height:66px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface)}
@@ -437,8 +412,6 @@ a{color:var(--ink)}
 .attn-item .nd{font-size:13px;color:var(--muted);margin-top:2px}
 .nacts{display:flex;align-items:center;gap:6px;flex:none}
 .insight{display:flex;align-items:center;gap:8px}
-.grp{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:14px 2px -4px}
-.grp.danger{color:var(--bad)}
 .tgroup{display:flex;flex-direction:column;gap:8px}
 .tcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden}
 .trow{display:flex;align-items:center;gap:14px;width:100%;min-height:64px;padding:12px 16px;border:0;border-bottom:1px solid var(--line);background:none;color:var(--ink);text-align:left}
@@ -563,7 +536,6 @@ details.more .sect:first-of-type{border-top:0}
 .tile-amt input{width:100%;min-width:0;border:0;border-bottom:1px dashed var(--accent);background:none;font:inherit;color:var(--ink);padding:2px 0;outline:none}
 .reveal-num{font-family:var(--f-display);font-size:clamp(44px,13vw,60px);font-weight:700;letter-spacing:-.03em;line-height:1.05;margin:6px 0 2px}
 @media (prefers-reduced-motion: no-preference){.reveal-num{animation:rise .5s ease-out both}@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}}
-.nextstep{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:var(--r);background:var(--accent-soft)}
 .x.sm{width:28px;height:28px;font-size:16px;background:transparent}
 .wrapcard{padding:8px 0 4px;min-height:180px}
 .planwarn{display:flex;gap:10px;align-items:center;padding:12px 14px;border-radius:var(--r);background:var(--warn-soft);color:var(--ink)}
@@ -605,13 +577,6 @@ const OUT=['savings','bills','expenses','debt'];
 const MODES=['UPI','Card','Cash','Net banking','Auto-debit'];
 const COLS=['settings','cats','tx','months','bills','loans','cards','goals','log','accounts','recurring','assets','trash'];
 const ROUTES=['home','transactions','budget','plan','more','family','bills','reports','prefs','pushsetup','help'];
-const STARTER={
-  income:[['Salary',120000],['Other income',0]],
-  savings:[['SIP / mutual funds',15000],['Recurring deposit',5000],['Emergency fund',5000]],
-  bills:[['Rent',25000,5],['Electricity',2000,10],['Mobile & internet',1200,15],['House help',4000,1]],
-  expenses:[['Groceries',10000],['Eating out',4000],['Transport & fuel',4000],['Shopping',3000],['Health',2000],['Family support',10000],['Miscellaneous',2000]],
-  debt:[['Home loan EMI',25000,5],['Personal loan EMI',8000,10],['Credit card payment',20000,18]]
-};
 
 /* ================= utils ================= */
 const $=s=>document.querySelector(s);
@@ -642,8 +607,8 @@ const lsSet=(k,v)=>{try{v==null?localStorage.removeItem(k):localStorage.setItem(
 
 /* ================= store ================= */
 const D={};COLS.forEach(c=>D[c]={});
-let DB=null,USER=null,ME=null,MODE='loading',ROLE='Owner',IS_OWNER=true;
-let loadedCols=new Set(),loadTimer=null,stale=false;
+let ME=null,MODE='loading',ROLE='Owner',IS_OWNER=true;
+let stale=false;
 const NAMES={};
 const queues={};
 function enqueue(path,fn){const p=(queues[path]||Promise.resolve()).then(fn,fn);queues[path]=p.catch(()=>{});return p}
@@ -660,12 +625,10 @@ const store={
   set(col,id,obj){
     if(MODE==='local'){D[col]={...D[col],[id]:obj};saveLocal();changed();return Promise.resolve()}
     if(MODE==='cloud'){D[col]={...D[col],[id]:obj};cacheSoon();changed();return cloudWrite({col,id,data:obj,deleted:false}).catch(e=>{writeErr(e);throw e})}
-    return enqueue(col+'/'+id,()=>DB.collection(col).doc(id).set(obj)).catch(e=>{writeErr(e);throw e});
   },
   del(col,id){
     if(MODE==='local'){const n={...D[col]};delete n[id];D[col]=n;saveLocal();changed();return Promise.resolve()}
     if(MODE==='cloud'){const n={...D[col]};delete n[id];D[col]=n;cacheSoon();changed();return cloudWrite({col,id,data:null,deleted:true}).catch(e=>{writeErr(e);throw e})}
-    return enqueue(col+'/'+id,()=>DB.collection(col).doc(id).delete()).catch(e=>{writeErr(e);throw e});
   }
 };
 function saveLocal(){try{localStorage.setItem('paisa-local',JSON.stringify(D))}catch(e){toast('This device is out of storage for the app. Back up, then delete old entries.')}}
@@ -742,7 +705,6 @@ function month(k){
   return memo.m[k]={key:k,cats,sec,open,income,spent,planned,close,toPay,incomeToCome,list:ti.list,
     available:open+income,left:open+income-spent,projected:open+income+incomeToCome-spent-toPay};
 }
-function spentShare(m){if(m.available<=0)return 1;return clamp(m.spent/m.available,0,1)}
 function dueDate(c,k){
   const[y,m]=k.split('-').map(Number);const d=c.dueDay;
   if(sd()===1||d>=sd())return ym(y,m)+'-'+pad(Math.min(d,dim(y,m)));
@@ -839,13 +801,6 @@ function topbar(title,{month:showM=true,back=null}={}){
   return `<header class="topbar">${back?`<a class="x" href="#${back}" aria-label="Back" style="display:grid;place-items:center;text-decoration:none;color:inherit">‹</a>`:''}<h1>${esc(title)}</h1>${showM?monthSwitch():''}</header>${stale?`<div class="banner" style="margin-bottom:12px">Can't reach your data right now. Figures may be out of date.</div>`:''}${OFFLINE?`<div class="banner" style="margin-bottom:12px">You're offline. Everything still works and is saved on this device.</div>`:''}${PENDING&&MODE==='cloud'?`<div class="banner" style="margin-bottom:12px">${PENDING} change${PENDING>1?'s':''} waiting to sync. ${OFFLINE?'They will upload when you are back online.':'Uploading…'}</div>`:''}${UPDATE?`<div class="banner" style="margin-bottom:12px;display:flex;gap:10px;align-items:center"><span style="flex:1">A new version of the app is ready.</span><button class="btn sm primary" data-act="reload">Update</button></div>`:''}`;
 }
 function monthSwitch(){return `<div class="mswitch"><button data-act="mprev" aria-label="Previous month">‹</button><span class="num"><b class="ml">${mLabel(VM)}</b><b class="ms">${MON[+VM.slice(5)-1]} ’${VM.slice(2,4)}</b></span><button data-act="mnext" aria-label="Next month">›</button></div>`}
-const ICONS={
-  home:'<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
-  transactions:'<path d="M4 6h16M4 12h16M4 18h10"/>',
-  budget:'<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M9 10v10"/>',
-  plan:'<path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/>',
-  family:'<circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.5"/><path d="M3 19c.6-3.4 3-5 6-5s5.4 1.6 6 5M14.5 14.6c2.8-.6 5.6.6 6.5 4.4"/>'
-};
 
 /* ================= onboarding: 60-second first run ================= */
 // Fixed monthly outgoings offered as tiles. pct = suggested share of income; due = typical due day.
@@ -1137,16 +1092,6 @@ function moneyBar(m,isCur){
   const seg=(v,cls)=>v>0?`<i class="${cls}" style="width:${v/total*100}%"></i>`:'';
   return `<div class="mbar" role="img" aria-label="Spent ${fmt(spent)}, planned ${fmt(plan)}, ${free<0?'short '+fmt(-free):'free '+fmt(free)}">${seg(spent,'b-spent')}${seg(plan,'b-plan')}${seg(free,'b-free')}</div>
   <div class="mlegend small"><span><i class="b-spent"></i>Spent <b class="num">${fmt(spent)}</b></span>${plan?`<span><i class="b-plan"></i>Planned <b class="num">${fmt(plan)}</b></span>`:''}<span>${free<0?`<i class="b-short"></i>Short <b class="num over">${fmt(-free)}</b>`:`<i class="b-free"></i>Free <b class="num">${fmt(free)}</b>`}</span></div>`;
-}
-function summaryCard(k){
-  const m=month(k);const saved=m.sec.savings.a;const over=m.cats.filter(c=>OUT.includes(c.section)&&c.left<0);
-  const ti=txIndex();const yr=k.slice(0,4);
-  const best=Object.keys(ti).filter(x=>x.startsWith(yr)&&x<=k).every(x=>x===k||month(x).sec.savings.a<=saved)&&saved>0;
-  const worst=over.slice().sort((a,b)=>a.left-b.left)[0];
-  return `<section class="sect"><h2 style="margin-bottom:6px">${mLong(k)} in short</h2>
-    <p class="small" style="margin:0 0 6px">You saved <b class="num">${fmt(saved)}</b> in ${mLong(k)}${best?', your best month this year':''}. The month closed at <b class="num ${m.close<0?'over':''}">${fmt(m.close)}</b>.</p>
-    <p class="small" style="margin:0 0 6px">${over.length?`Went over on ${over.slice(0,3).map(c=>esc(c.name)).join(', ')}${over.length>3?' and '+(over.length-3)+' more':''}.`:'Every category stayed within budget.'}</p>
-    <p class="small muted" style="margin:0 0 10px">${worst?`For ${mLong(curKey())}: set ${esc(worst.name)} to ${fmt(worst.actual)}, or plan to spend less on it.`:m.close<0?'For this month: trim Expenses so the month closes above zero.':'For this month: move part of what was left into savings.'}</p></section>`;
 }
 function bvaChart(m){
   const rows=SECTIONS.map(s=>({k:s.k,n:s.n,b:m.sec[s.k].b,a:m.sec[s.k].a}));
@@ -1768,31 +1713,6 @@ async function saveFile(filename,data,type){
   const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
   setTimeout(()=>URL.revokeObjectURL(url),4000);
 }
-function monthRows(k){
-  const m=month(k);
-  return{budget:[['Section','Category','Budget (₹)','Actual (₹)','Left (₹)'],...m.cats.map(c=>[SECN[c.section],c.name,c.budget/100,c.actual/100,c.left/100])],
-    tx:m.list.map(t=>{if(isXfer(t))return[t.date,'Self transfer',acctName(t.from)+' → '+acctName(t.to),t.amt/100,'Transfer',t.note||'',who(t.by)];const c=D.cats[t.cat]||{};return[t.date,SECN[c.section]||'',c.name||'',t.amt/100,t.mode||'',t.note||'',who(t.by)]}),
-    summary:[['Month',mLabel(k)],['Opening balance',m.open/100],['Income',m.income/100],...OUT.map(x=>[SECN[x],m.sec[x].a/100]),['Closing balance',m.close/100]]};
-}
-async function exportMonth(k){
-  let X;try{X=await loadXLSX()}catch(e){toast("Couldn't load the Excel library. Check your connection.");return}
-  const r=monthRows(k);const wb=X.utils.book_new();
-  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(r.summary),'Summary');
-  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(r.budget),'Budget');
-  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet([['Date','Section','Category','Amount (₹)','Mode','Note','Added by'],...r.tx]),'Expense Log');
-  await saveFile(`Budget ${mLabel(k)}.xlsx`,X.write(wb,{type:'array',bookType:'xlsx'}));
-  log('exported','month',mLabel(k));
-}
-async function exportYear(y){
-  let X;try{X=await loadXLSX()}catch(e){toast("Couldn't load the Excel library. Check your connection.");return}
-  const wb=X.utils.book_new();const keys=Array.from({length:12},(_,i)=>ym(y,i+1)).filter(k=>txIndex()[k]||(k>=S().startMonth&&k<=curKey()));
-  const rows=[['Month','Opening','Income','Savings','Bills','Expenses','EMIs','Closing','Savings rate']];const tx=[['Date','Section','Category','Amount (₹)','Mode','Note','Added by']];
-  keys.forEach(k=>{const m=month(k);rows.push([mLabel(k),m.open/100,m.income/100,m.sec.savings.a/100,m.sec.bills.a/100,m.sec.expenses.a/100,m.sec.debt.a/100,m.close/100,m.income?Math.round(m.sec.savings.a/m.income*100)+'%':'']);tx.push(...monthRows(k).tx)});
-  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(rows),'Year '+y);
-  X.utils.book_append_sheet(wb,X.utils.aoa_to_sheet(tx),'Expense Log');
-  await saveFile(`Budget ${y}.xlsx`,X.write(wb,{type:'array',bookType:'xlsx'}));
-  log('exported','year',String(y));
-}
 async function downloadTemplate(){
   let X;try{X=await loadXLSX()}catch(e){toast("Couldn't load the Excel library.");return}
   const wb=X.utils.book_new();
@@ -2338,12 +2258,6 @@ function recDue(k){
     .sort((a,b)=>a.date.localeCompare(b.date));
 }
 function recForCat(cat){return recList().find(r=>r.cat===cat&&r.active!==false)}
-function confirmHTML(k){
-  const items=recDue(k);if(!items.length)return'';
-  return `<section class="sect"><div class="sect-head"><h2>To confirm</h2><span class="small muted">${items.length} repeat${items.length>1?'s':''} due</span></div>
-    ${items.map(r=>`<div class="row">${icon(r.c)}<div class="grow"><div class="t">${esc(r.note||r.c.name)}</div><div class="s">${r.c.section==='income'?'Usually arrives':'Usually goes out'} ${relDay(r.date)}${r.acct?' · '+esc(acctName(r.acct)):''}</div></div><div class="amt num" style="${r.c.section==='income'?'color:var(--good)':''}">${r.c.section==='income'?'+':''}${fmt(r.amt)}</div></div>${canWrite()?`<div class="rowacts"><button class="btn sm" data-act="recskip" data-id="${r.id}">Skip this month</button><button class="btn sm primary" data-act="recok" data-id="${r.id}">Confirm</button></div>`:''}`).join('')}
-  </section>`;
-}
 function confirmRec(id){
   const r=D.recurring[id];if(!r||!D.cats[r.cat])return;const k=curKey();const date=dueDate({dueDay:r.day||1},k);const now=Date.now();
   const obj={byName:MYNAME||'',cat:r.cat,amt:r.amt,date,mode:r.mode||'Net banking',note:r.note||'',card:'',acct:r.acct||'',rec:id,src:'recurring',by:ME||'local',at:now,ub:ME||'local',uat:now};
@@ -2966,7 +2880,6 @@ async function bulkSet(ops){
   if(!ops.length)return;
   ops.forEach(o=>{const n={...D[o.col]};if(o.data==null)delete n[o.id];else n[o.id]=o.data;D[o.col]=n});
   if(MODE==='local'){saveLocal();changed();return}
-  if(MODE!=='cloud'){for(const o of ops)await(o.data==null?store.del(o.col,o.id):store.set(o.col,o.id,o.data)).catch(()=>{});return}
   cacheSoon();changed();
   const rows=ops.map(o=>({family_id:FID,col:o.col,id:o.id,data:o.data,deleted:o.data==null}));
   for(let i=0;i<rows.length;i+=1000){
@@ -3180,7 +3093,6 @@ document.addEventListener('click',async e=>{
     case 'waddmenu':openSheet(`${sheetHead('Add to Wallet')}<div class="stack"><button class="pillbtn block" data-act="editacct">Bank account</button><button class="btn block" data-act="editcard">Credit card</button><button class="btn block" data-act="goplan" data-k="loans">Loan</button></div>`);break;
     case 'mq':{const i=$('#m-q');if(i){i.value=el.dataset.k;moreSearch(el.dataset.k);saveRecentQ(el.dataset.k)}break}
     case 'go':location.hash=el.dataset.k;break;
-    case 'gocards':planTab='cards';location.hash='plan';break;
     case 'catentries':F={cat:id,mode:'',q:''};location.hash='transactions';break;
     case 'bedit':BEDIT=true;BDRAFT={};BSCOPE='future';render();window.scrollTo(0,0);break;
     case 'bcancel':BEDIT=false;BDRAFT={};render();break;
@@ -3294,7 +3206,6 @@ document.addEventListener('click',async e=>{
     case 'editopen':openOpening();break;
     case 'saveopen':{const v=amtOrNull('ob');if(v==null){toast('Enter an amount.');break}const d=JSON.parse(JSON.stringify(D.months[VM]||{}));d.open=v;closeSheet();store.set('months',VM,d).then(()=>log('changed','opening balance',mLabel(VM)+' '+fmt(v))).catch(()=>{});break}
     case 'resetopen':{const d=JSON.parse(JSON.stringify(D.months[VM]||{}));delete d.open;closeSheet();store.set('months',VM,d).catch(()=>{});break}
-    case 'plantab':planTab=el.dataset.k;if(planTab==='networth')ensureSnapshot();render();break;
     case 'editloan':openLoan(id);break;
     case 'saveloan':{const name=val('l-name').trim();if(!name){toast('Give the loan a name.');break}
       const o={name,lender:val('l-lender').trim(),original:amtOrNull('l-orig'),rate:parseFloat(val('l-rate'))||0,emi:amtOrNull('l-emi')||0,outstanding:amtOrNull('l-out')||0,cat:val('l-cat'),asOf:todayISO()};
@@ -3407,40 +3318,10 @@ document.addEventListener('keydown',e=>{
 $('#fab').addEventListener('click',()=>openQuick());
 
 /* ================= boot ================= */
-async function resolveRole(){
-  if(!USER){ROLE='Owner';IS_OWNER=true;return}
-  try{
-    const[own,edit,w,id]=await Promise.all([USER.isOwner(),USER.canEdit(),USER.can('data.write'),USER.id()]);
-    ME=id;IS_OWNER=!!own;ROLE=own?'Owner':edit?'Admin':w===false?'Viewer':'Member';
-  }catch(e){ROLE='Member'}
-}
-async function resolveNames(){
-  if(!USER||!USER.profiles)return;
-  const ids=new Set();Object.values(D.tx).forEach(t=>{if(t.by&&t.by!=='local')ids.add(t.by);if(t.ub&&t.ub!=='local')ids.add(t.ub)});Object.values(D.log).forEach(l=>l.user&&l.user!=='local'&&ids.add(l.user));
-  const need=[...ids].filter(i=>!(i in NAMES));if(!need.length)return;
-  try{const ps=await USER.profiles(need);need.forEach(i=>NAMES[i]=(ps[i]&&ps[i].name)||'Family member');scheduleRender()}catch(e){}
-}
-let nameT=null;
-function startRemote(){
-  MODE='remote';
-  loadTimer=setTimeout(()=>{if(loadedCols.size<COLS.length){stale=true;if(loadedCols.has('settings')&&loadedCols.has('cats')){render.ready=true;scheduleRender()}else{$('#app').innerHTML=`<div class="empty-state" style="padding-top:28vh"><h2>Can't reach your budget yet</h2><p>Check your connection. This page keeps trying by itself.</p></div>`}}},10000);
-  COLS.forEach(col=>{
-    let q=DB.collection(col);if(col==='log')q=q.orderBy('at','desc').limit(100);
-    q.onSnapshot(s=>{
-      const m={};s.docs.forEach(d=>{m[d.id]=d.data()});D[col]=m;
-      loadedCols.add(col);
-      if(!s.metadata.fromCache&&stale&&loadedCols.size===COLS.length){stale=false}
-      if(loadedCols.size===COLS.length){clearTimeout(loadTimer);if(MODE==='remote'&&!render.ready){render.ready=true}}
-      memo={};
-      if(render.ready)scheduleRender();
-      clearTimeout(nameT);nameT=setTimeout(resolveNames,400);
-    },err=>{if(err&&err.code==='revoked'){$('#app').innerHTML='<div class="empty-state" style="padding-top:28vh"><h2>Access removed</h2><p>You no longer have access to this budget.</p></div>'}else{stale=true;scheduleRender()}});
-  });
-}
 function startLocal(){
   MODE='local';
   try{const raw=lsGet('paisa-local');if(raw){const o=JSON.parse(raw);COLS.forEach(c=>D[c]=o[c]||{})}}catch(e){}
-  render.ready=true;
+
 }
 /* ================= cloud: Supabase database + Google sign-in ================= */
 const CFG=window.PAISA_CONFIG||{};
@@ -3578,7 +3459,7 @@ async function startCloud(){
   lsSet('paisa-fid-'+ME,FID);
   COLS.forEach(c=>D[c]={});DOCS_READY=false;
   try{const raw=localStorage.getItem(cacheKey());if(raw){const o=JSON.parse(raw);COLS.forEach(c=>D[c]=o[c]||{});DOCS_READY=true}}catch(e){}
-  PENDING=outbox().length;MODE='cloud';render.ready=true;memo={};VM=null;setRoute();
+  PENDING=outbox().length;MODE='cloud';memo={};VM=null;setRoute();
   if(CH)SB.removeChannel(CH);
   CH=SB.channel('family-'+FID)
     .on('postgres_changes',{event:'*',schema:'public',table:'docs',filter:'family_id=eq.'+FID},p=>{if(p.new&&p.new.col)applyRow(p.new)})
@@ -3732,14 +3613,10 @@ function doRestore(){
 }
 
 (async function boot(){
-  USER=null;await resolveRole();
   if(CLOUD){if(lsGet('paisa-pin'))showLock('unlock');cloudBoot();return}
   startLocal();
   if(lsGet('paisa-pin'))showLock('unlock');
-  // wait for first data (remote) then render
-  const go=()=>{setRoute()};
-  if(MODE==='local'){go();setTimeout(()=>checkReminders(),1500)}
-  else{const iv=setInterval(()=>{if(render.ready){clearInterval(iv);go()}},50)}
+  setRoute();setTimeout(()=>checkReminders(),1500);
 })();
 </script>
 </body>

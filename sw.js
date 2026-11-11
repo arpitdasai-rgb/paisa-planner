@@ -1,7 +1,7 @@
-/* Paisa Planner service worker: offline app shell + cached fonts and Excel library. */
-const VERSION = 'paisa-v22';
+/* Paisa Planner service worker: offline app shell (fonts are bundled), cached Excel and Supabase libraries, push reminders. */
+const VERSION = 'paisa-v23';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './config.js', './privacy.html', './terms.html', './fonts/manrope-latin.woff2', './fonts/manrope-latin-ext.woff2', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
-const RUNTIME_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];
+const RUNTIME_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];   // Excel library and Supabase client
 // Supabase API, auth and realtime traffic is never cached: it always goes to the network.
 
 self.addEventListener('install', e => {

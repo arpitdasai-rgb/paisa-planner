@@ -22,6 +22,11 @@ Dashboard menus get renamed now and then. If a label below doesn't match exactly
 
 > Run the script only once. Running it again deletes all Paisa Planner data.
 
+5. Then run these updates the same way, in this order. Each one is safe to run again and keeps your data:
+   - `supabase/v2.sql`: bank accounts, repeats, net worth, delete my account
+   - `supabase/v3.sql`: Recently deleted shared across the family
+   - `supabase/push.sql`: phone push addresses for scheduled reminders
+
 The script creates:
 
 | Table | What it holds |
@@ -30,7 +35,8 @@ The script creates:
 | `families` | One row per family budget |
 | `family_members` | Who is in which family, and their role. One Gmail can be in only one family. |
 | `invites` | Gmail invites that expire after 7 days |
-| `docs` | All budget data: categories, entries, months, bills, loans, cards, goals and the activity log |
+| `docs` | All budget data, one row per item: settings, categories, entries, months, bills, loans, cards, goals, accounts, repeats, investments, the activity log and Recently deleted |
+| `push_subscriptions` | Each phone's push address and reminder times (from `push.sql`) |
 
 Row-level security enforces the PRD's role table on the server:
 
@@ -96,8 +102,10 @@ Row-level security enforces the PRD's role table on the server:
 | Changes don't appear live on other phones | In **Database → Publications → supabase_realtime**, make sure `docs` and `family_members` are on. The script tries to switch them on for you. |
 | "new row violates row-level security" | That role isn't allowed to make the change. This is working as intended. |
 
+## Scheduled reminders
+
+Reminders while the app is closed come from the `send-reminders` Edge Function, run every hour by a `pg_cron` job. The Owner sets it up once from the app: **Settings → Reminders → Reminder setup**. That page creates the keys on the phone and lists each step (secrets, deploying the function, the schedule). After any change to `supabase/functions/send-reminders/index.ts`, deploy the function again.
+
 ## Not included yet
 
-- **Invite emails:** the app creates the invite and gives you a message to send yourself. Sending email automatically needs a Supabase Edge Function plus an email service such as Resend.
-- **Reminders while the app is closed:** those need web push from a scheduled Edge Function. For now, reminders appear when someone opens the app.
-- **Deleting your Google sign-in account:** the Owner can delete the family and all its data in the app. Removing the sign-in record itself needs an Edge Function using the service role, or you can delete it under **Authentication → Users**.
+- **Invite emails:** the app creates the invite and gives you a message to send yourself. Sending email automatically needs an email service such as Resend.
