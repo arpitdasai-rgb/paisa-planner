@@ -15,9 +15,14 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Paisa">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400..800&display=swap">
+<link rel="preload" href="fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
+@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/inter-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Inter";font-style:normal;font-weight:100 900;font-display:swap;src:url(fonts/inter-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02AF,U+0304,U+0308,U+0329,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+/* system font sized to match Inter, so nothing reflows when Inter arrives */
+@font-face{font-family:"Inter Fallback";src:local("Arial"),local("Helvetica Neue"),local("Roboto");size-adjust:107%;ascent-override:90%;descent-override:22.5%;line-gap-override:0%}
 /* Layout: one phone-width column; sticky month bar on top, five tabs + floating add at the bottom. */
 :root{
   --bg:#F2F4F3; --surface:#FFFFFF; --sunk:#E8ECEA; --ink:#14201B; --muted:#5B6863; --line:#D9E0DC;
@@ -25,8 +30,8 @@
   --good:#1D7F52; --good-soft:#DDF1E6; --bad:#BF3328; --bad-soft:#FBE3E0; --warn:#9A6411; --warn-soft:#FBEED6;
   --c-income:#7C8A84; --c-savings:#2C47C9; --c-bills:#6E82DA; --c-expenses:#AEB9EA; --c-debt:#15226E;
   --shadow:0 1px 2px rgba(20,32,27,.06),0 8px 24px rgba(20,32,27,.08);
-  --f-display:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
-  --f-body:"Inter",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-display:"Inter","Inter Fallback",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-body:"Inter","Inter Fallback",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --r:14px;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
@@ -270,6 +275,56 @@ button.brow:hover{background:var(--sunk)}
 .splitbox{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .srow{display:grid;grid-template-columns:1fr 110px 28px;gap:6px;align-items:center;margin-bottom:6px}
 .srow .input{padding:8px 10px;font-size:14px}
+/* ===== Foundations ==========================================================
+   Sources: Apple HIG (44pt touch targets, 17pt body), Material 3 (48dp targets, 4/8dp grid),
+   web.dev Core Web Vitals (no layout shift), WCAG 2.2 (2.5.8 target size, 1.4.4 resize text).
+   Spacing scale 4·8·12·16·24·32  ·  Type scale 12·13·14·16·20·24·32·44                     */
+:root{--sp1:4px;--sp2:8px;--sp3:12px;--sp4:16px;--sp5:24px;--sp6:32px;--tap:44px;--r:14px;--r-sm:10px;
+  --t-cap:12px;--t-sm:13px;--t-md:14px;--t-body:16px;--t-lg:20px;--t-xl:24px;--t-2xl:32px;--t-hero:44px}
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%;scroll-behavior:auto}
+html,body{overscroll-behavior:none}                      /* no rubber-band drag on iPhone */
+body{font-size:var(--t-body);line-height:1.5;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+/* iPhone Safari zooms into any field under 16px and stays zoomed: keep every field at 16px */
+input,select,textarea,.input,.filters .input,.srow .input,.tsel,.rolesel,.erow .input,.check .input{font-size:16px!important}
+.small{font-size:var(--t-sm)}
+.label{font-size:var(--t-cap)}
+h1{font-size:var(--t-lg)}
+.topbar{min-height:60px;padding-block:var(--sp2)}
+.topbar h1{font-size:var(--t-lg)}
+/* touch targets */
+.btn{min-height:var(--tap);display:inline-flex;align-items:center;justify-content:center;gap:var(--sp2)}
+.btn.sm{min-height:38px;padding:6px 14px;font-size:var(--t-md)}
+.btn.block{min-height:50px}
+.mswitch{padding:2px}
+.mswitch button{width:40px;height:40px}
+.x{width:40px;height:40px;flex:none}
+.x.sm{width:38px!important;height:38px!important}
+.chip{min-height:40px;padding:8px 14px}
+.seg button{min-height:40px}
+.link{min-height:36px;display:inline-flex;align-items:center}
+p .link,.small a,p a{min-height:0;display:inline}
+.tabs a{min-height:56px;justify-content:center}
+.keypad button{min-height:52px}
+.row{min-height:56px}
+/* sheets sit above the keyboard and never scroll the page behind them */
+.scrim{position:fixed;left:0;right:0;top:var(--vvt,0px);height:var(--vvh,100dvh);bottom:auto}
+.sheet{max-height:calc(var(--vvh,100dvh) - 24px);overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+body.sheet-open{overflow:hidden}
+/* with the keyboard up, hide the bottom bar and + so they don't float mid-screen */
+body.kb .tabs,body.kb .fab{display:none!important}
+.app{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}
+/* calmer Home: details behind one tap */
+/* actions under a row instead of squeezed beside it */
+.rowacts{display:flex;gap:var(--sp2);justify-content:flex-end;padding:0 0 var(--sp3) 46px;border-bottom:1px solid var(--line)}
+.rowacts+.row,.sect .row:has(+.rowacts){border-bottom:0}
+.rowacts:last-child{border-bottom:0}
+details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
+details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
+details.more>summary::-webkit-details-marker{display:none}
+details.more[open]>summary .chev{transform:rotate(90deg)}
+details.more .sect:first-of-type{border-top:0}
+.skel{background:linear-gradient(90deg,var(--sunk),var(--line),var(--sunk));background-size:200% 100%;border-radius:var(--r-sm)}
+@media (prefers-reduced-motion:no-preference){.skel{animation:sk 1.2s ease-in-out infinite}@keyframes sk{to{background-position:-200% 0}}}
 .trow{display:flex;align-items:center;gap:8px;padding:2px 0 10px 0;border-bottom:1px solid var(--line)}
 .tsel{width:auto;padding:6px 10px;font-size:14px}
 .qrep::-webkit-scrollbar{display:none}
@@ -545,15 +600,19 @@ let F={cat:'',mode:'',q:''};
 let reportYear=null;
 
 /* ================= render plumbing ================= */
-let rq=false;
-function scheduleRender(){if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;render()})}
+let rq=false,RENDER_WAITING=false;
+const typing=()=>{const a=document.activeElement;return!!(a&&a.closest&&a.closest('#app')&&/^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))};
+// a sync from another phone shouldn't redraw the screen under someone's fingers
+function scheduleRender(){if(typing()){RENDER_WAITING=true;return}if(rq)return;rq=true;requestAnimationFrame(()=>{rq=false;render()})}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(RENDER_WAITING&&!typing()){RENDER_WAITING=false;scheduleRender()}},0));
+let LAST_ROUTE=null;
 function setRoute(){let h=location.hash.slice(1);if(h==='add'){h='home';history.replaceState(null,'','#home');setTimeout(()=>{if(S()&&canWrite()&&!$('#sheetRoot').innerHTML)openQuick()},500)}route=ROUTES.includes(h)?h:'home';if(route!=='budget'){BEDIT=false;BDRAFT={}}window.scrollTo(0,0);render()}
 window.addEventListener('hashchange',setRoute);
 
 function render(){
   const app=$('#app');
   if(MODE==='loading'||MODE==='signin'||MODE==='nofamily'){return}
-  if(MODE==='cloud'&&!DOCS_READY){$('#tabs').hidden=true;$('#fab').hidden=true;app.innerHTML='<div class="empty-state" style="padding-top:30vh">Loading your family budget…</div>';return}
+  if(MODE==='cloud'&&!DOCS_READY){$('#tabs').hidden=true;$('#fab').hidden=true;app.innerHTML='<div class="stack" aria-busy="true" aria-label="Loading your family budget" style="padding-top:72px"><div class="skel" style="height:14px;width:30%"></div><div class="skel" style="height:44px;width:60%"></div><div class="skel" style="height:40px"></div><div class="skel" style="height:12px"></div><div class="skel" style="height:140px;margin-top:16px"></div><div class="skel" style="height:56px"></div><div class="skel" style="height:56px"></div></div>';return}
   if(!S()){
     $('#tabs').hidden=true;$('#fab').hidden=true;
     app.innerHTML=canAdmin()?onboardingHTML():`<div class="empty-state" style="padding-top:22vh"><div class="mark" style="margin:0 auto 14px">₹</div><h2>Budget not set up yet</h2><p>The family Owner needs to finish setup first. This page updates by itself once they do.</p></div>`;
@@ -563,7 +622,9 @@ function render(){
   $('#tabs').hidden=false;$('#fab').hidden=!canWrite();
   renderTabs();
   const v={home:homeView,transactions:txView,budget:budgetView,plan:planView,family:MODE==='cloud'?familyCloudView:familyView,pushsetup:pushSetupView,bills:billsView,reports:reportsView,prefs:prefsView}[route]||homeView;
+  const keepY=LAST_ROUTE===route?window.scrollY:0;
   app.innerHTML=v();
+  if(LAST_ROUTE===route&&keepY)window.scrollTo(0,keepY);LAST_ROUTE=route;
   if(route==='transactions')renderTxList();
   if(SHARED&&!render.shareDone&&S()&&(MODE!=='cloud'||DOCS_READY)){render.shareDone=true;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}setTimeout(openShared,400)}
   if(route==='home'&&!render.wrapTried&&(MODE!=='cloud'||DOCS_READY)){render.wrapTried=true;const pw=wrapDue();if(pw)setTimeout(()=>{if(!$('#sheetRoot').innerHTML&&route==='home')openWrap(pw)},800)}
@@ -889,10 +950,10 @@ function attentionItems(k){
 function attentionHTML(k){
   const items=attentionItems(k);
   if(!items.length)return `<p class="calm"><span class="dot" style="color:var(--good)"></span>Nothing needs you right now. Bills and budgets are on track.</p>`;
-  const shown=ATT_ALL?items:items.slice(0,4);
+  const shown=ATT_ALL?items:items.slice(0,3);
   return `<section class="attn" aria-label="Needs attention"><div class="attn-h">${items.length} thing${items.length>1?'s':''} need${items.length>1?'':'s'} you</div>
     ${shown.map(i=>`<div class="attn-item"><span class="dot" style="color:${i.sev===3?'var(--bad)':i.sev===2?'var(--warn)':'var(--muted)'}"></span><span class="grow small">${i.text}</span>${i.act?`<button class="btn sm" data-act="${i.act.a}" ${i.act.id?`data-id="${i.act.id}"`:''} ${i.act.k?`data-k="${i.act.k}"`:''}>${i.act.l}</button>`:''}</div>`).join('')}
-    ${items.length>4?`<button class="link" data-act="attall" style="padding:8px 0">${ATT_ALL?'Show fewer':'Show all '+items.length}</button>`:''}</section>`;
+    ${items.length>3?`<button class="link" data-act="attall" style="padding:8px 0">${ATT_ALL?'Show fewer':'Show all '+items.length}</button>`:''}</section>`;
 }
 function moneyBar(m,isCur){
   const spent=m.spent,plan=isCur||VM>curKey()?m.toPay:0,free=m.available+(isCur?m.incomeToCome:0)-spent-plan;
@@ -909,7 +970,8 @@ function homeView(){
   if(isCur){
     const next=mStart(addM(VM,1));const toNext=daysBetween(t,next);
     const turn=sd()>1?`Salary day in ${toNext} day${toNext===1?'':'s'}`:`New month in ${toNext} day${toNext===1?'':'s'}`;
-    line=free>0&&daysLeft>0?`You can spend <b class="num">${fmt(Math.floor(free/daysLeft/100)*100)} a day</b> for the next ${daysLeft} day${daysLeft===1?'':'s'}, after the payments you've planned.`
+    const waitInc=m.incomeToCome>0;
+    line=free>0&&daysLeft>0?`${waitInc?`Once the ${fmt(m.incomeToCome)} you're expecting arrives, you`:'You'} can spend <b class="num">${fmt(Math.floor(free/daysLeft/100)*100)} a day</b> for the next ${daysLeft} day${daysLeft===1?'':'s'}, after the payments you've planned.`
       :free<=0?`Planned payments are more than what's left. Trim a budget or move money in to cover <b class="num">${fmt(-free)}</b>.`:'';
     line+=`<br><span class="muted">${turn}.</span>`;
   }else if(VM<curKey())line=`${mLong(VM)} closed at <b class="num ${m.close<0?'over':''}">${fmt(m.close)}</b>.`;
@@ -920,7 +982,8 @@ function homeView(){
   return topbar(S().name)+`<div class="stack">
   <section class="hero2" aria-label="Left to spend">
     <div class="label">Left to spend${isCur?'':' · '+mLabel(VM)}</div>
-    <div class="big num ${m.left<0?'neg':''}">${fmt(m.left)}</div>
+    <div class="big num ${m.left<0&&!(isCur&&m.incomeToCome>0)?'neg':''}">${fmt(m.left)}</div>
+    ${isCur&&m.incomeToCome>0&&m.left<=0?`<p class="small muted" style="margin:2px 0 0">Below zero only because ${fmt(m.incomeToCome)} of income hasn't been logged yet.</p>`:''}
     <p class="heroline">${line}</p>
     ${moneyBar(m,isCur)}
     <button class="link small" data-act="breakdown">How this is worked out</button>
@@ -933,9 +996,11 @@ function homeView(){
     ${dues.length?dues.map(b=>`<div class="row">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s">Goes out ${relDay(b.due)}</div></div><div class="amt num">${fmt(b.budget)}</div>${canWrite()?`<button class="btn sm" data-act="paybill" data-id="${b.id}">Paid</button>`:''}</div>`).join('')
       :`<p class="small muted" style="margin:4px 0 8px">Nothing else is due ${isCur?'this month':'in '+mLong(VM)}.</p>`}
   </section>
+  <details class="more" id="home-more" ${lsGet('paisa-home-more')==='1'?'open':''}><summary>Where the money went ${CHEV}</summary>
   <section class="sect"><div class="sect-head"><h2>Plan vs actual</h2><a class="link small" href="#reports">Yearly report</a></div>${bvaChart(m)}</section>
-  <section class="sect"><h2 style="margin-bottom:10px">Where the money went</h2>${donut(m)}</section>
+  <section class="sect"><h2 style="margin-bottom:10px">Split by section</h2>${donut(m)}</section>
   <section class="sect"><h2 style="margin-bottom:10px">Everyday spending</h2>${expBars(m)}</section>
+  </details>
   </div>`;
 }
 function summaryCard(k){
@@ -1275,7 +1340,7 @@ let sheetClose=null;
 function openSheet(html,{onClose}={}){
   const ex=$('#sheetRoot .sheet');
   // already open: swap the content in place (no replayed animation, scroll kept)
-  if(ex)ex.innerHTML=html;
+  if(ex){const y=ex.scrollTop;ex.innerHTML=html;ex.scrollTop=y}
   else $('#sheetRoot').innerHTML=`<div class="scrim" data-act="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
   sheetClose=onClose||null;
   const f=$('#sheetRoot [autofocus]');if(f)f.focus();
@@ -2059,6 +2124,18 @@ function pushSetupView(){
 }
 
 const ordinal=n=>n+(['th','st','nd','rd'][(n%10<4&&Math.floor(n%100/10)!==1)?n%10:0]);
+/* ================= viewport & keyboard (iPhone) ================= */
+(function(){
+  const vv=window.visualViewport;const root=document.documentElement;
+  const sync=()=>{if(!vv)return;root.style.setProperty('--vvh',vv.height+'px');root.style.setProperty('--vvt',vv.offsetTop+'px')};
+  if(vv){vv.addEventListener('resize',sync);vv.addEventListener('scroll',sync);sync()}
+  const isField=el=>el&&/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)&&!/^(checkbox|radio|file|button|submit)$/.test(el.type||'');
+  document.addEventListener('focusin',e=>{if(isField(e.target))document.body.classList.add('kb')});
+  document.addEventListener('focusout',()=>setTimeout(()=>{if(!isField(document.activeElement))document.body.classList.remove('kb')},50));
+  // stop the page behind an open sheet from scrolling
+  new MutationObserver(()=>document.body.classList.toggle('sheet-open',!!document.querySelector('#sheetRoot .scrim'))).observe(document.getElementById('sheetRoot'),{childList:true});
+  document.addEventListener('toggle',e=>{if(e.target&&e.target.id==='home-more')lsSet('paisa-home-more',e.target.open?'1':'0')},true);
+})();
 /* ================= v2: bank accounts, self transfer, recurring, split, share, net worth ================= */
 const BANKS=['SBI','HDFC Bank','ICICI Bank','Axis Bank','Kotak Mahindra Bank','Bank of Baroda','Punjab National Bank','Canara Bank','Union Bank of India','IDFC FIRST Bank','IndusInd Bank','Yes Bank','Federal Bank','AU Small Finance Bank','Bank of India','Indian Bank','Central Bank of India','IDBI Bank','RBL Bank','Paytm Payments Bank','Airtel Payments Bank','Other'];
 const ACCT_TYPES=['Savings','Salary','Current','Cash','Wallet'];
@@ -2147,7 +2224,7 @@ function recForCat(cat){return recList().find(r=>r.cat===cat&&r.active!==false)}
 function confirmHTML(k){
   const items=recDue(k);if(!items.length)return'';
   return `<section class="sect"><div class="sect-head"><h2>To confirm</h2><span class="small muted">${items.length} repeat${items.length>1?'s':''} due</span></div>
-    ${items.map(r=>`<div class="row">${icon(r.c)}<div class="grow"><div class="t">${esc(r.note||r.c.name)}</div><div class="s">${r.c.section==='income'?'Usually arrives':'Usually goes out'} ${relDay(r.date)}${r.acct?' · '+esc(acctName(r.acct)):''}</div></div><div class="amt num" style="${r.c.section==='income'?'color:var(--good)':''}">${r.c.section==='income'?'+':''}${fmt(r.amt)}</div>${canWrite()?`<button class="btn sm primary" data-act="recok" data-id="${r.id}">Confirm</button><button class="x sm" data-act="recskip" data-id="${r.id}" aria-label="Skip this month">×</button>`:''}</div>`).join('')}
+    ${items.map(r=>`<div class="row">${icon(r.c)}<div class="grow"><div class="t">${esc(r.note||r.c.name)}</div><div class="s">${r.c.section==='income'?'Usually arrives':'Usually goes out'} ${relDay(r.date)}${r.acct?' · '+esc(acctName(r.acct)):''}</div></div><div class="amt num" style="${r.c.section==='income'?'color:var(--good)':''}">${r.c.section==='income'?'+':''}${fmt(r.amt)}</div></div>${canWrite()?`<div class="rowacts"><button class="btn sm" data-act="recskip" data-id="${r.id}">Skip this month</button><button class="btn sm primary" data-act="recok" data-id="${r.id}">Confirm</button></div>`:''}`).join('')}
   </section>`;
 }
 function confirmRec(id){
