@@ -1222,7 +1222,7 @@ function budgetView(){
   <section class="bsum">
     <div class="kv"><span>Money at the start <span class="small muted">${ov?'· edited':'· from '+mLong(addM(VM,-1))}</span></span><b class="num">${fmt(m.open)}</b></div>
     ${hideInc()?'':`<div class="kv"><span>Income received</span><b class="num">+${fmt(m.income)}</b></div>`}
-    <div class="kv"><span>Savings, bills, spending and EMIs</span><b class="num">−${fmt(m.spent).replace('−','')}</b></div>
+    <div class="kv"><span>Paid out <span class="small muted">· bills, EMIs, savings, spends</span></span><b class="num" style="white-space:nowrap">−${fmt(m.spent).replace('−','')}</b></div>
     <div class="kv"><span><b>${VM<curKey()?'Closing balance':'Balance now'}</b></span><b class="num ${m.close<0?'over':''}">${fmt(m.close)}</b></div>
     ${canAdmin()?`<div class="btns" style="margin-top:12px"><button class="btn primary" data-act="bedit">Edit budgets</button><button class="btn" data-act="editopen">Starting money</button></div>`:''}
   </section>
