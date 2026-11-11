@@ -432,6 +432,12 @@ a{color:var(--ink)}
 .circ-i{width:66px;height:66px;border-radius:50%;border:1px solid var(--line);display:grid;place-items:center;background:var(--surface)}
 .circ-l{font-size:13px;text-align:center;line-height:1.25}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tabs a[aria-current="page"]{color:#fff}}
+.attn-item .nt{font-weight:600;font-size:15px;line-height:1.3}
+.attn-item .nd{font-size:13px;color:var(--muted);margin-top:2px}
+.nacts{display:flex;align-items:center;gap:6px;flex:none}
+.insight{display:flex;align-items:center;gap:8px}
+.grp{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:600;margin:14px 2px -4px}
+.grp.danger{color:var(--bad)}
 details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
 details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
 details.more>summary::-webkit-details-marker{display:none}
@@ -1040,26 +1046,6 @@ const cap=s=>s.charAt(0).toUpperCase()+s.slice(1);
 
 /* ================= HOME ================= */
 let ATT_ALL=false;
-function attentionItems(k){
-  const m=month(k),out=[],isCur=k===curKey();
-  billsFor(k).filter(b=>b.st==='overdue').forEach(b=>out.push({sev:3,text:`<b>${esc(b.name)}</b> was due ${relDay(b.due)}. ${fmt(b.budget)} isn't marked paid.`,act:canWrite()?{a:'paybill',id:b.id,l:'Mark paid'}:null}));
-  if(isCur&&m.projected<0)out.push({sev:3,text:`You'll be <b>${fmt(-m.projected)} short</b> by month end once the planned payments go out.`,act:{a:'go',k:'budget',l:'Review'}});
-  if(m.left<0)out.push({sev:3,text:`You've spent <b>${fmt(-m.left)} more</b> than you had this month.`,act:{a:'go',k:'transactions',l:'See entries'}});
-  Object.entries(D.cards).forEach(([id,cd])=>{const st=cd.stmts&&cd.stmts[k];const s=cardStatus(st);
-    if(s==='part')out.push({sev:3,text:`<b>${esc(cd.name)}</b> bill is part-paid. Interest will be charged on ${fmt(st.amt-st.paid)}.`,act:{a:'gocards',l:'Open'}});
-    if(st&&cd.limit&&st.amt/cd.limit>.3)out.push({sev:1,text:`<b>${esc(cd.name)}</b> is using ${Math.round(st.amt/cd.limit*100)}% of its limit. Under 30% is healthier.`,act:{a:'gocards',l:'Open'}});});
-  m.cats.filter(c=>OUT.includes(c.section)&&c.budget>0&&c.left<0).sort((a,b)=>a.left-b.left).forEach(c=>out.push({sev:2,text:`<b>${esc(c.name)}</b> is ${fmt(-c.left)} over budget.`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}}));
-  out.push(...paceItems(k));
-  return out.sort((a,b)=>b.sev-a.sev);
-}
-function attentionHTML(k){
-  const items=attentionItems(k);
-  if(!items.length)return `<p class="calm"><span class="dot" style="color:var(--good)"></span>Nothing needs you right now. Bills and budgets are on track.</p>`;
-  const shown=ATT_ALL?items:items.slice(0,3);
-  return `<section class="attn" aria-label="Needs attention"><div class="attn-h">${items.length} thing${items.length>1?'s':''} need${items.length>1?'':'s'} you</div>
-    ${shown.map(i=>`<div class="attn-item"><span class="dot" style="color:${i.sev===3?'var(--bad)':i.sev===2?'var(--warn)':'var(--muted)'}"></span><span class="grow small">${i.text}</span>${i.act?`<button class="btn sm" data-act="${i.act.a}" ${i.act.id?`data-id="${i.act.id}"`:''} ${i.act.k?`data-k="${i.act.k}"`:''}>${i.act.l}</button>`:''}</div>`).join('')}
-    ${items.length>3?`<button class="link" data-act="attall" style="padding:8px 0">${ATT_ALL?'Show fewer':'Show all '+items.length}</button>`:''}</section>`;
-}
 function moneyBar(m,isCur){
   const spent=m.spent,plan=isCur||VM>curKey()?m.toPay:0,free=m.available+(isCur?m.incomeToCome:0)-spent-plan;
   const total=Math.max(1,spent+plan+Math.max(0,free));
@@ -1135,7 +1121,7 @@ function renderTxList(){
       h+=`<div class="swipe" data-id="${t.id}" data-can="${can?1:0}"><div class="swipe-bg"><span class="sw-edit">Edit</span><span class="sw-del">${can?'Delete':''}</span></div>
       <button class="rowbtn swipe-fg" data-act="edittx" data-id="${t.id}"><div class="row">${ic}<div class="grow"><div class="t">${esc(title)}</div><div class="s">${sub}</div></div>${amtH}${can?CHEV:''}</div></button></div>`});
   }
-  if(touch&&canWrite())h+=`<p class="small muted" style="text-align:center;margin:14px 0 0">Swipe an entry left to delete it, or right to edit it.</p>`;
+  if(touch&&canWrite()&&!lsGet('paisa-hint-swipe')){h+=`<p class="small muted" style="text-align:center;margin:14px 0 0">Tip: swipe an entry left to delete it, or right to edit it.</p>`}
   el.innerHTML=h;
 }
 /* swipe to edit / delete */
@@ -1147,7 +1133,7 @@ document.addEventListener('pointermove',e=>{if(!SW)return;const dx=e.clientX-SW.
   const can=SW.fg.parentElement.dataset.can==='1';SW.dx=can?dx:Math.max(0,Math.min(dx,0));
   SW.fg.style.transition='none';SW.fg.style.transform=`translateX(${SW.dx}px)`;SW.fg.parentElement.classList.toggle('to-del',SW.dx<0);});
 const swipeEnd=()=>{if(!SW)return;const{fg,dx}=SW;SW=null;const id=fg.parentElement.dataset.id;fg.style.transition='';
-  if(Math.abs(dx)>8)SWIPED=true;
+  if(Math.abs(dx)>8){SWIPED=true;lsSet('paisa-hint-swipe','1')}
   if(dx<-90&&fg.parentElement.dataset.can==='1'){fg.style.transform='translateX(-100%)';setTimeout(()=>deleteTx(id),160)}
   else if(dx>90){fg.style.transform='';openEditTx(id)}
   else fg.style.transform='';
@@ -1186,11 +1172,11 @@ function budgetView(){
   return topbar('Budget')+`<div class="stack">
   ${planBannerHTML(VM)}
   <section class="bsum">
-    <div class="kv"><span>Opening balance <span class="small muted">${ov?'· edited':'· carried from '+mLabel(addM(VM,-1))}</span></span><b class="num">${fmt(m.open)}</b></div>
+    <div class="kv"><span>Money at the start <span class="small muted">${ov?'· edited':'· from '+mLong(addM(VM,-1))}</span></span><b class="num">${fmt(m.open)}</b></div>
     ${hideInc()?'':`<div class="kv"><span>Income received</span><b class="num">+${fmt(m.income)}</b></div>`}
     <div class="kv"><span>Savings, bills, spending and EMIs</span><b class="num">−${fmt(m.spent).replace('−','')}</b></div>
     <div class="kv"><span><b>${VM<curKey()?'Closing balance':'Balance now'}</b></span><b class="num ${m.close<0?'over':''}">${fmt(m.close)}</b></div>
-    ${canAdmin()?`<div class="btns" style="margin-top:12px"><button class="btn primary" data-act="bedit">Edit budgets</button><button class="btn" data-act="editopen">Opening balance</button></div>`:''}
+    ${canAdmin()?`<div class="btns" style="margin-top:12px"><button class="btn primary" data-act="bedit">Edit budgets</button><button class="btn" data-act="editopen">Starting money</button></div>`:''}
   </section>
   ${SECTIONS.filter(s=>!(hideInc()&&s.k==='income')).map(s=>{const cs=m.cats.filter(c=>c.section===s.k);const st=m.sec[s.k];const over=s.k!=='income'&&st.b>0&&st.a>st.b;
     return `<section class="sect"><div class="sect-head"><h2>${s.n}</h2><span class="small num">${over?`<span class="over">${fmt(st.a-st.b)} over</span> · `:''}${fmt(st.a)} <span class="muted">of ${fmt(st.b)}</span></span></div>
@@ -1258,8 +1244,9 @@ function billsView(){
   };
   return topbar('Bills & EMIs',{back:'home'})+`<div class="stack">
   <p class="heroline" style="margin:0">${bl.length?`${paid} of ${bl.length} paid. <b class="num">${fmt(toGo)}</b> still to go out in ${mLong(VM)}.`:'Give Bills or Debt categories a due day on the Budget tab to track them here.'}</p>
-  ${groups.filter(g=>g[1].length).map(([n,items])=>`<section class="sect"><h2 style="margin-bottom:4px;${n==='Overdue'?'color:var(--bad)':''}">${n}</h2>${items.map(row).join('')}</section>`).join('')}
-  <p class="small muted" style="margin:0 2px">Turn on reminders in Settings to get a notification 3 days before each due date.</p>
+  ${groups.slice(0,3).filter(g=>g[1].length).map(([n,items])=>`<section class="sect"><h2 style="margin-bottom:4px;${n==='Overdue'?'color:var(--bad)!important':''}">${n}</h2>${items.map(row).join('')}</section>`).join('')}
+  ${groups[3][1].length?`<details class="more"><summary>Done · ${groups[3][1].length} ${CHEV}</summary>${groups[3][1].map(row).join('')}</details>`:''}
+  <a class="link small" href="#prefs">Reminder settings ›</a>
   </div>`;
 }
 
@@ -1374,27 +1361,31 @@ function familyView(){
 function prefsView(){
   const s=S();const hasPin=!!lsGet('paisa-pin');
   return topbar('Settings',{month:false,back:'family'})+`<div class="stack">
+  <div class="grp">Account</div>
   ${MODE==='cloud'?`<section class="card"><h2 style="margin-bottom:10px">Account</h2><div class="row" style="padding-top:0"><div class="avatar">${esc((MYNAME||EMAIL||'?')[0].toUpperCase())}</div><div class="grow"><div class="t">${esc(MYNAME)}</div><div class="s">${esc(EMAIL)} · signed in with Google</div></div></div><div class="btns"><button class="btn" data-act="signout">Sign out</button><button class="btn danger" data-act="delaccount">Delete my account</button></div></section>`:''}
   ${canAdmin()?`<section class="card"><h2 style="margin-bottom:10px">Budget</h2>
     <div class="field"><label for="p-name">Name</label><input class="input" id="p-name" value="${esc(s.name)}"></div>
     <div class="two"><div class="field"><label for="p-sd">Month starts on day</label><select class="input" id="p-sd">${Array.from({length:28},(_,i)=>`<option ${i+1===s.startDay?'selected':''}>${i+1}</option>`).join('')}</select></div>
     <div class="field"><label for="p-sm">First month</label><input class="input" id="p-sm" type="month" value="${s.startMonth}"></div></div>
-    <div class="field"><label for="p-op">Opening balance of first month (₹)</label><input class="input num" id="p-op" inputmode="decimal" value="${rupees(s.opening)}"></div>
+    <div class="field"><label for="p-op">Money in your account when you started (₹)</label><input class="input num" id="p-op" inputmode="decimal" value="${rupees(s.opening)}"></div>
     ${MODE==='cloud'?`<label class="check" style="border:0"><input type="checkbox" id="p-hideinc" ${s.hideIncome?'checked':''}><span class="small">Hide income, net worth and yearly reports from Members and Viewers</span></label>`:''}
     <button class="btn primary" data-act="saveprefs">Save</button></section>`:''}
-  <section class="card"><h2 style="margin-bottom:6px">App lock</h2><p class="small muted" style="margin:0 0 10px">A 4-digit PIN on this device. The app locks when opened and after 5 minutes in the background.</p>
-    <div class="btns"><button class="btn" data-act="setpin">${hasPin?'Change PIN':'Set PIN'}</button>${hasPin?'<button class="btn danger" data-act="clearpin">Remove PIN</button>':''}</div></section>
-  ${canAdmin()?`<section class="card"><h2 style="margin-bottom:6px">Import from Excel</h2><p class="small muted" style="margin:0 0 10px">Bring in your tracker: a <b>Budget</b> sheet (Section, Category, Budget, Due day) and an <b>Expense Log</b> sheet (Date, Category, Amount, Mode, Note). You'll see a preview before anything is saved.</p>
-    <div class="btns"><label class="btn" for="imp-file" style="display:inline-block">Choose .xlsx or .csv</label><input id="imp-file" type="file" accept=".xlsx,.xls,.csv" hidden><button class="btn" data-act="template">Download template</button></div></section>
-  <section class="card"><h2 style="margin-bottom:6px">Export</h2><p class="small muted" style="margin:0 0 10px">Excel, CSV, a PDF report or a full backup. Pick the period and what to include.</p><button class="btn primary" data-act="exp-month">Choose what to export…</button></section>`:''}
   <section class="card"><h2 style="margin-bottom:6px">Install the app</h2>
     ${STANDALONE?'<p class="small muted" style="margin:0">Installed. Paisa Planner opens from your home screen and works offline.</p>':INSTALL_EVT?'<p class="small muted" style="margin:0 0 10px">Add Paisa Planner to your home screen. It opens full screen and works offline.</p><button class="btn primary" data-act="install">Install app</button>':IS_IOS?'<p class="small muted" style="margin:0">On iPhone: tap the <b>Share</b> button in Safari, then <b>Add to Home Screen</b>.</p>':'<p class="small muted" style="margin:0">Use your browser menu and choose <b>Install app</b> or <b>Add to Home screen</b>.</p>'}
   </section>
+  <div class="grp">Reminders & security</div>
   ${remindersCardHTML()}
+  <section class="card"><h2 style="margin-bottom:6px">App lock</h2><p class="small muted" style="margin:0 0 10px">A 4-digit PIN on this device. The app locks when opened and after 5 minutes in the background.</p>
+    <div class="btns"><button class="btn" data-act="setpin">${hasPin?'Change PIN':'Set PIN'}</button>${hasPin?'<button class="btn danger" data-act="clearpin">Remove PIN</button>':''}</div></section>
+  <div class="grp">Your data</div>
+  ${canAdmin()?`<section class="card"><h2 style="margin-bottom:6px">Import from Excel</h2><p class="small muted" style="margin:0 0 10px">Bring in your tracker: a <b>Budget</b> sheet (Section, Category, Budget, Due day) and an <b>Expense Log</b> sheet (Date, Category, Amount, Mode, Note). You'll see a preview before anything is saved.</p>
+    <div class="btns"><label class="btn" for="imp-file" style="display:inline-block">Choose .xlsx or .csv</label><input id="imp-file" type="file" accept=".xlsx,.xls,.csv" hidden><button class="btn" data-act="template">Download template</button></div></section>
+  <section class="card"><h2 style="margin-bottom:6px">Export</h2><p class="small muted" style="margin:0 0 10px">Excel, CSV, a PDF report or a full backup. Pick the period and what to include.</p><button class="btn primary" data-act="exp-month">Choose what to export…</button></section>`:''}
   <section class="card"><h2 style="margin-bottom:6px">Back up and restore</h2>
     <p class="small muted" style="margin:0 0 10px">${MODE==='cloud'?'Your budget syncs to your family\'s database. Back up saves a copy you can keep.':'Your data lives only on this device. Save a backup file regularly, and use it to move to a new phone.'}${lsGet('paisa-backup-at')?' Last backup: '+new Date(Number(lsGet('paisa-backup-at'))).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})+'.':''}</p>
     <div class="btns"><button class="btn" data-act="backup">Back up</button>${MODE==='cloud'?'':'<label class="btn" for="restore-file" style="display:inline-block">Restore…</label><input id="restore-file" type="file" accept=".json,application/json" hidden>'}</div>
   </section>
+  ${IS_OWNER?'<div class="grp danger">Danger zone</div>':''}
   ${IS_OWNER?`<section class="card"><h2 style="margin-bottom:6px">${MODE==='cloud'?'Delete family budget':'Delete all data'}</h2><p class="small muted" style="margin:0 0 10px">${MODE==='cloud'?'Deletes the family, its members and every category, entry, loan, card and goal from the database for everyone. Back up first if you might need it.':'Removes every category, entry, loan, card, goal and the activity log from this device. Back up first if you might need it.'}</p><button class="btn danger" data-act="wipe">Delete everything…</button></section>`:''}
   <p class="small muted" style="margin:0 4px">Amounts are stored in paise and shown with Indian grouping. ${MODE==='cloud'?'Your budget is stored in your family\'s Supabase database and only family members can read it.':'Your data is stored on this device and never sent anywhere.'}</p>
   <p class="small" style="margin:0 4px"><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms</a></p>
@@ -1472,7 +1463,7 @@ function renderQuick(){
       <div class="flabel" style="margin-bottom:6px">From</div><div class="hscroll">${accts.map(a=>`<button class="chip" data-act="qfrom" data-id="${a.id}" aria-pressed="${QA.from===a.id}">${esc(acctLabel(a))}</button>`).join('')}</div>
       <div class="flabel" style="margin-bottom:6px">To</div><div class="hscroll">${targets.filter(([id])=>id!==QA.from).map(([id,l])=>`<button class="chip" data-act="qto" data-id="${id}" aria-pressed="${QA.to===id}">${esc(l)}</button>`).join('')}</div>
       ${meta}${QA.more?`<div class="qdetails">${dateNote}</div>`:''}
-      <p class="small muted" style="margin:10px 0 0">Doesn't change what's left to spend. Putting money into an FD, RD or SIP? Log it as an <b>Expense</b> under Savings so it counts as saved.</p>
+      ${lsGet('paisa-hint-xfer')?'':('<p class="small muted" style="margin:10px 0 0">Moves money between your own accounts, so what\'s left to spend doesn\'t change. For an FD, RD or SIP, log an Expense under Savings instead.</p>')}
       <button class="btn primary block" style="margin-top:12px" data-act="qsave" ${(!QA.amt||!QA.from||!QA.to)?'disabled':''}>Save transfer${QA.from&&QA.to?' · '+esc(acctName(QA.from))+' → '+esc(acctName(QA.to)):''}</button>`;
   }else{
     const splitSum=(QA.split||[]).reduce((s,r)=>{const v=parseAmt(r.amt);return s+(isNaN(v)?0:v)},0);const total=parseAmt(QA.amt)||0;
@@ -1520,7 +1511,7 @@ async function quickSave(){
     if(!q.from||!q.to||q.from===q.to)return;const id=q.id||uid();
     const obj={...base,type:'xfer',from:q.from,to:q.to,amt};closeSheet();
     store.set('tx',id,obj).then(()=>log(q.id?'edited':'added','transfer',`${acctName(q.from)} → ${acctName(q.to)} ${fmt(amt)}`)).catch(()=>{});
-    lsSet('paisa-lastacct',q.from);toast(`${q.id?'Updated':'Moved'} ${fmt(amt)} · ${acctName(q.from)} → ${acctName(q.to)}.`);return;
+    lsSet('paisa-lastacct',q.from);lsSet('paisa-hint-xfer','1');toast(`${q.id?'Updated':'Moved'} ${fmt(amt)} · ${acctName(q.from)} → ${acctName(q.to)}.`);return;
   }
   const acct=q.mode==='Card'?'':(q.acct||'');
   if(q.mode==='Card'&&q.card)lsSet('paisa-lastcard',q.card);if(acct)lsSet('paisa-lastacct',acct);
@@ -1602,8 +1593,9 @@ function moveCat(id,dir){
 /* ---- misc sheets ---- */
 function openBreakdown(){
   const m=month(VM);
-  openSheet(`${sheetHead(mLabel(VM)+' breakdown')}
-    <div class="kv"><span>Opening balance</span><b class="num">${fmt(m.open)}</b></div>
+  openSheet(`${sheetHead('How '+mLong(VM)+' adds up')}
+    <div style="margin:0 0 14px">${moneyBar(m,VM===curKey())}</div>
+    <div class="kv"><span>Money at the start</span><b class="num">${fmt(m.open)}</b></div>
     <div class="kv"><span>+ Income received</span><b class="num">${fmt(m.income)}</b></div>
     <div class="kv"><span><b>Available</b></span><b class="num">${fmt(m.available)}</b></div>
     ${OUT.map(k=>`<div class="kv"><span>− ${SECN[k]}</span><span class="num">${fmt(m.sec[k].a)}</span></div>`).join('')}
@@ -2053,18 +2045,6 @@ function printReport(T,name){
 
 /* ================= proactive budget warnings ================= */
 // Pace: projects a category's month-end total from how fast it's being spent.
-function paceItems(k){
-  if(k!==curKey())return[];
-  const m=month(k),total=daysBetween(mStart(k),mEnd(k))+1,gone=daysBetween(mStart(k),todayISO())+1,f=clamp(gone/total,0,1),left=total-gone;
-  const out=[];
-  if(f>=.92)return out;
-  m.cats.filter(c=>c.section==='expenses'&&c.budget>0&&c.actual>0&&c.left>=0).forEach(c=>{
-    const used=c.actual/c.budget;
-    if(used>=.6&&used>f+.15){const proj=Math.round(c.actual/f);if(proj>c.budget){out.push({sev:2,text:`At this pace, <b>${esc(c.name)}</b> will end the month about ${fmt(Math.round((proj-c.budget)/10000)*10000)} over.`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}});return}}
-    if(used>=.8)out.push({sev:1,text:`${fmt(c.left)} left in <b>${esc(c.name)}</b> for ${left} more day${left===1?'':'s'}.`,act:{a:'catentries',id:c.id,l:'See entries'}});
-  });
-  return out;
-}
 // Plan check: is more planned to go out than the month brings in?
 function planGap(k){
   const m=month(k);const inc=m.cats.filter(c=>c.section==='income'&&!c.archived).reduce((t,c)=>t+c.budget,0);
@@ -2398,9 +2378,9 @@ function insightHTML(k){
   const f=gone/total;const prev=[1,2,3].map(i=>addM(k,-i)).filter(x=>txIndex()[x]);if(prev.length<2)return'';
   const m=month(k);let best=null;
   m.cats.filter(c=>c.section==='expenses').forEach(c=>{const avg=prev.reduce((s,x)=>s+((txIndex()[x].byCat[c.id])||0),0)/prev.length;if(avg<100000)return;const proj=c.actual/f;const d=proj/avg-1;if(d>=.3&&proj-avg>=100000&&(!best||d>best.d))best={c,avg,proj,d}});
-  if(best)return `<p class="insight"><b>${esc(best.c.name)}</b> is heading for ${Math.round(best.d*100)}% above your ${prev.length}-month average (${fmt(Math.round(best.proj/10000)*10000)} vs ${fmt(Math.round(best.avg/10000)*10000)}).</p>`;
+  if(best&&!dismissed('ins:'+best.c.id,k))return `<div class="insight"><span class="grow"><b>${esc(best.c.name)}</b> is heading ${Math.round(best.d*100)}% above your usual ${fmt(Math.round(best.avg/10000)*10000)}.</span><button class="x sm" data-act="dismsg" data-k="ins:${best.c.id}" aria-label="Hide">×</button></div>`;
   const avgAll=prev.reduce((s,x)=>s+month(x).sec.expenses.a,0)/prev.length;const projAll=m.sec.expenses.a/f;
-  if(avgAll>0&&projAll<avgAll*.85)return `<p class="insight good">Everyday spending is on track for ${Math.round((1-projAll/avgAll)*100)}% less than your ${prev.length}-month average. Nice.</p>`;
+  if(avgAll>0&&projAll<avgAll*.85&&!dismissed('ins:good',k))return `<div class="insight good"><span class="grow">Everyday spending is ${Math.round((1-projAll/avgAll)*100)}% below your usual. Nice.</span><button class="x sm" data-act="dismsg" data-k="ins:good" aria-label="Hide">×</button></div>`;
   return'';
 }
 
@@ -2444,7 +2424,7 @@ function homeView(){
   const needs=attentionItems(VM);
   const bills=billsFor(VM);const urgent=bills.find(b=>b.st==='overdue')||bills.find(b=>b.st==='due');
   const cta=!canWrite()?'':urgent?`<button class="pillbtn" data-act="paybill" data-id="${urgent.id}">Mark ${esc(urgent.name)} paid</button>`:`<button class="pillbtn" data-act="fab">Add expense</button>`;
-  const dues=bills.filter(b=>b.st==='due'||b.st==='up').slice(0,3);
+  const dues=bills.filter(b=>b.st==='due'||b.st==='up').slice(0,2);
   const hero=`<section class="hero2 hero3" aria-label="Left to spend">
     <div class="hbar"><a class="ibtn" href="#reports" aria-label="Yearly report">${ui('chart')}</a>
       <div class="ptoggle" role="tablist"><button role="tab" data-act="hview" data-k="spend" aria-pressed="${HVIEW==='spend'}">This month${needs.length?`<i class="badge">${needs.length}</i>`:''}</button><button role="tab" data-act="hview" data-k="recent" aria-pressed="${HVIEW==='recent'}">Recent</button></div>
@@ -2453,7 +2433,7 @@ function homeView(){
     <button class="bigbtn" data-act="breakdown" aria-label="How this is worked out"><span class="big num ${m.left<0&&!waitInc?'neg':''}">${fmt(m.left)}</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <p class="heroline">${line}${waitInc&&m.left<=0?'. Below zero only because that income isn\'t logged yet':''}</p>
     ${cta}
-    ${isCur?nextStepHTML():''}
+    ${isCur&&!needs.some(n=>n.rank===1)?nextStepHTML():''}
   </section>`;
   if(HVIEW==='recent'){
     const list=Object.entries(D.tx).map(([id,x])=>({...x,id})).filter(x=>x&&x.date&&(!hideInc()||isXfer(x)||!(D.cats[x.cat]&&D.cats[x.cat].section==='income'))).sort((a,b)=>b.date.localeCompare(a.date)||(b.at||0)-(a.at||0)).slice(0,15);
@@ -2463,10 +2443,8 @@ function homeView(){
       </section></div>`;
   }
   return `<div class="home">${topbar(S().name)}${hero}<div class="stack">
-  <section class="sect nob">${moneyBar(m,isCur)}</section>
-  ${attentionHTML(VM)}
-  ${insightHTML(VM)}
-  ${confirmHTML(VM)}
+  ${attentionHTML(VM,urgent&&canWrite()?'bill.overdue:'+urgent.id:null)}
+  ${isCur&&!needs.length&&!nextStep()?insightHTML(VM):''}
   <section class="sect"><div class="sect-head"><h2>Coming up</h2><a class="link small" href="#bills">All bills ›</a></div>
     ${dues.length?dues.map(b=>`<div class="row">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s">Goes out ${relDay(b.due)}</div></div><div class="amt num">${fmt(b.budget)}</div>${canWrite()?`<button class="btn sm" data-act="paybill" data-id="${b.id}">Paid</button>`:''}</div>`).join('')
       :`<p class="small muted" style="margin:4px 0 8px">Nothing else is due ${isCur?'this month':'in '+mLong(VM)}.</p>`}
@@ -2584,6 +2562,51 @@ function moreSearch(q){
 }
 function saveRecentQ(q){q=q.trim();if(q.length<2)return;const a=recentQ().filter(x=>x.toLowerCase()!==q.toLowerCase());a.unshift(q);lsSet('paisa-recent-q',JSON.stringify(a.slice(0,6)))}
 
+/* ================= messages: one registry for every in-app prompt =================
+   Each message: rank (1 act now · 2 to confirm · 3 heads-up), slot, and how it reads:
+   title = the fact (subject first, under ~6 words) · detail = amount · when · action = one verb.
+   Screens never decide what to show on their own; they ask needsItems() for a ranked list. */
+const MSG={
+  'bill.overdue':{rank:1,tone:'bad',make:b=>({title:`${b.name} was due ${relDay(b.due)}`,detail:`${fmt(b.budget)} · not marked paid`,act:canWrite()?{a:'paybill',id:b.id,l:'Mark paid'}:null})},
+  'month.short': {rank:1,tone:'bad',make:m=>({title:`${fmt(-m.projected)} short this month`,detail:'Once planned payments go out',act:{a:'go',k:'budget',l:'Review'}})},
+  'month.over':  {rank:1,tone:'bad',make:m=>({title:`Spent ${fmt(-m.left)} more than you had`,detail:'This month so far',act:{a:'go',k:'transactions',l:'See entries'}})},
+  'card.part':   {rank:1,tone:'bad',make:([id,cd,st])=>({title:`${cd.name} bill part-paid`,detail:`Interest on ${fmt(st.amt-(st.paid||0))}`,act:canWrite()?{a:'wpay',id,l:'Pay'}:null})},
+  'repeat.due':  {rank:2,tone:'cat',make:r=>({title:r.note||r.c.name,detail:`${r.c.section==='income'?'+':''}${fmt(r.amt)} · ${r.c.section==='income'?'usually arrives':'usually goes out'} ${relDay(r.date)}`,act:canWrite()?{a:'recok',id:r.id,l:'Confirm'}:null,alt:canWrite()?{a:'recskip',id:r.id,l:'Skip'}:null,cat:r.c})},
+  'cat.over':    {rank:3,tone:'warn',dismiss:'month',make:c=>({title:`${c.name} is ${fmt(-c.left)} over`,detail:`Budget ${fmt(c.budget)}`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}})},
+  'cat.pace':    {rank:3,tone:'warn',dismiss:'month',make:([c,over])=>({title:`${c.name} heading ${fmt(over)} over`,detail:`At this pace · budget ${fmt(c.budget)}`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}})},
+  'cat.near':    {rank:3,tone:'warn',dismiss:'month',make:([c,days])=>({title:`${fmt(c.left)} left in ${c.name}`,detail:`For ${days} more day${days===1?'':'s'}`,act:{a:'catentries',id:c.id,l:'See entries'}})},
+  'card.limit':  {rank:3,tone:'muted',dismiss:'month',make:([id,cd,pct])=>({title:`${cd.name} at ${pct}% of its limit`,detail:'Under 30% is healthier for your credit score',act:{a:'wdetail',id:'card:'+id,l:'Open'}})}
+};
+const dismissed=(key,k)=>lsGet('paisa-dis-'+key+'-'+k)==='1';
+function needsItems(k){
+  const m=month(k),isCur=k===curKey(),out=[];
+  const add=(type,data,key)=>{const d=MSG[type];if(d.dismiss&&dismissed(key,k))return;out.push({type,key,rank:d.rank,tone:d.tone,dismiss:!!d.dismiss,...d.make(data)})};
+  billsFor(k).filter(b=>b.st==='overdue').forEach(b=>add('bill.overdue',b,'bill.overdue:'+b.id));
+  if(isCur&&m.projected<0)add('month.short',m,'month.short');
+  else if(m.left<0&&!(isCur&&m.incomeToCome>0))add('month.over',m,'month.over');
+  Object.entries(D.cards).forEach(([id,cd])=>{const st=cd.stmts&&cd.stmts[k];if(cardStatus(st)==='part')add('card.part',[id,cd,st],'card.part:'+id);
+    if(st&&cd.limit&&st.amt/cd.limit>.3)add('card.limit',[id,cd,Math.round(st.amt/cd.limit*100)],'card.limit:'+id)});
+  recDue(k).forEach(r=>add('repeat.due',r,'repeat.due:'+r.id));
+  m.cats.filter(c=>OUT.includes(c.section)&&c.budget>0&&c.left<0).sort((a,b)=>a.left-b.left).forEach(c=>add('cat.over',c,'cat.over:'+c.id));
+  if(isCur){const total=daysBetween(mStart(k),mEnd(k))+1,gone=daysBetween(mStart(k),todayISO())+1,f=clamp(gone/total,0,1),left=total-gone;
+    if(f<.92)m.cats.filter(c=>c.section==='expenses'&&c.budget>0&&c.actual>0&&c.left>=0).forEach(c=>{const used=c.actual/c.budget;
+      if(used>=.6&&used>f+.15){const proj=Math.round(c.actual/f);if(proj>c.budget){add('cat.pace',[c,Math.round((proj-c.budget)/10000)*10000],'cat.pace:'+c.id);return}}
+      if(used>=.8)add('cat.near',[c,left],'cat.near:'+c.id)})}
+  return out.sort((a,b)=>a.rank-b.rank);
+}
+// kept for older callers (Home badge, tests)
+function attentionItems(k){return needsItems(k)}
+function attentionHTML(k,skip){
+  const items=needsItems(k).filter(i=>i.key!==skip);
+  if(!items.length)return `<p class="calm"><span class="dot" style="color:var(--good)"></span>Nothing needs you. Bills and budgets are on track.</p>`;
+  const shown=ATT_ALL?items:items.slice(0,3);
+  const lead=i=>i.cat?icon(i.cat):`<span class="dot" style="color:var(--${i.tone==='bad'?'bad':i.tone==='warn'?'warn':'muted'})"></span>`;
+  return `<section class="attn" aria-label="Needs you"><div class="attn-h">Needs you · ${items.length}</div>
+    ${shown.map(i=>`<div class="attn-item">${lead(i)}<div class="grow"><div class="nt">${esc(i.title)}</div><div class="nd">${esc(i.detail)}</div></div>
+      <div class="nacts">${i.alt?`<button class="link small" data-act="${i.alt.a}" data-id="${i.alt.id}">${i.alt.l}</button>`:''}${i.act?`<button class="btn sm ${i.rank===1||i.rank===2?'primary':''}" data-act="${i.act.a}" ${i.act.id?`data-id="${i.act.id}"`:''} ${i.act.k?`data-k="${i.act.k}"`:''}>${i.act.l}</button>`:''}${i.dismiss?`<button class="x sm" data-act="dismsg" data-k="${esc(i.key)}" aria-label="Hide until next month">×</button>`:''}</div></div>`).join('')}
+    ${items.length>3?`<button class="link small" data-act="attall" style="padding:8px 0">${ATT_ALL?'Show fewer':'Show all '+items.length}</button>`:''}</section>`;
+}
+
 /* ================= events ================= */
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
@@ -2591,6 +2614,7 @@ document.addEventListener('click',async e=>{
   if(a==='scrim'&&e.target!==el)return;
   switch(a){
     case 'attall':ATT_ALL=!ATT_ALL;render();break;
+    case 'dismsg':lsSet('paisa-dis-'+el.dataset.k+'-'+VM,'1');render();break;
     case 'hview':HVIEW=el.dataset.k;render();break;
     case 'goplan':planTab=el.dataset.k;PLAN_KEEP=true;closeSheet();if(planTab==='networth')ensureSnapshot();if(route==='plan'){render();window.scrollTo(0,0)}else location.hash='plan';break;
     case 'wpick':WSEL=id;render();{const s=$('.cstack');if(s)s.scrollIntoView({block:'center',behavior:'smooth'})}break;
