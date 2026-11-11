@@ -1889,16 +1889,17 @@ async function serverTest(el){
 function remindersCardHTML(){
   const perm=NOTIF_SUPPORT?Notification.permission:'unsupported';
   const sched=PUSH_READY();
+  const setup=CLOUD&&IS_OWNER&&!CFG.vapidPublicKey?`<a class="btn sm" href="#pushsetup" style="display:inline-block;margin-top:12px;text-decoration:none">Set up reminders for everyone</a><p class="small muted" style="margin:6px 0 0">One-time, for the Owner. Lets reminders arrive even when the app is closed.</p>`:'';
   const head=`<h2 style="margin-bottom:6px">Reminders</h2>`;
-  if(perm==='unsupported')return `<section class="card">${head}<p class="small" style="margin:0">This browser can't show notifications. On iPhone, add the app to your home screen first (iOS 16.4 or later), then open it from there.</p></section>`;
-  if(perm==='denied')return `<section class="card">${head}<p class="small" style="margin:0">Notifications are blocked for this app. Allow them in your phone's settings for this site, then come back here.</p></section>`;
-  if(perm!=='granted')return `<section class="card">${head}<p class="small muted" style="margin:0 0 10px">${sched?'Get bill and EMI reminders on your phone at 8 am, even when the app is closed.':'Get a heads-up about bills and EMIs due within 3 days.'}</p><button class="btn primary" data-act="allownotif">Turn on reminders</button></section>`;
+  if(perm==='unsupported')return `<section class="card">${head}<p class="small" style="margin:0">This browser can't show notifications. On iPhone, add the app to your home screen first (iOS 16.4 or later), then open it from there.</p>${setup}</section>`;
+  if(perm==='denied')return `<section class="card">${head}<p class="small" style="margin:0">Notifications are blocked for this app. Allow them in your phone's settings for this site, then come back here.</p>${setup}</section>`;
+  if(perm!=='granted')return `<section class="card">${head}<p class="small muted" style="margin:0 0 10px">${sched?'Get bill and EMI reminders on your phone at 8 am, even when the app is closed.':'Get a heads-up about bills and EMIs due within 3 days.'}</p><button class="btn primary" data-act="allownotif">Turn on reminders</button>${setup}</section>`;
   const tog=(id,on,t,s)=>`<label class="rtog"><span class="grow"><b>${t}</b><span class="small muted">${s}</span></span><input type="checkbox" id="${id}" ${on?'checked':''}></label>`;
   const p=pushPrefs();
   if(!sched)return `<section class="card">${head}
     ${tog('rem-on',p.bills,'Bills & EMIs','Checked when you open the app, at most once a day: anything due within 3 days or overdue.')}
     <div class="btns" style="margin-top:8px"><button class="btn sm" data-act="testnotif">Send a test</button></div>
-    <p class="small muted" style="margin:10px 0 0">${CLOUD?(IS_OWNER?'To get reminders even when the app is closed, finish the one-time <a href="#pushsetup">reminder setup</a>.':'Reminders while the app is closed will start once the family Owner finishes setup.'):'Reminders while the app is closed need family sync (Supabase) to be set up.'}</p></section>`;
+    ${setup||`<p class="small muted" style="margin:10px 0 0">${CLOUD?'Reminders while the app is closed will start once the app\'s reminder setup is finished.':'Reminders while the app is closed need family sync (Supabase) to be set up.'}</p>`}</section>`;
   const days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   return `<section class="card">${head}
     ${tog('rem-on',p.bills,'Bills & EMIs','3 days before, on the day, and the next morning if still unpaid.')}
@@ -1908,7 +1909,7 @@ function remindersCardHTML(){
     ${tog('rem-week',p.weekly,'Weekly check-in','What you spent this week, in one line.')}
     ${p.weekly?`<div class="trow"><span class="small muted">Every</span><select class="input tsel" id="d-week" aria-label="Day">${days.map((d,i)=>`<option value="${i}" ${i===p.weeklyDay?'selected':''}>${d}</option>`).join('')}</select><span class="small muted">at</span>${hourSelect('h-week',p.weeklyHour)}</div>`:''}
     <div class="btns" style="margin-top:10px"><button class="btn sm" data-act="servertest">Send a test</button></div>
-    <p class="small muted" style="margin:10px 0 0">These arrive even when the app is closed.${IS_OWNER?' <a href="#pushsetup">Reminder setup</a>':''}</p></section>`;
+    <p class="small muted" style="margin:10px 0 0">These arrive even when the app is closed.</p></section>`;
 }
 
 /* ================= one-time reminder setup page (Owner) ================= */
@@ -1948,6 +1949,7 @@ function pushSetupView(){
   return topbar('Reminder setup',{month:false,back:'prefs'})+`<div class="stack">
   <p class="heroline" style="margin:0">One-time setup so reminders reach every family member's phone at the time they choose, even with the app closed. About 10 minutes, in your Supabase dashboard. Your brother's family and yours share it automatically.</p>
   ${!CLOUD?'<div class="planwarn"><div class="small">Family sync (Supabase) isn\'t set up in this copy of the app, so scheduled reminders can\'t work yet.</div></div>':''}
+  ${CFG.vapidPublicKey?'<div class="planwarn"><div class="small"><b>Reminders are already set up.</b> Don\'t make new keys unless the private key has leaked: new keys stop reminders on every phone until each person turns them off and on again.</div></div>':''}
   ${step(1,'Create the reminders table',`<p class="small muted" style="margin:0 0 8px">Supabase → <b>SQL Editor</b> → New query → paste → <b>Run</b>.</p>${PS.sql?code('ps-sql',PS.sql,8):'<p class="small muted">Loading…</p>'}`)}
   ${step(2,'Make your keys',`<p class="small muted" style="margin:0 0 8px">These are made on this phone and never sent anywhere. Keep this page open until step 5.</p>
     ${PS.keys?`<div class="field"><label>Public key <span class="muted">(safe to share)</span></label>${code('ps-pub',PS.keys.pub,2)}</div>

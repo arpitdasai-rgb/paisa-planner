@@ -1,5 +1,5 @@
 /* Paisa Planner service worker: offline app shell + cached fonts and Excel library. */
-const VERSION = 'paisa-v8';
+const VERSION = 'paisa-v9';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './config.js', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 const RUNTIME_HOSTS = ['fonts.googleapis.com', 'fonts.gstatic.com', 'cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];
 // Supabase API, auth and realtime traffic is never cached: it always goes to the network.
