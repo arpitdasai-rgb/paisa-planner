@@ -511,6 +511,18 @@ input[type=search]::-webkit-search-cancel-button{filter:grayscale(1) brightness(
 .stmrow .tsel{font-size:16px;padding:6px 10px;max-width:100%}
 .stmtick{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);flex:none;margin-top:2px}
 .stmtick[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 5px var(--ink),inset 0 0 0 7px var(--bg)}
+.plan3{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:6px 16px 14px;display:flex;flex-direction:column}
+.p3{padding:12px 0;border-bottom:1px solid var(--line)}
+.p3h{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-weight:600;font-size:15.5px}
+.p3h b{font-size:18px;font-weight:700}
+.p3s{font-size:13px;color:var(--muted);margin-top:4px}
+.p3.free{border-bottom:0}
+.p3.free .p3h b{font-size:22px}
+.pbar{height:6px;border-radius:6px;background:var(--sunk);overflow:hidden;margin-top:8px}
+.pbar i{display:block;height:100%;background:var(--ink);border-radius:6px}
+.pbar i.good{background:var(--good)}.pbar i.bad{background:var(--bad)}
+.billsrow{border:1px solid var(--line);border-radius:18px;background:var(--surface)}
+.grp2{margin:6px 2px -6px}
 details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
 details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
 details.more>summary::-webkit-details-marker{display:none}
@@ -736,6 +748,14 @@ function month(k){
   const incomeToCome=Math.max(0,sec.income.b-sec.income.a);
   return memo.m[k]={key:k,cats,sec,open,income,spent,planned,close,toPay,incomeToCome,list:ti.list,
     available:open+income,left:open+income-spent,projected:open+income+incomeToCome-spent-toPay};
+}
+// Commitments (bills + EMIs), savings, and what's free for everyday spending
+function planParts(m){
+  const by=k=>m.cats.filter(c=>c.section===k);const planOf=cs=>cs.reduce((s,c)=>s+Math.max(c.budget,c.actual),0);const done=cs=>cs.reduce((s,c)=>s+c.actual,0);
+  const commitCats=[...by('bills'),...by('debt')];const commit=planOf(commitCats),commitPaid=Math.min(commit,done(commitCats)+commitCats.reduce((s,c)=>s+(isCardBill(c)?paidToCard(c,m.list):0),0));
+  const save=planOf(by('savings')),saveDone=done(by('savings'));const inAvail=m.open+m.income+m.incomeToCome;
+  const free=inAvail-commit-save,everyday=done(by('expenses'));
+  return{inAvail,commit,commitPaid,save,saveDone,free,everyday,freeLeft:free-everyday};
 }
 function dueDate(c,k){
   const[y,m]=k.split('-').map(Number);const d=c.dueDay;
@@ -1142,7 +1162,7 @@ function donut(m){
 }
 function expBars(m){
   const cs=m.cats.filter(c=>c.section==='expenses'&&(c.actual>0||c.budget>0)).sort((a,b)=>b.actual-a.actual).slice(0,8);
-  if(!cs.length)return `<p class="small muted">Add Expenses categories on the Budget tab.</p>`;
+  if(!cs.length)return `<p class="small muted">Add Everyday spending categories on the Month tab.</p>`;
   const max=Math.max(1,...cs.map(c=>Math.max(c.actual,c.budget)));
   return cs.map(c=>{const over=c.budget>0&&c.actual>c.budget;return `<div style="margin-bottom:11px"><div style="display:flex;justify-content:space-between;font-size:13px;gap:8px"><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(c.name)}</span><span class="num">${over?`<span class="over">${fmt(c.actual-c.budget)} over</span> · `:''}${fmt(c.actual)}</span></div>
   <div class="pbar"><i style="width:${c.actual/max*100}%;background:${over?'var(--bad)':'var(--accent)'}"></i><span class="tick" style="left:calc(${c.budget/max*100}% - 1px)"></span></div></div>`}).join('')+`<div class="legend"><span><span class="sw" style="background:var(--accent)"></span>Spent</span><span><span class="sw" style="width:2px;background:var(--muted)"></span>Budget</span></div>`;
@@ -1229,22 +1249,25 @@ function budgetView(){
   const m=month(VM);
   if(BEDIT)return budgetEditView(m);
   const ov=D.months[VM]&&D.months[VM].open!=null;
-  return topbar('Budget')+`<div class="stack">
+  const P=planParts(m);const bl=billsFor(VM),bPaid=bl.filter(b=>b.st==='paid'||b.st==='skip').length,bDue=bl.filter(b=>b.st==='overdue').length;
+  const bar=(a,b,tone='')=>`<div class="pbar"><i class="${tone}" style="width:${b>0?Math.min(100,Math.round(a/b*100)):0}%"></i></div>`;
+  return topbar('Month plan')+`<div class="stack">
   ${planBannerHTML(VM)}
-  <section class="bsum">
-    <div class="kv"><span>Money at the start <span class="small muted">${ov?'· edited':'· from '+mLong(addM(VM,-1))}</span></span><b class="num">${fmt(m.open)}</b></div>
-    ${hideInc()?'':`<div class="kv"><span>Income received</span><b class="num">+${fmt(m.income)}</b></div>`}
-    <div class="kv"><span>Paid out <span class="small muted">· bills, EMIs, savings, spends</span></span><b class="num" style="white-space:nowrap">−${fmt(m.spent).replace('−','')}</b></div>
-    <div class="kv"><span><b>${VM<curKey()?'Closing balance':'Balance now'}</b></span><b class="num ${m.close<0?'over':''}">${fmt(m.close)}</b></div>
-    ${canAdmin()?`<div class="btns" style="margin-top:12px"><button class="btn primary" data-act="bedit">Edit budgets</button><button class="btn" data-act="editopen">Starting money</button></div>`:''}
+  <section class="plan3">
+    ${hideInc()?'':`<div class="p3"><div class="p3h"><span>Money in</span><b class="num">${fmt(P.inAvail)}</b></div><div class="p3s">${fmt(m.open)} at the start${ov?' (set)':''} + ${fmt(m.income)} received${m.incomeToCome?` · ${fmt(m.incomeToCome)} to come`:''}</div></div>`}
+    <div class="p3"><div class="p3h"><span>Commitments</span><b class="num">${fmt(P.commit)}</b></div>${bar(P.commitPaid,P.commit)}<div class="p3s">Bills and EMIs · ${fmt(P.commitPaid)} paid, ${fmt(Math.max(0,P.commit-P.commitPaid))} to go</div></div>
+    <div class="p3"><div class="p3h"><span>Savings</span><b class="num">${fmt(P.save)}</b></div>${bar(P.saveDone,P.save,'good')}<div class="p3s">${fmt(P.saveDone)} put away${P.save>P.saveDone?`, ${fmt(P.save-P.saveDone)} to go`:''}</div></div>
+    <div class="p3 free"><div class="p3h"><span>Free to spend</span><b class="num ${P.free<0?'over':''}">${fmt(P.free)}</b></div>${bar(P.everyday,P.free>0?P.free:1,P.everyday>P.free?'bad':'')}<div class="p3s">${fmt(P.everyday)} spent on everyday things · <b class="${P.freeLeft<0?'over':''}">${fmt(P.freeLeft)} left</b></div></div>
+    <div class="btns" style="margin-top:4px">${canAdmin()?'<button class="btn primary sm" data-act="bedit">Edit budgets</button><button class="btn sm" data-act="editopen">Starting money</button>':''}<button class="btn sm" data-act="breakdown">How it adds up</button></div>
   </section>
-  ${SECTIONS.filter(s=>!(hideInc()&&s.k==='income')).map(s=>{const cs=m.cats.filter(c=>c.section===s.k);const st=m.sec[s.k];const over=s.k!=='income'&&st.b>0&&st.a>st.b;
-    return `<section class="sect"><div class="sect-head"><h2>${s.n}</h2><span class="small num">${over?`<span class="over">${fmt(st.a-st.b)} over</span> · `:''}${st.b?`${fmt(st.a)} <span class="muted">of ${fmt(st.b)}</span>`:`${fmt(st.a)} <span class="muted">${s.k==='income'?'received':'spent'}</span>`}</span></div>
+  ${bl.length?`<a class="trow billsrow" href="#bills"><span class="ti">${ui('receipt',20)}</span><span class="tt"><b>Bills & EMIs</b><small>${bPaid} of ${bl.length} done${bDue?` · <span class="over">${bDue} overdue</span>`:''}</small></span>${CHEV}</a>`:''}
+  ${[['income','','Money in'],['bills','Commitments','Bills'],['debt','','EMIs & loans'],['savings','','Savings'],['expenses','','Everyday spending']].filter(([k])=>!(hideInc()&&k==='income')).map(([k,grp,label])=>{const s={...SECTIONS.find(x=>x.k===k),n:label};const cs=m.cats.filter(c=>c.section===s.k);const st=m.sec[s.k];const over=s.k!=='income'&&st.b>0&&st.a>st.b;
+    return `${grp?`<div class="eyebrow grp2">${grp}</div>`:''}<section class="sect"><div class="sect-head"><h2>${s.n}</h2><span class="small num">${over?`<span class="over">${fmt(st.a-st.b)} over</span> · `:''}${st.b?`${fmt(st.a)} <span class="muted">of ${fmt(st.b)}</span>`:`${fmt(st.a)} <span class="muted">${s.k==='income'?'received':'spent'}</span>`}</span></div>
     ${cs.map(c=>budgetRow(c,VM)).join('')||`<p class="small muted" style="margin:4px 0">No categories yet.</p>`}
     ${canAdmin()?`<button class="link small" data-act="addcat" data-sec="${s.k}" style="padding:8px 0 4px">+ Add ${s.k==='income'?'an income source':s.k==='debt'?'a loan or EMI':'a category'}</button>`:''}
     </section>`}).join('')}
   ${canAdmin()?`<button class="link small" data-act="clearmonth" style="padding:0 2px">Clear data for ${mLong(VM)}…</button>`:''}
-  ${canAdmin()?`<p class="small muted" style="margin:0 2px">Tap a category to rename it, set a due day, move or archive it. Use <b>Edit budgets</b> to plan the whole month at once.</p>`:''}
+  ${canAdmin()?`<p class="small muted" style="margin:0 2px">Everyday categories don't need limits: free to spend is what's left after commitments and savings. Tap a category to rename it, set a due day, a limit, move or archive it.</p>`:''}
   </div>`;
 }
 function budgetEditView(m){
@@ -1392,7 +1415,7 @@ function planView(){
     body=goalsBody();
   }
   const titles={loans:'Loans',cards:'Credit cards',goals:'Goals',recurring:'Repeats',networth:'Net worth'};
-  return `<header class="topbar"><button class="x" data-act="goplan" data-k="accounts" aria-label="Back to Wallet">‹</button><h1>${titles[planTab]||'Wallet'}</h1>${planTab==='cards'?monthSwitch():''}</header>${stale?'<div class="banner" style="margin-bottom:12px">Can\'t reach your data right now. Figures may be out of date.</div>':''}<div class="stack">${body}</div>`;
+  return `<header class="topbar"><button class="x" data-act="goplan" data-k="accounts" aria-label="Back to Money">‹</button><h1>${titles[planTab]||'Money'}</h1>${planTab==='cards'?monthSwitch():''}</header>${stale?'<div class="banner" style="margin-bottom:12px">Can\'t reach your data right now. Figures may be out of date.</div>':''}<div class="stack">${body}</div>`;
 }
 
 /* ================= FAMILY ================= */
@@ -1557,16 +1580,18 @@ function parseQuick(s){
   else if(s)out.note=s.replace(/\b\w/g,c=>c.toUpperCase()).slice(0,40);
   return out;
 }
-function qtextResolve(){const o=parseQuick(QA.qtext);if(!o.amt)return o;if(!o.cat){const g=guessCat(parseAmt(o.amt),o.note);if(g&&(o.type!=='in')===(D.cats[g].section!=='income'))o.cat=g}return o}
+function qtextResolve(){const o=parseQuick(QA.qtext);if(!o.amt)return o;if(o.cat){o.sure=true;return o}
+  const mm=o.note&&merchantMemory()[o.note.trim().toLowerCase()];const g=mm?mm.cat:guessCat(parseAmt(o.amt),o.note);
+  if(g&&D.cats[g]&&(o.type!=='in')===(D.cats[g].section!=='income')){o.cat=g;o.sure=!!mm}return o}
 function qtextHint(){const o=qtextResolve();if(!QA.qtext)return'Amount and a word or two. Paisa picks the category from your past entries. Press Done to save.';
   if(!o.amt)return'Add an amount, like 350.';const c=o.cat&&D.cats[o.cat];
-  return`${o.type==='in'?'Income':'Expense'} · <b>${fmt(parseAmt(o.amt))}</b>${o.note?' · '+esc(o.note):''} · ${c?esc(c.name):'<span class="over">pick a category below</span>'}`}
+  return`${o.type==='in'?'Income':'Expense'} · <b>${fmt(parseAmt(o.amt))}</b>${o.note?' · '+esc(o.note):''} · ${c?esc(c.name)+(o.sure?'':' <span class="muted">(a guess: check it, then Save)</span>'):'<span class="over">pick a category below</span>'}`}
 function qtextApply(save){
   const o=qtextResolve();if(!o.amt){toast('Add an amount, like 350.');return}
   QA.amt=o.amt;if(o.note)QA.note=o.note;if(o.mode)QA.mode=o.mode;if(o.card)QA.card=o.card;if(o.acct)QA.acct=o.acct;QA.type=o.type==='in'?'in':'out';QA.src=o.sms?'share':'manual';
-  if(o.cat){QA.cat=o.cat;QA.guessed=false}else if(QA.cat&&D.cats[QA.cat]&&(D.cats[QA.cat].section==='income')!==(QA.type==='in'))QA.cat=null;
+  if(o.cat){QA.cat=o.cat;QA.guessed=!o.sure}else if(QA.cat&&D.cats[QA.cat]&&(D.cats[QA.cat].section==='income')!==(QA.type==='in'))QA.cat=null;
   lsSet('paisa-qtext','1');
-  if(save&&QA.cat){QA.text=false;quickSave();return}
+  if(save&&QA.cat&&o.sure){QA.text=false;quickSave();return}
   QA.text=false;renderQuick();
 }
 function qSyncSplit(){if(!QA||!QA.split)return;document.querySelectorAll('[data-split-cat]').forEach(s=>{QA.split[+s.dataset.splitCat].cat=s.value});document.querySelectorAll('[data-split-amt]').forEach(s=>{QA.split[+s.dataset.splitAmt].amt=s.value})}
@@ -2479,9 +2504,9 @@ const UI={
 const ui=(n,s=22)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${UI[n]||NAVI[n]||''}</svg>`;
 
 function renderTabs(){
-  const cur=['transactions','bills'].includes(route)?'home':['family','prefs','reports','pushsetup','help','habits'].includes(route)?'more':route;
+  const cur=route==='transactions'?'home':route==='bills'?'budget':['family','prefs','reports','pushsetup','help','habits'].includes(route)?'more':route;
   const item=([k,n])=>`<a href="#${k}" ${cur===k?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVI[k]}</svg><span>${n}</span></a>`;
-  $('#tabs').innerHTML='<nav>'+[['home','Home'],['budget','Budget']].map(item).join('')+'<span class="navgap" aria-hidden="true"></span>'+[['plan','Wallet'],['more','More']].map(item).join('')+'</nav>';
+  $('#tabs').innerHTML='<nav>'+[['home','Today'],['budget','Month']].map(item).join('')+'<span class="navgap" aria-hidden="true"></span>'+[['plan','Money'],['more','More']].map(item).join('')+'</nav>';
 }
 
 /* ---- Home ---- */
@@ -2574,7 +2599,7 @@ function walletView(){
   const nw=hideInc()?null:netWorth().total;const loans=Object.values(D.loans).reduce((s,l)=>s+loanOutstanding(l),0);
   const goals=Object.keys(D.goals).length,reps=recList().length;
   const tile=(k,label,val)=>`<button class="mtile" data-act="goplan" data-k="${k}"><span class="mt-l">${label}</span><span class="mt-v">${val} ›</span></button>`;
-  return `<header class="topbar"><h1>Wallet</h1>${canAdmin()?'<button class="btn sm" data-act="waddmenu">+ Add</button>':''}</header>
+  return `<header class="topbar"><h1>Money</h1>${canAdmin()?'<button class="btn sm" data-act="waddmenu">+ Add</button>':''}</header>
   <section class="wsum"><div class="eyebrow">In ${acctList().length} account${acctList().length===1?'':'s'}</div><div class="bigc num">${fmt(tot)}</div>${dues?`<div class="small muted">Card dues ${fmt(dues)}</div>`:''}</section>
   ${items.length?`<div class="cstrip" role="tablist">
     <button class="cs-all" data-act="wfilter" data-k="${WFILTER==='all'?'acct':WFILTER==='acct'?'card':'all'}" aria-label="Filter">${WFILTER==='all'?'All':WFILTER==='acct'?'Banks':'Cards'} (${items.length})</button>
@@ -2737,15 +2762,13 @@ function memberMenu(uid){
 
 /* ================= More ================= */
 function moreView(){
-  const rq=recentQ();const nw=hideInc()?null:netWorth().total;const loans=Object.values(D.loans).reduce((s,l)=>s+loanOutstanding(l),0);const bal=acctList().reduce((s,a)=>s+acctBalance(a.id),0);
+  const rq=recentQ();
   const circle=([n,a,k,ic])=>`<button class="circ" data-act="${a}" data-k="${k}"><span class="circ-i">${ui(ic,26)}</span><span class="circ-l">${n}</span></button>`;
-  const tile=(k,label,val)=>`<button class="mtile" data-act="goplan" data-k="${k}"><span class="mt-l">${label}</span><span class="mt-v">${val}</span></button>`;
   return `<div class="msearchwrap"><div class="more-top"><label class="msearch">${ui('search',20)}<input id="m-q" type="search" placeholder='Search "rent" or "Swiggy"' data-msearch autocomplete="off" aria-label="Search entries, categories and settings"></label><a class="ibtn lg" href="#family" aria-label="Family">${ui('users',24)}</a></div>
     <div class="msuggest">${rq.length?`<div class="eyebrow">Recent</div><div class="hscroll" style="margin:8px 0 12px">${rq.map(q=>`<button class="chip qchip" data-act="mq" data-k="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}<div class="eyebrow">Try</div><div class="hscroll" style="margin-top:8px">${['bills due this week','eating out','salary','rent'].map(q=>`<button class="chip outline" data-act="mq" data-k="${q}">${q}</button>`).join('')}</div></div></div>
   <div id="mresults"></div>
   <div id="mhome">
   <section class="sect nob"><div class="circles">${[FEATURES[0],FEATURES[1],FEATURES[2],FEATURES[3]].map(circle).join('')}</div></section>
-  <section class="sect nob"><span class="eyebrow">Money</span><div class="mgrid">${tile('accounts','Bank balance',acctList().length?fmt(bal):'Add account')}${nw!=null?tile('networth','Net worth',fmt(nw)):''}${tile('loans','Loans',loans?fmt(loans)+' left':'Add a loan')}${tile('goals','Goals',Object.keys(D.goals).length?Object.keys(D.goals).length+' active':'Set a goal')}</div></section>
   ${tgroup('Manage',[trow('go','family','users','Family & sharing',MODE==='cloud'?`${MEMBERS.length||1} member${MEMBERS.length===1?'':'s'}`:'Only on this device'),
     trow('goplan','recurring','repeat','Repeats',`${recList().length} every month`),
     trow('goplan','cards','card','Credit cards',Object.keys(D.cards).length?Object.keys(D.cards).length+' added':'Track statements and dues'),
@@ -2883,7 +2906,7 @@ function renderDelete(){
     <div class="tcard">${types.map(([k,l,h,ic])=>`<button class="trow" data-act="delwhat" data-k="${k}" aria-pressed="${!!DEL.what[k]}"><span class="ti">${ui(ic,20)}</span><span class="tt"><b>${l}</b><small>${h}</small></span><span class="tick" aria-hidden="true"></span></button>`).join('')}</div>
     ${canAdmin()?`<button class="trow danger" style="border:1px solid var(--line);border-radius:18px;margin-top:10px" data-act="delfresh"><span class="ti">${ui('repeat',20)}</span><span class="tt"><b>Start fresh</b><small>Clear all money data, keep categories, budgets and family</small></span>${CHEV}</button>`:''}
     ${ROLE==='Member'?'<p class="small muted" style="margin:10px 2px 0">As a Member you can delete entries you added yourself.</p>':''}
-    ${canAdmin()?'<p class="small muted" style="margin:10px 2px 0">To delete a category, open it on the Budget tab.</p>':''}`;
+    ${canAdmin()?'<p class="small muted" style="margin:10px 2px 0">To delete a category, open it on the Month tab.</p>':''}`;
   }
   if(DEL.step===1){
     const years=[...new Set([DEL.fy,...Object.keys(txIndex()).map(k=>Number(k.slice(5))>=4?Number(k.slice(0,4)):Number(k.slice(0,4))-1)])].sort((x,y)=>y-x);
@@ -3099,7 +3122,7 @@ function habitsView(){
 }
 /* ================= Help & FAQ ================= */
 // [topic, question, answer (simple HTML), extra search words, [button label, data-act, data-k]]
-const FAQ_TOPICS=[['start','Getting started','home'],['add','Adding entries','list'],['budget','Budget & months','budget'],['bills','Bills & reminders','bell'],['wallet','Wallet','card'],['family','Family & sharing','users'],['data','Import, export & backup','upload'],['delete','Deleting & restoring','backup'],['privacy','Privacy & security','shield'],['app','App & troubleshooting','gear']];
+const FAQ_TOPICS=[['start','Getting started','home'],['add','Adding entries','list'],['budget','Month plan','budget'],['bills','Bills & reminders','bell'],['wallet','Money: accounts, cards, loans','card'],['family','Family & sharing','users'],['data','Import, export & backup','upload'],['delete','Deleting & restoring','backup'],['privacy','Privacy & security','shield'],['app','App & troubleshooting','gear']];
 const FAQ=[
  ['start','What does "Left to spend" mean?','It is the money you started the month with, plus income received, minus everything paid out so far. Tap the big number on Home to see exactly how it adds up.','left to spend balance home number how calculated',['See how it adds up','breakdown','']],
  ['start','How is the "a day" amount worked out?','Paisa takes what\'s left, adds income still to come, subtracts bills, EMIs and budgets you haven\'t paid yet, then divides by the days left in the month. It\'s what you can spend each day without missing a planned payment.','per day daily amount safe to spend',null],
@@ -3113,25 +3136,25 @@ const FAQ=[
  ['add','How do I split one payment across categories?','In Add entry, open the details line under the categories and tap <b>Split across categories</b>. Add each part. The parts must add up to the total before you can save.','split multiple categories one bill',null],
  ['add','What is a Self transfer?','Money moved between your own accounts, like salary account to savings, or paying your credit card. It changes account balances but not what\'s left to spend.','self transfer move money between accounts own',null],
  ['add','How do I record a credit card bill without counting it twice?','If you log card purchases as expenses, pay the card bill as a <b>Self transfer</b> to the card, not as an expense. Paisa warns you if you try, with a one-tap <b>Pay card instead</b>, and marks the Credit card bill paid.','credit card bill payment double count twice',null],
- ['add','How do I make an entry repeat every month?','In Add entry, open the details and tick <b>Repeats every month</b>. On that day each month it appears on Home for a one-tap confirm. Manage repeats in Wallet → Repeats.','repeat recurring monthly salary sip rent automatic',['Open Repeats','goplan','recurring']],
+ ['add','How do I make an entry repeat every month?','In Add entry, open the details and tick <b>Repeats every month</b>. On that day each month it appears on Home for a one-tap confirm. Manage repeats in Money → Repeats.','repeat recurring monthly salary sip rent automatic',['Open Repeats','goplan','recurring']],
  ['add','Can I share an SMS or UPI message to Paisa?','On Android, after installing the app, use your phone\'s Share button and pick Paisa. It reads the amount and merchant for you. iPhone doesn\'t let web apps receive shares, so copy the amount instead.','share sms upi message android iphone',null],
 
- ['budget','How do I change my budgets?','Open <b>Budget</b> and tap <b>Edit budgets</b> to plan the whole month at once, or tap a category to change just that one. You can apply a change to one month only, or to this and future months.','change budget limit plan amount',['Open Budget','go','budget']],
+ ['budget','How do I change my budgets?','Open <b>Month</b> and tap <b>Edit budgets</b> to plan the whole month at once, or tap a category to change just that one. You can apply a change to one month only, or to this and future months.','change budget limit plan amount',['Open Month','go','budget']],
  ['budget','My month starts on salary day, not the 1st. Can I change that?','Yes. In Settings → Budget setup, set <b>Month starts on day</b> (for example 25). Every screen, report and export follows it.','start day month salary date 25th cycle',['Budget setup','prefsec','budget']],
- ['budget','What is "Money at the start" and how do I correct it?','It is what you had when the month began, carried over from last month. If it doesn\'t match your bank, open Budget and tap <b>Starting money</b> to set it for that month.','opening balance starting money carry over correct',['Open Budget','go','budget']],
- ['budget','How do I add, rename, archive or delete a category?','On Budget, tap <b>+ Add a category</b> under a section, or tap a category to rename it, set a due day or archive it. <b>Delete</b> lets you move its entries to another category or delete them too.','category add rename archive remove delete move',['Open Budget','go','budget']],
+ ['budget','What is "Money at the start" and how do I correct it?','It is what you had when the month began, carried over from last month. If it doesn\'t match your bank, open Month and tap <b>Starting money</b> to set it for that month.','opening balance starting money carry over correct',['Open Month','go','budget']],
+ ['budget','How do I add, rename, archive or delete a category?','On Month, tap <b>+ Add a category</b> under a section, or tap a category to rename it, set a due day or archive it. <b>Delete</b> lets you move its entries to another category or delete them too.','category add rename archive remove delete move',['Open Month','go','budget']],
  ['budget','What are the sections Income, Savings, Bills, Expenses and Debt?','They group your categories. Savings and Debt/EMIs count as money going out, so "left to spend" stays honest. Bills and Debt can have due days for reminders.','sections savings debt emi expenses bills income',null],
  ['budget','Where can I see the whole year?','Tap the chart icon at the top left of Home for the Yearly report: income, outflow, savings rate and month-by-month totals. You can export it from there.','year yearly report annual savings rate chart',['Yearly report','go','reports']],
 
- ['bills','How do I track a bill or EMI?','Give a Bills or Debt category a due day on the Budget tab. It then appears in Bills & EMIs with its status, and on Home when it\'s due or overdue. Tap <b>Paid</b> when it goes out.','bill emi due date track rent electricity',['Bills & EMIs','go','bills']],
+ ['bills','How do I track a bill or EMI?','Give a Bills or Debt category a due day on the Month tab. It then appears in Bills & EMIs with its status, and on Home when it\'s due or overdue. Tap <b>Paid</b> when it goes out.','bill emi due date track rent electricity',['Bills & EMIs','go','bills']],
  ['bills','How do I skip a bill this month?','In Bills & EMIs tap <b>Skip</b> next to it. It won\'t count as overdue and you can undo it any time that month.','skip bill not this month',['Bills & EMIs','go','bills']],
  ['bills','How do reminders work?','Turn them on in Settings → Reminders. You can get bill reminders before due dates, an evening nudge to log the day\'s spending, and a weekly summary, each at a time you choose.','reminder notification push alert time',['Reminders','prefsec','reminders']],
  ['bills','Reminders don\'t work on my iPhone. Why?','On iPhone, notifications only work when Paisa is installed: open it in Safari, tap Share → <b>Add to Home Screen</b>, open it from the home screen, then turn on reminders. You need iOS 16.4 or later.','iphone ios notification not working safari home screen',['Install the app','prefsec','install']],
  ['bills','Reminders say "Blocked in phone settings".','Notifications were turned off for Paisa in your phone or browser settings. Turn them back on there (on iPhone: Settings → Notifications → Paisa), then reopen the app.','blocked denied notification permission',['Reminders','prefsec','reminders']],
 
- ['wallet','How do I add my bank account?','Wallet → <b>+ Add</b> → Bank account. Pick the bank and type the balance your bank app shows today. Only the last 4 digits are kept, never the full account number.','bank account add savings salary',['Open Wallet','go','plan']],
- ['wallet','My account balance doesn\'t match the bank. What do I do?','Open the account and tap <b>Check balance</b>. If it differs, type what your bank shows and Paisa adjusts. Small gaps usually mean an entry wasn\'t logged.','balance wrong mismatch check correct',['Open Wallet','go','plan']],
- ['wallet','How do I track a credit card?','Wallet → <b>+ Add</b> → Credit card, with the statement and due days. Each month tap <b>Add statement</b> with the amount, and Paisa shows the due date and what\'s unpaid.','credit card statement due limit',['Credit cards','goplan','cards']],
+ ['wallet','How do I add my bank account?','Money → <b>+ Add</b> → Bank account. Pick the bank and type the balance your bank app shows today. Only the last 4 digits are kept, never the full account number.','bank account add savings salary',['Open Money','go','plan']],
+ ['wallet','My account balance doesn\'t match the bank. What do I do?','Open the account and tap <b>Check balance</b>. If it differs, type what your bank shows and Paisa adjusts. Small gaps usually mean an entry wasn\'t logged.','balance wrong mismatch check correct',['Open Money','go','plan']],
+ ['wallet','How do I track a credit card?','Money → <b>+ Add</b> → Credit card, with the statement and due days. Each month tap <b>Add statement</b> with the amount, and Paisa shows the due date and what\'s unpaid.','credit card statement due limit',['Credit cards','goplan','cards']],
  ['wallet','How do loans and payoff dates work?','Add a loan with what\'s still owed, the interest rate and the EMI. Paisa works out when it ends and the interest left, and updates as you log EMIs.','loan emi payoff interest home personal',['Loans','goplan','loans']],
  ['wallet','What kinds of goals can I set?','Savings goals (a target by a date), yearly payments like insurance (it tells you what to set aside each month), and loan payoff goals (pay off by a date).','goal save target insurance yearly payoff',['Goals','goplan','goals']],
  ['wallet','What is Net worth?','Your bank balances plus investments (FDs, mutual funds, PPF, gold…) minus loans and card dues. Update investment values when they change. Paisa saves a snapshot each month so you can see the trend.','net worth investments assets fd mutual fund',['Net worth','goplan','networth']],
@@ -3203,7 +3226,7 @@ function helpHits(q){return faqFind(q,'').slice(0,3).map(x=>x.i)}
 let STM=null;
 function openStmMatch(acct){
   if(!canWrite()){toast("Your role can't add entries.");return}
-  const L=acctList();if(!L.length){toast('Add your bank account first, in Wallet.');return}
+  const L=acctList();if(!L.length){toast('Add your bank account first, in Money.');return}
   STM={step:'pick',acct:acct&&D.accounts[acct]?acct:defaultAcct()||L[0].id};renderStm();
 }
 function stmDate(v){
@@ -3523,7 +3546,7 @@ document.addEventListener('click',async e=>{
     case 'toastact':{const f=TOASTFN;TOASTFN=null;$('#toastRoot').innerHTML='';if(f)f();break}
   }
 });
-document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='q-text'&&QA){e.preventDefault();QA.qtext=e.target.value;qtextApply(true)}});
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='q-text'&&QA){e.preventDefault();e.stopImmediatePropagation();QA.qtext=e.target.value;qtextApply(true)}});
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.onb){ONB[t.dataset.onb]=t.value.replace(/[^0-9]/g,'');if(t.value!==ONB[t.dataset.onb])t.value=ONB[t.dataset.onb];const nb=document.querySelector('[data-act=onb-go]');if(nb&&ONB.step===2)nb.disabled=!(onbIncome()>0)}
