@@ -621,7 +621,16 @@ function writeErr(e){
   else if(c==='revoked')toast('Your access to this budget was removed.');
   else toast("Couldn't save. Check your connection and try again.");
 }
+// set one field inside a record (path of keys); null removes it
+function setDeep(o,path,v){const r=o&&typeof o==='object'?o:{};let cur=r;for(let i=0;i<path.length-1;i++){const k=path[i];if(!cur[k]||typeof cur[k]!=='object')cur[k]={};cur=cur[k]}const last=path[path.length-1];if(v==null)delete cur[last];else cur[last]=v;return r}
 const store={
+  // one field of a shared record (a month's budgets, bill marks, card statements): family edits merge instead of overwriting each other
+  patch(col,id,path,value){
+    const next=setDeep(D[col][id]?JSON.parse(JSON.stringify(D[col][id])):{},path,value);
+    if(MODE==='local'){D[col]={...D[col],[id]:next};saveLocal();changed();return Promise.resolve()}
+    D[col]={...D[col],[id]:next};cacheSoon();changed();
+    return cloudPatch({col,id,path,value:value==null?null:value,patch:true}).catch(e=>{writeErr(e);throw e});
+  },
   set(col,id,obj){
     if(MODE==='local'){D[col]={...D[col],[id]:obj};saveLocal();changed();return Promise.resolve()}
     if(MODE==='cloud'){D[col]={...D[col],[id]:obj};cacheSoon();changed();return cloudWrite({col,id,data:obj,deleted:false}).catch(e=>{writeErr(e);throw e})}
@@ -679,6 +688,12 @@ function opening(k){
   if(k===s.startMonth)return s.opening||0;
   return month(addM(k,-1)).close;
 }
+// A card bill is a category linked to a card (cat.card). Older budgets with no links fall back to the name, once.
+function cardLinks(){if(memo.cl)return memo.cl;const m={};Object.entries(D.cats).forEach(([id,c])=>{if(c&&c.card)m[id]=c.card});return memo.cl=m}
+function cardOfCat(c){if(!c)return null;if(c.card)return D.cards[c.card]?c.card:null;return !Object.keys(cardLinks()).length&&/credit card/i.test(c.name||'')?'*':null}
+const isCardBill=c=>!!cardOfCat(c);
+// money moved to the card(s) a bill category pays, in a list of entries
+function paidToCard(c,list){const k=cardOfCat(c);if(!k)return 0;return list.filter(x=>x.type==='xfer'&&String(x.to||'').startsWith('card:')&&(k==='*'||x.to==='card:'+k)).reduce((s,x)=>s+x.amt,0)}
 function month(k){
   memo.m=memo.m||{};
   if(memo.m[k])return memo.m[k];
@@ -698,9 +713,8 @@ function month(k){
   const planned=OUT.reduce((t,x)=>t+sec[x].b,0);
   const close=open+income-spent;
   // still to pay = budget not yet used on outflow categories
-  // a card bill already paid by transfer to the card isn't still to pay (its purchases are counted as spent)
-  const cardPaid=ti.list.some(x=>x.type==='xfer'&&String(x.to||'').startsWith('card:'));
-  const toPay=cats.filter(c=>OUT.includes(c.section)&&!(cardPaid&&/credit card/i.test(c.name))).reduce((t,c)=>t+Math.max(0,c.left),0);
+  // a card bill already paid by transfer to its card isn't still to pay (the purchases are counted as spent)
+  const toPay=cats.filter(c=>OUT.includes(c.section)).reduce((t,c)=>t+Math.max(0,isCardBill(c)?c.left-paidToCard(c,ti.list):c.left),0);
   const incomeToCome=Math.max(0,sec.income.b-sec.income.a);
   return memo.m[k]={key:k,cats,sec,open,income,spent,planned,close,toPay,incomeToCome,list:ti.list,
     available:open+income,left:open+income-spent,projected:open+income+incomeToCome-spent-toPay};
@@ -714,7 +728,7 @@ function billsFor(k){
   const m=month(k),t=todayISO(),skip=(D.bills[k]&&D.bills[k].skip)||{};
   return m.cats.filter(c=>(c.section==='bills'||c.section==='debt')&&c.dueDay&&!c.archived).map(c=>{
     const due=dueDate(c,k);let st,label;
-    const viaCard=/credit card/i.test(c.name)?m.list.filter(x=>isXfer(x)&&String(x.to||'').startsWith('card:')).reduce((s,x)=>s+x.amt,0):0;
+    const viaCard=paidToCard(c,m.list);
     if(c.actual>0||viaCard>0){st='paid';label='Paid';if(!c.actual)return{...c,actual:viaCard,due,st,label}}
     else if(skip[c.id]){st='skip';label='Skipped'}
     else{const dd=daysBetween(t,due);
@@ -932,7 +946,7 @@ function afterSaveAsk(tx){
       <div class="btns"><button class="btn primary" data-act="setdue" data-id="${cid}" data-k="${d}">Yes, the ${d}${['th','st','nd','rd'][(d%10<4&&Math.floor(d/10)!==1)?d%10:0]}</button><button class="btn" data-act="duepick" data-id="${cid}">Another day</button><button class="btn" data-act="close">Not fixed</button></div>`);
   }
   // 2. a loan EMI with no loan details yet: offer the payoff reveal
-  if(canAdmin()&&c.section==='debt'&&LOANLIKE.test(c.name)&&!/credit card/i.test(c.name)&&!Object.values(D.loans).some(l=>l.cat===cid)&&!asked('loan-'+cid)){
+  if(canAdmin()&&c.section==='debt'&&LOANLIKE.test(c.name)&&!isCardBill(c)&&!Object.values(D.loans).some(l=>l.cat===cid)&&!asked('loan-'+cid)){
     markAsked('loan-'+cid);return openLoanAsk(cid,tx.amt);
   }
   // 3. paid by card twice, but no card added
@@ -995,7 +1009,7 @@ function nextStep(){
   const noDue=catsAll().filter(c=>!c.archived&&(c.section==='bills'||c.section==='debt')&&!c.dueDay);
   if(canAdmin()&&noDue.length)steps.push({k:'due',t:`Add due dates for ${noDue.length===1?esc(noDue[0].name):noDue.length+' bills and EMIs'} so nothing slips.`,b:'Add dates',a:'duedates',meta:'30 sec'});
   if(NOTIF_SUPPORT&&Notification.permission==='default')steps.push({k:'notif',t:'Get a heads-up 3 days before each bill is due.',b:'Turn on',a:'allownotif'});
-  const loanCat=catsAll().find(c=>!c.archived&&c.section==='debt'&&LOANLIKE.test(c.name)&&!/credit card/i.test(c.name)&&!Object.values(D.loans).some(l=>l.cat===c.id));
+  const loanCat=catsAll().find(c=>!c.archived&&c.section==='debt'&&LOANLIKE.test(c.name)&&!isCardBill(c)&&!Object.values(D.loans).some(l=>l.cat===c.id));
   if(canAdmin()&&loanCat)steps.push({k:'loan-'+loanCat.id,t:`See the date your ${esc(loanCat.name.replace(/\s*EMI$/i,''))} ends.`,b:'Show me',a:'loanask',id:loanCat.id});
   const hh=S()&&S().household;
   if(MODE==='cloud'&&canAdmin()&&hh&&hh!=='me'&&MEMBERS.length<2)steps.push({k:'invite',t:`Invite ${hh==='partner'?'your partner':'your family'} so their spends count too.`,b:'Invite',a:'goinvite'});
@@ -1247,10 +1261,9 @@ async function saveBudgets(){
     const c={...D.cats[id]};const old=budgetOf({...c,id},VM);
     if(amt===old&&!(BSCOPE==='future'&&mdoc.b&&mdoc.b[id]!=null))continue;
     n++;
-    if(BSCOPE==='month'){mdoc.b=mdoc.b||{};mdoc.b[id]=amt;mChanged=true}
-    else{c.hist=histWith(c,old,amt,VM);writes.push(store.set('cats',id,c));if(mdoc.b&&mdoc.b[id]!=null){delete mdoc.b[id];mChanged=true}}
+    if(BSCOPE==='month')writes.push(store.patch('months',VM,['b',id],amt));
+    else{c.hist=histWith(c,old,amt,VM);writes.push(store.set('cats',id,c));if(mdoc.b&&mdoc.b[id]!=null)writes.push(store.patch('months',VM,['b',id],null))}
   }
-  if(mChanged)writes.push(store.set('months',VM,mdoc));
   BEDIT=false;BDRAFT={};render();
   if(!n){toast('No budgets changed.');return}
   await Promise.allSettled(writes);
@@ -1507,7 +1520,7 @@ function renderQuick(){
   `);
 }
 // paying a card bill as an expense double-counts purchases already logged with mode Card
-function ccDouble(q){if(!q||q.type==='xfer'||q.split||!q.cat||!D.cats[q.cat]||!/credit card/i.test(D.cats[q.cat].name))return false;
+function ccDouble(q){if(!q||q.type==='xfer'||q.split||!q.cat||!isCardBill(D.cats[q.cat]))return false;
   const from=addDays(todayISO(),-62);return Object.values(D.tx).some(t=>t&&t.mode==='Card'&&!isXfer(t)&&t.date>=from)}
 function qSyncSplit(){if(!QA||!QA.split)return;document.querySelectorAll('[data-split-cat]').forEach(s=>{QA.split[+s.dataset.splitCat].cat=s.value});document.querySelectorAll('[data-split-amt]').forEach(s=>{QA.split[+s.dataset.splitAmt].amt=s.value})}
 function quickKey(k){
@@ -1583,12 +1596,12 @@ async function saveCat(id,sec){
   c.name=name;c.dueDay=due;
   const mdoc=JSON.parse(JSON.stringify(D.months[VM]||{}));
   if(b!==old||SCOPE==='future'&&mdoc.b&&mdoc.b[id]!=null){
-    if(SCOPE==='month'){mdoc.b=mdoc.b||{};mdoc.b[id]=b;await store.set('months',VM,mdoc).catch(()=>{})}
+    if(SCOPE==='month'){await store.patch('months',VM,['b',id],b).catch(()=>{})}
     else{
       c.hist=(c.hist||[]).filter(h=>h.from<VM);
       if(!c.hist.length){const prev=(D.cats[id].hist||[]).slice().sort((a,b)=>a.from.localeCompare(b.from));if(prev.length&&prev[0].from<VM)c.hist.push({from:prev[0].from,amt:old})}
       c.hist.push({from:VM,amt:b});
-      if(mdoc.b&&mdoc.b[id]!=null){delete mdoc.b[id];store.set('months',VM,mdoc).catch(()=>{})}
+      if(mdoc.b&&mdoc.b[id]!=null){store.patch('months',VM,['b',id],null).catch(()=>{})}
     }
   }
   closeSheet();
@@ -1643,6 +1656,10 @@ function openCard(id){
     <div class="two"><div class="field"><label for="k-name">Card name</label><input class="input" id="k-name" value="${esc(c.name)}" placeholder="Millennia"></div><div class="field"><label for="k-bank">Bank</label><input class="input" id="k-bank" value="${esc(c.bank)}" placeholder="HDFC"></div></div>
     <div class="field"><label for="k-limit">Credit limit (₹)</label><input class="input num" id="k-limit" inputmode="decimal" value="${rupees(c.limit)}"></div>
     <div class="two"><div class="field"><label for="k-sd">Statement day</label><input class="input num" id="k-sd" inputmode="numeric" value="${c.stmtDay||''}"></div><div class="field"><label for="k-dd">Due day</label><input class="input num" id="k-dd" inputmode="numeric" value="${c.dueDay||''}"></div></div>
+    ${(()=>{const L=catsAll().filter(x=>!x.archived&&(x.section==='bills'||x.section==='debt'));if(!L.length)return'';
+      const cur=id?L.find(x=>x.card===id):null;const guess=cur||(!Object.keys(cardLinks()).length?L.find(x=>/credit card|card bill/i.test(x.name)):null);
+      return`<div class="field"><label for="k-cat">Budget line that pays this card</label><select class="input" id="k-cat"><option value="">None</option>${L.map(x=>`<option value="${x.id}" ${guess&&guess.id===x.id?'selected':''}>${esc(x.name)}${x.card&&x.card!==id&&D.cards[x.card]?' · '+esc(D.cards[x.card].name):''}</option>`).join('')}</select></div>
+      <p class="small muted" style="margin:-6px 0 12px">Paying the card with a self transfer marks this bill paid, and Paisa warns if it would count spending twice.</p>`})()}
     <button class="btn primary block" data-act="savecard" data-id="${id||''}">Save</button>
     ${id?`<button class="btn block" style="margin-top:8px" data-act="carddel" data-id="${id}">Delete card and its entries…</button>`:''}
     ${id?`<button class="btn danger block" style="margin-top:8px" data-act="delcard" data-id="${id}">Delete card</button>`:''}`);
@@ -3126,7 +3143,7 @@ document.addEventListener('click',async e=>{
     case 'wrapnext':WRAP.step++;openWrap(WRAP.prev);break;
     case 'wrapclose':closeWrap();break;
     case 'wrapraise':wrapRaise(id,el.dataset.k);break;
-    case 'qpaycard':{qSync();const cid=Object.keys(D.cards)[0];QA.type='xfer';QA.cat=null;QA.from=QA.acct||defaultAcct();QA.to=cid?'card:'+cid:'';renderQuick();break}
+    case 'qpaycard':{qSync();const lk=cardOfCat(D.cats[QA.cat]);const cid=lk&&lk!=='*'?lk:Object.keys(D.cards)[0];QA.type='xfer';QA.cat=null;QA.from=QA.acct||defaultAcct();QA.to=cid?'card:'+cid:'';renderQuick();break}
     case 'key':{const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))a.blur()}quickKey(el.dataset.k);break;
     case 'qcat':qSync();QA.cat=id;QA.guessed=false;renderQuick();break;
     case 'qtype':qSync();QA.type=el.dataset.k;QA.guessed=false;QA.split=null;QA.cat=QA.type==='in'?lastIncomeCat():null;if(QA.type==='xfer'){QA.from=QA.from||defaultAcct();QA.to=''}else if(!QA.acct)QA.acct=defaultAcct(QA.mode);if(QA.type==='in'&&QA.mode==='Card')QA.mode='Net banking';if(QA.type==='in'&&QA.mode==='UPI'&&!QA.amt)QA.mode='Net banking';renderQuick();break;
@@ -3148,7 +3165,7 @@ document.addEventListener('click',async e=>{
     case 'checkyes':{closeSheet();await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});toast('Balance confirmed.');break}
     case 'checkfix':{const v=amtOrNull('ck-bal');if(v==null){toast('Enter what your bank shows.');break}const cur=acctBalance(id);closeSheet();await store.set('accounts',id,{...D.accounts[id],adj:(D.accounts[id].adj||0)+(v-cur),checkedAt:todayISO()}).catch(()=>{});log('corrected','balance',acctName(id)+' to '+fmt(v));toast('Balance updated to '+fmt(v)+'.');break}
     case 'recok':confirmRec(id);break;
-    case 'recskip':{const d=JSON.parse(JSON.stringify(D.bills[curKey()]||{}));d.skipRec=d.skipRec||{};d.skipRec[id]=true;store.set('bills',curKey(),d).catch(()=>{});toast('Skipped for this month.');break}
+    case 'recskip':{store.patch('bills',curKey(),['skipRec',id],true).catch(()=>{});toast('Skipped for this month.');break}
     case 'editrec':closeSheet();openRec(id,id?{}:(el.dataset.k?{cat:el.dataset.k,amt:Number(el.dataset.amt)||null,day:Number(el.dataset.day)||1,mode:'Net banking'}:{}));break;
     case 'rectype':RECTYPE=el.dataset.k;openRec(null,{});break;
     case 'saverec':saveRec(id);break;
@@ -3195,7 +3212,7 @@ document.addEventListener('click',async e=>{
     case 'catdelgo':catDelGo(id);break;
     case 'paybill':{const c=catById(id);const b=budgetOf(c,VM);const due=dueDate(c,VM);const t=todayISO();
       const rr=recForCat(id);openQuick({cat:id,amt:rr?String(rr.amt/100):b?String(b/100):'',mode:rr&&rr.mode||'Auto-debit',acct:rr&&rr.acct||defaultAcct(),date:VM===curKey()?(t<mStart(VM)?mStart(VM):t):due,title:'Mark '+c.name+' paid'});break}
-    case 'skip':case 'unskip':{const d=JSON.parse(JSON.stringify(D.bills[VM]||{}));d.skip=d.skip||{};if(a==='skip')d.skip[id]=true;else delete d.skip[id];store.set('bills',VM,d).then(()=>log(a==='skip'?'skipped':'unskipped','bill',(D.cats[id]||{}).name)).catch(()=>{});break}
+    case 'skip':case 'unskip':{store.patch('bills',VM,['skip',id],a==='skip'?true:null).then(()=>log(a==='skip'?'skipped':'unskipped','bill',(D.cats[id]||{}).name)).catch(()=>{});break}
     case 'addcat':openCat(null,el.dataset.sec);break;
     case 'editcat':openCat(id);break;
     case 'scope':SCOPE=el.dataset.k;el.parentElement.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',b===el));break;
@@ -3204,8 +3221,8 @@ document.addEventListener('click',async e=>{
     case 'catdown':moveCat(id,1);break;
     case 'catarch':{const c={...D.cats[id],archived:!D.cats[id].archived};closeSheet();store.set('cats',id,c).then(()=>log(c.archived?'archived':'restored','category',c.name)).catch(()=>{});toast(c.archived?'Archived '+c.name:'Restored '+c.name);break}
     case 'editopen':openOpening();break;
-    case 'saveopen':{const v=amtOrNull('ob');if(v==null){toast('Enter an amount.');break}const d=JSON.parse(JSON.stringify(D.months[VM]||{}));d.open=v;closeSheet();store.set('months',VM,d).then(()=>log('changed','opening balance',mLabel(VM)+' '+fmt(v))).catch(()=>{});break}
-    case 'resetopen':{const d=JSON.parse(JSON.stringify(D.months[VM]||{}));delete d.open;closeSheet();store.set('months',VM,d).catch(()=>{});break}
+    case 'saveopen':{const v=amtOrNull('ob');if(v==null){toast('Enter an amount.');break}closeSheet();store.patch('months',VM,['open'],v).then(()=>log('changed','opening balance',mLabel(VM)+' '+fmt(v))).catch(()=>{});break}
+    case 'resetopen':{closeSheet();store.patch('months',VM,['open'],null).catch(()=>{});break}
     case 'editloan':openLoan(id);break;
     case 'saveloan':{const name=val('l-name').trim();if(!name){toast('Give the loan a name.');break}
       const o={name,lender:val('l-lender').trim(),original:amtOrNull('l-orig'),rate:parseFloat(val('l-rate'))||0,emi:amtOrNull('l-emi')||0,outstanding:amtOrNull('l-out')||0,cat:val('l-cat'),asOf:todayISO()};
@@ -3214,10 +3231,12 @@ document.addEventListener('click',async e=>{
     case 'editcard':openCard(id);break;
     case 'savecard':{const name=val('k-name').trim();if(!name){toast('Give the card a name.');break}
       const o={...(id?D.cards[id]:{stmts:{}}),name,bank:val('k-bank').trim(),limit:amtOrNull('k-limit')||0,stmtDay:parseInt(val('k-sd'),10)||null,dueDay:parseInt(val('k-dd'),10)||null};
-      closeSheet();store.set('cards',id||uid(),o).then(()=>log(id?'edited':'added','card',name)).catch(()=>{});break}
+      const cid=id||uid();const link=$('#k-cat')?$('#k-cat').value:null;closeSheet();store.set('cards',cid,o).then(()=>log(id?'edited':'added','card',name)).catch(()=>{});
+      if(link!==null)Object.entries(D.cats).forEach(([x,c])=>{const want=x===link;if(want&&c.card!==cid)store.set('cats',x,{...c,card:cid}).catch(()=>{});else if(!want&&c.card===cid){const n={...c};delete n.card;store.set('cats',x,n).catch(()=>{})}});
+      break}
     case 'delcard':closeSheet();delCommit({dels:[{col:'cards',id}],label:((D.cards[id]||{}).name||'')+' card'});break;
     case 'stmt':openStmt(id);break;
-    case 'savestmt':{const o=JSON.parse(JSON.stringify(D.cards[id]));o.stmts=o.stmts||{};o.stmts[VM]={amt:amtOrNull('s-amt')||0,paid:amtOrNull('s-paid')||0};closeSheet();store.set('cards',id,o).then(()=>log('updated','card statement',o.name+' '+mLabel(VM))).catch(()=>{});break}
+    case 'savestmt':{const o={name:D.cards[id].name};const st={amt:amtOrNull('s-amt')||0,paid:amtOrNull('s-paid')||0};closeSheet();store.patch('cards',id,['stmts',VM],st).then(()=>log('updated','card statement',o.name+' '+mLabel(VM))).catch(()=>{});break}
     case 'editgoal':openGoal(id);break;
     case 'savegoal':saveGoal(id);break;
     case 'newgoal':openGoal(null,el.dataset.k);break;
@@ -3343,11 +3362,23 @@ function cacheSave(){if(FID)try{localStorage.setItem(cacheKey(),JSON.stringify(D
 let cacheT=null;function cacheSoon(){clearTimeout(cacheT);cacheT=setTimeout(cacheSave,300)}
 function outbox(){try{return JSON.parse(localStorage.getItem(outKey())||'[]')}catch(e){return[]}}
 function outSave(a){try{localStorage.setItem(outKey(),JSON.stringify(a))}catch(e){}PENDING=a.length}
-function queueOut(op){const a=outbox().filter(x=>!(x.col===op.col&&x.id===op.id));a.push(op);outSave(a);scheduleRender()}
-function clearFamilyCache(){if(!FID)return;lsSet(cacheKey(),null);lsSet(outKey(),null);lsSet('paisa-fid-'+ME,null)}
+function queueOut(op){const a=op.patch?outbox():outbox().filter(x=>!(x.col===op.col&&x.id===op.id));a.push(op);outSave(a);scheduleRender()}
+function clearFamilyCache(){if(!FID)return;lsSet(cacheKey(),null);lsSet(outKey(),null);lsSet(syncKey(),null);lsSet('paisa-fid-'+ME,null)}
 async function pushDoc(op){
   const {error}=await SB.from('docs').upsert({family_id:FID,col:op.col,id:op.id,data:op.data,deleted:op.deleted},{onConflict:'family_id,col,id'});
   if(error)throw error;
+}
+let PATCH_RPC=true;   // turns off if the database hasn't had supabase/v4.sql yet
+async function pushPatch(op){
+  if(PATCH_RPC){const {error}=await SB.rpc('patch_doc',{p_col:op.col,p_id:op.id,p_path:op.path,p_value:op.value});
+    if(!error)return;if(!(error.code==='PGRST202'||error.code==='42883'||/patch_doc/.test(error.message||'')))throw error;PATCH_RPC=false}
+  await pushDoc({col:op.col,id:op.id,data:D[op.col][op.id]||{},deleted:false});
+}
+function cloudPatch(op){
+  return enqueue(op.col+'/'+op.id,async()=>{
+    if(!navigator.onLine){queueOut(op);return}
+    try{await pushPatch(op)}catch(e){if(isNetErr(e)){queueOut(op);return}refetchDoc(op.col,op.id);throw{code:e.code==='42501'?'invalid_argument':'server',message:errMsg(e)}}
+  });
 }
 function cloudWrite(op){
   return enqueue(op.col+'/'+op.id,async()=>{
@@ -3365,7 +3396,7 @@ async function flushOut(){
   let a=outbox();
   while(a.length){
     const op=a[0];
-    try{await pushDoc(op)}catch(e){if(isNetErr(e))break;refetchDoc(op.col,op.id);toast("An offline change wasn't allowed for your role and was undone.")}
+    try{await(op.patch?pushPatch(op):pushDoc(op))}catch(e){if(isNetErr(e))break;refetchDoc(op.col,op.id);toast("An offline change wasn't allowed for your role and was undone.")}
     a.shift();outSave(a);
   }
   flushing=false;scheduleRender();
@@ -3381,17 +3412,22 @@ function applyRow(r){
   if(r.col==='tx'&&r.data&&r.data.by&&r.data.byName&&!NAMES[r.data.by])NAMES[r.data.by]=r.data.byName;
   cacheSoon();changed();
 }
+const syncKey=()=>'paisa-sync-'+FID;
 async function loadAllDocs(){
-  const all={};COLS.forEach(c=>all[c]={});
+  let since=null;try{const s=JSON.parse(lsGet(syncKey())||'null');if(s&&DOCS_READY&&Date.now()-s.full<7*864e5)since=s}catch(e){}
+  const all={};COLS.forEach(c=>all[c]=since?{...D[c]}:{});let maxAt=since?since.at:'';
   for(let from=0;;from+=1000){
-    const {data,error}=await SB.from('docs').select('col,id,data').eq('family_id',FID).eq('deleted',false).order('col').order('id').range(from,from+999);
+    let q=SB.from('docs').select('col,id,data,deleted,updated_at').eq('family_id',FID);
+    q=since?q.gt('updated_at',since.at):q.eq('deleted',false);
+    const {data,error}=await q.order('updated_at').order('col').order('id').range(from,from+999);
     if(error)throw error;
-    data.forEach(r=>{if(all[r.col])all[r.col][r.id]=r.data});
+    data.forEach(r=>{if(!all[r.col])return;if(r.deleted||r.data==null)delete all[r.col][r.id];else all[r.col][r.id]=r.data;if(r.updated_at>maxAt)maxAt=r.updated_at});
     if(data.length<1000)break;
   }
-  outbox().forEach(op=>{if(op.deleted)delete all[op.col][op.id];else all[op.col][op.id]=op.data});
+  outbox().forEach(op=>{if(!all[op.col])return;if(op.patch)all[op.col][op.id]=setDeep(JSON.parse(JSON.stringify(all[op.col][op.id]||{})),op.path,op.value);else if(op.deleted)delete all[op.col][op.id];else all[op.col][op.id]=op.data});
   COLS.forEach(c=>D[c]=all[c]);
   Object.values(D.tx).forEach(t=>{if(t.by&&t.byName&&!NAMES[t.by])NAMES[t.by]=t.byName});
+  if(maxAt)lsSet(syncKey(),JSON.stringify({at:maxAt,full:since?since.full:Date.now()}));
   DOCS_READY=true;cacheSave();changed();
 }
 function setRoleFrom(r){ROLE=ROLEN[r]||'Viewer';IS_OWNER=r==='owner'}
