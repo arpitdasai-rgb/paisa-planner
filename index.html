@@ -495,6 +495,22 @@ input[type=search]::-webkit-search-cancel-button{filter:grayscale(1) brightness(
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) input[type=search]::-webkit-search-cancel-button{filter:grayscale(1) invert(1)}}
 .qtextbtn{display:block;margin:-6px auto 4px;padding:4px 8px}
 .qtext{margin:0 0 6px}
+.hab{display:flex;align-items:center;gap:12px;padding:14px 16px;border-bottom:1px solid var(--line)}
+.hab:last-child{border-bottom:0}
+.hab-t{font-weight:600;font-size:15px}
+.hab-n{font-size:13px;color:var(--muted);margin-top:3px;line-height:1.4}
+.hab-v{text-align:right;font-weight:700;font-size:18px;white-space:nowrap;display:flex;flex-direction:column;align-items:flex-end}
+.hab-v span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+.hab-v.good{color:var(--good)}.hab-v.warn{color:var(--warn)}
+.stmlist{display:flex;flex-direction:column;gap:2px;max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:16px;padding:4px 12px}
+.stmrow{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.stmrow:last-child{border-bottom:0}
+.stmrow.off{opacity:.45}
+.stmrow .t{font-weight:600;font-size:15px}
+.stmrow .s{font-size:12px;color:var(--muted);margin:2px 0 6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:52vw}
+.stmrow .tsel{font-size:16px;padding:6px 10px;max-width:100%}
+.stmtick{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--line);background:var(--surface);flex:none;margin-top:2px}
+.stmtick[aria-pressed="true"]{background:var(--ink);border-color:var(--ink);box-shadow:inset 0 0 0 5px var(--ink),inset 0 0 0 7px var(--bg)}
 details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
 details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
 details.more>summary::-webkit-details-marker{display:none}
@@ -578,7 +594,7 @@ const SECN=Object.fromEntries(SECTIONS.map(s=>[s.k,s.n]));
 const OUT=['savings','bills','expenses','debt'];
 const MODES=['UPI','Card','Cash','Net banking','Auto-debit'];
 const COLS=['settings','cats','tx','months','bills','loans','cards','goals','log','accounts','recurring','assets','trash'];
-const ROUTES=['home','transactions','budget','plan','more','family','bills','reports','prefs','pushsetup','help'];
+const ROUTES=['home','transactions','budget','plan','more','family','bills','reports','prefs','pushsetup','help','habits'];
 
 /* ================= utils ================= */
 const $=s=>document.querySelector(s);
@@ -805,7 +821,7 @@ function render(){
   if(!VM)VM=curKey();
   $('#tabs').hidden=false;$('#fab').hidden=!canWrite();
   renderTabs();
-  const v={home:homeView,transactions:txView,budget:budgetView,plan:planView,family:MODE==='cloud'?familyCloudView:familyView,pushsetup:pushSetupView,more:moreView,bills:billsView,reports:reportsView,prefs:prefsView,help:helpView}[route]||homeView;
+  const v={home:homeView,transactions:txView,budget:budgetView,plan:planView,family:MODE==='cloud'?familyCloudView:familyView,pushsetup:pushSetupView,more:moreView,bills:billsView,reports:reportsView,prefs:prefsView,help:helpView,habits:habitsView}[route]||homeView;
   const keepY=LAST_ROUTE===route?window.scrollY:0;
   app.innerHTML=v();
   if(LAST_ROUTE===route&&keepY)window.scrollTo(0,keepY);LAST_ROUTE=route;
@@ -1565,7 +1581,7 @@ async function quickSave(){
   const q=QA;if(!q)return;
   qSync();qSyncSplit();const rep=$('#q-repeat');if(rep)q.repeat=rep.checked;
   const amt=parseAmt(q.amt);if(!(amt>0))return;
-  const now=Date.now();const base={byName:q.id?(q.byName||''):(MYNAME||''),date:q.date,note:q.note,src:q.src||'manual',by:q.by||ME||'local',at:q.at||now,ub:ME||'local',uat:now};
+  const now=Date.now();const base={byName:q.id?(q.byName||''):(MYNAME||''),date:q.date,note:q.note,src:q.src||'manual',by:q.by||ME||'local',at:q.at||now,ub:ME||'local',uat:now,...(!q.id&&q.t0?{secs:Math.round((performance.now()-q.t0)/100)/10}:q.secs?{secs:q.secs}:{})};
   try{navigator.vibrate&&navigator.vibrate(12)}catch(e){}
   if(q.type==='xfer'){
     if(!q.from||!q.to||q.from===q.to)return;const id=q.id||uid();
@@ -2285,6 +2301,7 @@ function openAccount(id){
     <label class="check" style="border:0"><input type="checkbox" id="ac-def" ${a.isDefault?'checked':''}><span class="small">Use this account by default</span></label>
     <p class="small muted" style="margin:4px 0 12px">Only the last 4 digits are stored, never the full account number.</p>
     <button class="btn primary block" data-act="saveacct" data-id="${id||''}">Save</button>
+    ${id?`<button class="btn block" style="margin-top:8px" data-act="stmmatch" data-id="${id}">Match a bank statement…</button>`:''}
     ${id?`<button class="btn block" style="margin-top:8px" data-act="acctdel" data-id="${id}">Delete account and its entries…</button>`:''}
     ${id?`<button class="btn danger block" style="margin-top:8px" data-act="archacct" data-id="${id}">Remove account</button>`:''}`);
   ACTYPE=a.type||'Savings';
@@ -2462,7 +2479,7 @@ const UI={
 const ui=(n,s=22)=>`<svg viewBox="0 0 24 24" width="${s}" height="${s}" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${UI[n]||NAVI[n]||''}</svg>`;
 
 function renderTabs(){
-  const cur=['transactions','bills'].includes(route)?'home':['family','prefs','reports','pushsetup','help'].includes(route)?'more':route;
+  const cur=['transactions','bills'].includes(route)?'home':['family','prefs','reports','pushsetup','help','habits'].includes(route)?'more':route;
   const item=([k,n])=>`<a href="#${k}" ${cur===k?'aria-current="page"':''}><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${NAVI[k]}</svg><span>${n}</span></a>`;
   $('#tabs').innerHTML='<nav>'+[['home','Home'],['budget','Budget']].map(item).join('')+'<span class="navgap" aria-hidden="true"></span>'+[['plan','Wallet'],['more','More']].map(item).join('')+'</nav>';
 }
@@ -2589,7 +2606,7 @@ function openWalletDetail(key){
 /* ---- More: search and everything else ---- */
 const FEATURES=[['Bills & EMIs','go','bills','receipt'],['Budget','go','budget','budget'],['Entries','go','transactions','list'],['Yearly report','go','reports','report'],['Family','go','family','users'],['Settings','go','prefs','gear'],
   ['Bank accounts','goplan','accounts','bank'],['Credit cards','goplan','cards','card'],['Loans','goplan','loans','bank'],['Goals','goplan','goals','target'],['Repeats','goplan','recurring','repeat'],['Net worth','goplan','networth','chart'],
-  ['Export','exp-month','','download'],['Import from Excel','prefsec','data','upload'],['Reminders','prefsec','reminders','bell'],['App lock','prefsec','lock','lock'],['Back up','prefsec','data','backup'],['Delete data','deldata','','shield'],['Help & FAQ','go','help','doc'],['Recently deleted','prefsec','trash','backup'],['Install the app','prefsec','install','download'],['Budget setup','prefsec','budget','budget'],['Privacy policy','link','privacy.html','shield'],['Terms','link','terms.html','doc']];
+  ['Export','exp-month','','download'],['Import from Excel','prefsec','data','upload'],['Reminders','prefsec','reminders','bell'],['App lock','prefsec','lock','lock'],['Back up','prefsec','data','backup'],['Match bank statement','stmmatch','','bank'],['Delete data','deldata','','shield'],['Help & FAQ','go','help','doc'],['Your habits','go','habits','chart'],['Recently deleted','prefsec','trash','backup'],['Install the app','prefsec','install','download'],['Budget setup','prefsec','budget','budget'],['Privacy policy','link','privacy.html','shield'],['Terms','link','terms.html','doc']];
 const recentQ=()=>{try{return JSON.parse(lsGet('paisa-recent-q')||'[]')}catch(e){return[]}};
 function featBtn([n,a,k,ic],cls='chip'){return a==='link'?`<a class="${cls}" href="${k}">${ui(ic,18)}<span>${n}</span></a>`:`<button class="${cls}" data-act="${a}" ${k?`data-k="${k}"`:''}>${ui(ic,18)}<span>${n}</span></button>`}
 function moreSearch(q){
@@ -2672,7 +2689,7 @@ function prefTiles(s,hasPin){
     trow('prefsec','reminders','bell','Reminders',remSub)])}
   ${tgroup('Security',[trow('prefsec','lock','lock','App lock',hasPin?'On · 4-digit PIN':'Off'),
     trow('prefsec','install','download','Install the app',STANDALONE?'Installed':'Add to home screen')])}
-  ${tgroup('Data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data'),canWrite()?trow('deldata','','shield','Delete data','Choose what, which period, which category'):'',trow('prefsec','trash','backup','Recently deleted',(n=>n?n+' item'+(n>1?'s':'')+' you can restore':'Restore anything deleted in the last 30 days')(Object.keys(trashAll()).length))])}
+  ${tgroup('Data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data'),canWrite()&&acctList().length?trow('stmmatch','','bank','Match a bank statement','Add what you missed, skip what you logged'):'',canWrite()?trow('deldata','','shield','Delete data','Choose what, which period, which category'):'',trow('prefsec','trash','backup','Recently deleted',(n=>n?n+' item'+(n>1?'s':'')+' you can restore':'Restore anything deleted in the last 30 days')(Object.keys(trashAll()).length))])}
   ${tgroup('About',[trow('go','help','doc','Help & FAQ','Search answers to common questions'),trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),IS_OWNER&&CLOUD&&!CFG.vapidPublicKey?trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner'):''])}
   ${IS_OWNER?`<section class="tgroup"><div class="tcard"><button class="trow danger" data-act="prefsec" data-k="danger"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>${MODE==='cloud'?'Delete family budget':'Delete all data'}</b><small>Can't be undone</small></span>${CHEV}</button></div></section>`:''}`;
 }
@@ -2734,6 +2751,7 @@ function moreView(){
     trow('goplan','cards','card','Credit cards',Object.keys(D.cards).length?Object.keys(D.cards).length+' added':'Track statements and dues'),
     trow('prefsec','data','upload','Import & export','Excel, CSV, PDF, backup'),
     trow('go','prefs','gear','Settings','Reminders, app lock, budget setup'),
+    trow('go','habits','chart','Your habits','Logging speed, days logged, bills on time'),
     trow('go','help','doc','Help & FAQ','Answers to common questions')])}
   <p class="small center muted" style="margin:6px 0 0"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
   </div>`;
@@ -3043,6 +3061,42 @@ function selBar(){
   if(!SEL||route!=='transactions')return'';
   return`<div class="selbar" role="toolbar" aria-label="Selected entries"><button class="link" data-act="selcancel">Cancel</button><b>${SEL.size} selected</b><button class="link" data-act="selall">All shown</button><button class="btn danger sm" data-act="seldel" ${SEL.size?'':'disabled'}>Delete</button></div>`;
 }
+/* ================= Habits: the PRD's own success measures, from the family's data ================= */
+function habitStats(){
+  const t=todayISO(),tx=Object.values(D.tx).filter(x=>x&&x.date);
+  const mine=tx.filter(x=>MODE!=='cloud'||x.by===ME);
+  const secs=mine.filter(x=>typeof x.secs==='number'&&x.secs>0&&x.secs<300).sort((a,b)=>(b.at||0)-(a.at||0)).slice(0,30).map(x=>x.secs).sort((a,b)=>a-b);
+  const median=secs.length?secs[Math.floor(secs.length/2)]:null;
+  const from=addDays(t,-27);const days=new Set(mine.filter(x=>x.at).map(x=>iso(new Date(x.at))).filter(d=>d>=from&&d<=t));
+  const perWeek=Math.round(days.size/4*10)/10;
+  const s=S();const closed=[1,2,3].map(n=>addM(curKey(),-n)).filter(k=>s&&k>=s.startMonth);
+  const done=closed.filter(k=>billsFor(k).every(b=>b.st==='paid'||b.st==='skip'));
+  let late=0,billN=0;closed.forEach(k=>billsFor(k).forEach(b=>{billN++;if(b.st==='skip')return;const paid=(txIndex()[k]||{list:[]}).list.filter(x=>x.cat===b.id).map(x=>x.date).sort()[0];if(!paid||daysBetween(b.due,paid)>3)late++}));
+  const missedPerMonth=closed.length?Math.round(late/closed.length*10)/10:null;
+  const L=acctList();const checked=L.filter(a=>a.checkedAt&&daysBetween(a.checkedAt,t)<=7).length;
+  const recent=tx.filter(x=>x.date>=from&&!isXfer(x));const src={manual:0,quick:0,import:0,recurring:0,other:0};
+  recent.forEach(x=>{const k=x.src==='manual'||!x.src?'manual':x.src==='share'?'quick':x.src==='import'?'import':x.src==='recurring'?'recurring':'other';src[k]++});
+  return{median,secsN:secs.length,perWeek,daysN:days.size,closed:closed.length,done:done.length,missedPerMonth,late,billN,accts:L.length,checked,src,recentN:recent.length};
+}
+function habitsView(){
+  const h=habitStats();
+  const row=(title,val,target,ok,note)=>`<div class="hab"><div class="grow"><div class="hab-t">${title}</div><div class="hab-n">${note}</div></div><div class="hab-v ${ok==null?'':ok?'good':'warn'}">${val}<span>${target}</span></div></div>`;
+  return topbar('Your habits',{month:false,back:'more'})+`<div class="stack">
+  <p class="heroline" style="margin:0">The few habits that keep left to spend true. Worked out on this phone from your own entries; nothing is sent anywhere.</p>
+  <section class="tgroup"><div class="eyebrow">Logging</div><div class="tcard habs">
+    ${row('Time to add an entry',h.median==null?'—':h.median+'s','goal 5s',h.median==null?null:h.median<=5,h.secsN?`Middle of your last ${h.secsN>1?h.secsN+" entries":"entry"}. Try "Type or paste" or one-tap repeats to go faster.`:'Shows after your next few entries.')}
+    ${row('Days you logged',h.perWeek+' a week','goal 4',h.daysN?h.perWeek>=4:null,`${h.daysN} of the last 28 days.${h.perWeek<4?' The evening reminder helps: Settings → Reminders.':''}`)}
+    ${row('Entries that weren\'t typed by hand',h.recentN?Math.round((h.src.quick+h.src.import+h.src.recurring)/h.recentN*100)+'%':'—','more is easier',null,h.recentN?`Last 28 days: ${h.src.manual} on the keypad, ${h.src.quick} typed or pasted, ${h.src.recurring} from repeats, ${h.src.import} imported.`:'No entries in the last 28 days.')}
+  </div></section>
+  <section class="tgroup"><div class="eyebrow">Bills and months</div><div class="tcard habs">
+    ${row('Months closed cleanly',h.closed?`${h.done} of ${h.closed}`:'—','all bills done',h.closed?h.done===h.closed:null,h.closed?'Every bill and EMI marked paid or skipped.':'Shows after your first full month.')}
+    ${row('Late or missed payments',h.missedPerMonth==null?'—':h.missedPerMonth+' a month','goal 0',h.missedPerMonth==null?null:h.missedPerMonth<.2,h.closed?`${h.late} of ${h.billN} bills in the last ${h.closed} month${h.closed>1?'s':''} were paid more than 3 days late or not marked.`:'Shows after your first full month.')}
+  </div></section>
+  ${h.accts?`<section class="tgroup"><div class="eyebrow">Trust</div><div class="tcard habs">
+    ${row('Bank accounts checked this week',`${h.checked} of ${h.accts}`,'all',h.checked===h.accts,'A weekly check keeps left to spend matching your bank.')}
+  </div></section>`:''}
+  </div>`;
+}
 /* ================= Help & FAQ ================= */
 // [topic, question, answer (simple HTML), extra search words, [button label, data-act, data-k]]
 const FAQ_TOPICS=[['start','Getting started','home'],['add','Adding entries','list'],['budget','Budget & months','budget'],['bills','Bills & reminders','bell'],['wallet','Wallet','card'],['family','Family & sharing','users'],['data','Import, export & backup','upload'],['delete','Deleting & restoring','backup'],['privacy','Privacy & security','shield'],['app','App & troubleshooting','gear']];
@@ -3145,6 +3199,115 @@ function helpResults(){
 function helpRefresh(){const r=$('#helpres');if(r)r.innerHTML=helpResults()}
 // the More search shows the best help answers too
 function helpHits(q){return faqFind(q,'').slice(0,3).map(x=>x.i)}
+/* ================= Match a bank statement: add what's missing, skip what's already logged ================= */
+let STM=null;
+function openStmMatch(acct){
+  if(!canWrite()){toast("Your role can't add entries.");return}
+  const L=acctList();if(!L.length){toast('Add your bank account first, in Wallet.');return}
+  STM={step:'pick',acct:acct&&D.accounts[acct]?acct:defaultAcct()||L[0].id};renderStm();
+}
+function stmDate(v){
+  if(v instanceof Date&&!isNaN(v))return iso(v);
+  if(typeof v==='number'&&v>20000&&v<80000){const d=new Date(Math.round((v-25569)*864e5));return d.toISOString().slice(0,10)}
+  const s=String(v||'').trim();let m;
+  if((m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/)))return m[1]+'-'+pad(+m[2])+'-'+pad(+m[3]);
+  if((m=s.match(/^(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{2,4})/))){const y=m[3].length===2?2000+(+m[3]):+m[3];const d=+m[1],mo=+m[2];if(mo>=1&&mo<=12&&d>=1&&d<=31)return y+'-'+pad(mo)+'-'+pad(d)}
+  if((m=s.match(/^(\d{1,2})[\s\-\/]([A-Za-z]{3})[A-Za-z]*[\s\-\/,]+(\d{2,4})/))){const mo=MON.findIndex(x=>x.toLowerCase()===m[2].toLowerCase())+1;const y=m[3].length===2?2000+(+m[3]):+m[3];if(mo)return y+'-'+pad(mo)+'-'+pad(+m[1])}
+  return null;
+}
+function stmAmt(v){if(typeof v==='number')return Math.round(Math.abs(v)*100);const s=String(v||'').replace(/[₹,\s]|inr|rs\.?/gi,'').replace(/(cr|dr)$/i,'');const n=parseFloat(s);return isFinite(n)?Math.round(Math.abs(n)*100):0}
+const STM_STOP=/^(upi|dr|cr|imps|neft|rtgs|pos|atm|p2a|p2m|payment|paid|transfer|trf|to|by|from|ref|txn|ach|nach|ecs|mmt|bil|onl|inb|vps|ybl|okaxis|okhdfcbank|okicici|oksbi|paytm|axl|ibl|apl|upi ref|purchase|debit|credit|card|ending|india|pvt|ltd|limited|the|and|via|online)$/i;
+function stmMerchant(desc){
+  const s=String(desc||'');const vpa=s.match(/([a-z0-9._-]{3,})@[a-z]+/i);
+  const toks=s.split(/[\/|\-:*#]+|\s{2,}/).map(x=>x.trim()).filter(Boolean);
+  for(const tk of toks){if(/^[A-Z]{4}0/.test(tk))continue;   // bank branch codes (IFSC)
+    const w=tk.replace(/[^A-Za-z&' ]+/g,' ').split(/\s+/).filter(x=>x.length>2&&!STM_STOP.test(x)&&!/^x+$/i.test(x)).join(' ');
+    if(w.length<3)continue;return w.toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()).slice(0,28)}
+  return vpa?vpa[1].replace(/[._-]+/g,' ').replace(/\d+/g,'').trim().replace(/\b\w/g,c=>c.toUpperCase()):'';
+}
+const STM_KEYS=[[/swiggy|zomato|domino|mcdonald|kfc|pizza|cafe|restaurant|starbucks|eatsure/i,/eat|food|dining|restaurant/i],[/bigbasket|blinkit|zepto|dmart|grofers|jiomart|grocery|supermarket|more retail|instamart/i,/grocer/i],
+  [/uber|ola|rapido|petrol|fuel|hpcl|bpcl|iocl|indian oil|shell|metro|irctc|fastag/i,/transport|fuel|travel|commute/i],[/amazon|flipkart|myntra|ajio|nykaa|meesho|tata cliq/i,/shop/i],
+  [/apollo|pharm|medplus|1mg|hospital|clinic|diagnostic|netmeds/i,/health|medical/i],[/netflix|hotstar|spotify|prime|youtube|jio|airtel|vodafone|vi |bsnl|electric|bescom|tata power|gas|water|broadband/i,/bill|utilit|phone|internet|subscri|electric/i],
+  [/salary|sal cr|payroll/i,/salary|income/i],[/interest/i,/interest|income/i]];
+function stmGuessCat(r){
+  const inc=r.dir==='in';const pool=catsAll().filter(c=>!c.archived&&(inc?c.section==='income':c.section!=='income'));
+  const g=guessCat(r.amt,r.merchant);if(g&&pool.some(c=>c.id===g))return g;
+  for(const [re,catRe] of STM_KEYS)if(re.test(r.desc)){const c=pool.find(c=>catRe.test(c.name));if(c)return c.id}
+  if(inc&&!/salary|sal cr|payroll/i.test(r.desc)){const c=pool.find(c=>/other|misc|refund|interest|cashback/i.test(c.name))||pool.find(c=>!/salary/i.test(c.name));if(c)return c.id}
+  return(pool.find(c=>/misc|other/i.test(c.name))||pool.find(c=>c.section==='expenses')||pool[0]||{}).id||'';
+}
+async function stmRead(file){
+  let X;try{X=await loadXLSX()}catch(e){toast("Couldn't load the reader. Check your connection.");return null}
+  let wb;try{wb=/\.csv$/i.test(file.name)?X.read(await file.text(),{type:'string',raw:true}):X.read(await file.arrayBuffer(),{cellDates:true})}catch(e){toast("Couldn't read that file. Download the statement as Excel or CSV.");return null}
+  for(const name of wb.SheetNames){
+    const rows=X.utils.sheet_to_json(wb.Sheets[name],{header:1,raw:true,defval:''});
+    const hi=rows.findIndex(r=>r.some(c=>/date/i.test(String(c)))&&r.some(c=>/withdraw|debit|dr\b|amount/i.test(String(c))));if(hi<0)continue;
+    const H=rows[hi].map(c=>String(c).trim().toLowerCase());const f=re=>H.findIndex(h=>re.test(h));
+    const ci={date:[/^(txn|tran|transaction)\.?\s*date/,/^date/,/date/].map(f).find(i=>i>=0),desc:f(/narration|description|particular|details|remark/),dr:f(/withdraw|debit|^dr\b|dr amount/),cr:f(/deposit|credit|^cr\b|cr amount/),amt:f(/^amount|txn amount|transaction amount/),type:f(/dr\s*\/\s*cr|cr\s*\/\s*dr|^type$/),bal:f(/balance/)};
+    const out=[];let closing=null,lastDate=null;
+    for(const r of rows.slice(hi+1)){const date=stmDate(r[ci.date]);if(!date)continue;
+      let dr=ci.dr>=0?stmAmt(r[ci.dr]):0,cr=ci.cr>=0?stmAmt(r[ci.cr]):0;
+      if(!dr&&!cr&&ci.amt>=0){const v=r[ci.amt];const a=stmAmt(v);const t=ci.type>=0?String(r[ci.type]):String(v);if(/cr/i.test(t)&&!/dr/i.test(t))cr=a;else if(typeof v==='number'&&v>0&&ci.type<0)cr=a;else dr=a}
+      if(!dr&&!cr)continue;const desc=String(ci.desc>=0?r[ci.desc]:'').replace(/\s+/g,' ').trim();
+      out.push({date,desc,dir:dr?'out':'in',amt:dr||cr,merchant:stmMerchant(desc)});
+      if(ci.bal>=0&&String(r[ci.bal]).trim()!==''){closing=stmAmt(r[ci.bal]);lastDate=date}}
+    if(out.length)return{rows:out,closing,lastDate};
+  }
+  toast("Couldn't find the transactions in that file. It needs Date and Withdrawal/Deposit (or Amount) columns.");return null;
+}
+// pair each statement line with an entry already in Paisa: same amount, same direction, within 3 days
+function stmMatch(rows,acct){
+  const used=new Set();const pool=Object.entries(D.tx).map(([id,t])=>({...t,id}));
+  const dirOf=t=>isXfer(t)?(t.from===acct?'out':t.to===acct?'in':null):(D.cats[t.cat]&&D.cats[t.cat].section==='income'?'in':'out');
+  rows.forEach(r=>{let best=null,bd=9;
+    for(const t of pool){if(used.has(t.id)||t.amt!==r.amt||dirOf(t)!==r.dir)continue;if(!isXfer(t)&&t.acct&&t.acct!==acct)continue;if(!isXfer(t)&&t.mode==='Card')continue;
+      const d=Math.abs(daysBetween(t.date,r.date));if(d<=3&&(d<bd||(d===bd&&t.acct===acct))){best=t;bd=d}}
+    if(best){used.add(best.id);r.match=best.id}else{r.match=null;r.cat=stmGuessCat(r);r.on=true}});
+  return rows;
+}
+function renderStm(){
+  const S0=STM;const L=acctList();
+  if(S0.step==='pick')return openSheet(`${sheetHead('Match a bank statement')}
+    <p class="small" style="margin-top:0">Download a statement from your bank app or net banking (Excel or CSV). Paisa skips what you already logged and lists only what's missing.</p>
+    <div class="field"><label for="stm-acct">Which account is it for?</label><select class="input" id="stm-acct">${L.map(a=>`<option value="${a.id}" ${a.id===S0.acct?'selected':''}>${esc(acctLabel(a))}</option>`).join('')}</select></div>
+    <label class="btn primary block" for="stm-file" style="display:flex;justify-content:center;align-items:center;gap:8px">${ui('upload',18)} Choose statement file</label>
+    <input type="file" id="stm-file" accept=".csv,.xls,.xlsx" hidden>
+    <p class="small muted" style="margin:10px 2px 0">Read on this phone only. The file isn't uploaded or kept.</p>`);
+  const R=S0.rows,miss=R.filter(r=>!r.match),on=miss.filter(r=>r.on),a=acctById(S0.acct);
+  const from=R.reduce((m,r)=>r.date<m?r.date:m,'9999'),to=R.reduce((m,r)=>r.date>m?r.date:m,'0000');
+  const outCats=catsAll().filter(c=>!c.archived&&c.section!=='income'),inCats=catsAll().filter(c=>!c.archived&&c.section==='income');
+  const before=a&&a.asOf?miss.filter(r=>r.date<a.asOf).length:0;
+  const paisaThen=S0.lastDate?acctBalanceAt(S0.acct,addDays(S0.lastDate,1)):null;
+  openSheet(`${sheetHead('Statement check')}
+    <div class="dsum"><div>${R.length} lines · ${dShort(from)} to ${dShort(to)}</div><div class="small muted" style="font-weight:500">${esc(acctLabel(a))}</div></div>
+    <div class="kv"><span>Already in Paisa</span><b class="num">${R.length-miss.length}</b></div>
+    <div class="kv"><span>Missing from Paisa</span><b class="num ${miss.length?'over':''}">${miss.length}</b></div>
+    ${S0.closing!=null&&paisaThen!=null?`<div class="kv"><span>Bank balance on ${dShort(S0.lastDate)}</span><b class="num">${fmt(S0.closing)}</b></div><div class="kv"><span>Paisa had</span><b class="num">${fmt(paisaThen)}</b></div>`:''}
+    ${miss.length?`<p class="dq" style="font-size:17px;margin:16px 0 8px">Add the missing ${miss.length>1?miss.length+' entries':'entry'}?</p>
+    ${before?`<p class="small muted" style="margin:-4px 0 8px">${before} ${before>1?'are':'is'} from before you added this account; they count in the budget but not the balance.</p>`:''}
+    <div class="stmlist">${miss.map((r,i)=>{const idx=R.indexOf(r);const cats=r.dir==='in'?inCats:outCats;return`<div class="stmrow ${r.on?'':'off'}">
+      <button class="stmtick" data-act="stmtoggle" data-i="${idx}" aria-pressed="${!!r.on}" aria-label="Include"></button>
+      <div class="grow"><div class="t">${esc(r.merchant||r.desc.slice(0,28)||'Bank entry')}</div><div class="s">${dShort(r.date)} · ${esc(r.desc.slice(0,48))}</div>
+      <select class="input tsel" data-stmcat="${idx}" aria-label="Category">${cats.map(c=>`<option value="${c.id}" ${c.id===r.cat?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+      <b class="num ${r.dir==='in'?'':''}" style="${r.dir==='in'?'color:var(--good)':''}">${r.dir==='in'?'+':''}${fmt(r.amt)}</b></div>`}).join('')}</div>
+    <button class="btn primary block" style="margin-top:12px" data-act="stmsave" ${on.length?'':'disabled'}>Add ${on.length} entr${on.length===1?'y':'ies'}</button>`
+    :`<p class="small" style="margin:14px 0 0">Everything on this statement is already in Paisa. Nice.</p><button class="btn primary block" style="margin-top:12px" data-act="close">Done</button>`}`);
+}
+async function stmLoad(file){
+  STM.acct=$('#stm-acct')?$('#stm-acct').value:STM.acct;const r=await stmRead(file);if(!r)return;
+  STM={...STM,step:'review',rows:stmMatch(r.rows,STM.acct),closing:r.closing,lastDate:r.lastDate};renderStm();
+}
+async function stmSave(){
+  const S0=STM;document.querySelectorAll('[data-stmcat]').forEach(s=>{S0.rows[+s.dataset.stmcat].cat=s.value});
+  const add=S0.rows.filter(r=>!r.match&&r.on&&r.cat&&D.cats[r.cat]);if(!add.length)return;const now=Date.now();
+  const ops=add.map((r,i)=>({col:'tx',id:uid()+i,data:{byName:MYNAME||'',cat:r.cat,amt:r.amt,date:r.date,mode:/upi/i.test(r.desc)?'UPI':'Net banking',note:r.merchant||r.desc.slice(0,40),card:'',acct:S0.acct,src:'statement',by:ME||'local',at:now,ub:ME||'local',uat:now}}));
+  closeSheet();try{await bulkSet(ops)}catch(e){writeErr(e);return}
+  const ids=ops.map(o=>o.id);log('added','statement entries',`${add.length} from ${acctName(S0.acct)}`);
+  const ok=S0.closing!=null&&S0.lastDate&&acctBalanceAt(S0.acct,addDays(S0.lastDate,1))===S0.closing;
+  if(ok&&S0.lastDate>=addDays(todayISO(),-2))store.set('accounts',S0.acct,{...D.accounts[S0.acct],checkedAt:todayISO()}).catch(()=>{});
+  toast(`Added ${add.length} entr${add.length===1?'y':'ies'} from the statement.${ok?' Balance matches the bank.':''}`,{action:'Undo',ms:10000,fn:()=>bulkSet(ids.map(id=>({col:'tx',id,data:null}))).catch(()=>{})});
+  STM=null;
+}
 /* ================= events ================= */
 document.addEventListener('click',async e=>{
   const el=e.target.closest('[data-act]');if(!el)return;
@@ -3252,6 +3415,9 @@ document.addEventListener('click',async e=>{
     case 'selall':document.querySelectorAll('#txlist .swipe[data-can="1"]').forEach(s=>SEL.add(s.dataset.id));render();break;
     case 'seldel':if(SEL&&SEL.size)openDelete({ids:[...SEL],step:3});break;
     case 'deldata':openDelete();break;
+    case 'stmmatch':closeSheet();openStmMatch(id);break;
+    case 'stmtoggle':{const r=STM.rows[+el.dataset.i];document.querySelectorAll('[data-stmcat]').forEach(s=>{STM.rows[+s.dataset.stmcat].cat=s.value});r.on=!r.on;renderStm();break}
+    case 'stmsave':stmSave();break;
     case 'helptopic':HELPT=el.dataset.k;render();break;
     case 'helpq':HELPQ=el.dataset.k;HELPT='';render();break;
     case 'helpopen':HELPQ=el.dataset.k||'';HELPT='';location.hash='help';break;
@@ -3378,6 +3544,7 @@ document.addEventListener('input',e=>{
     out.innerHTML=`Saves <b>${a.n-b.n} months</b> and <b>${fmt(a.interest-b.interest)}</b> in interest. New payoff: ${mLabel(addM(curKey(),b.n))}.`}
 });
 document.addEventListener('change',e=>{
+  if(e.target&&e.target.id==='stm-file'&&e.target.files[0]){stmLoad(e.target.files[0]);return}
   const t=e.target;
   if(t.id==='onb-sd'){ONB.startDay=Number(t.value);render()}
   else if(t.id==='m-q'){saveRecentQ(t.value)}
