@@ -300,7 +300,7 @@ function showLock(mode){
 }
 function drawLock(){
   const titles={unlock:'Enter your PIN',set:'Choose a 4-digit PIN',confirm:'Enter the PIN again'};
-  $('#lockRoot').innerHTML=`<div class="lock" role="dialog" aria-modal="true" aria-label="App lock"><div class="mark">₹</div><h2>${titles[PIN.mode]}</h2>
+  $('#lockRoot').innerHTML=`<div class="lock" role="dialog" aria-modal="true" aria-label="App lock"><div class="mark">${GULLAK}</div><h2>${titles[PIN.mode]}</h2>
   <div class="dots" aria-hidden="true">${[0,1,2,3].map(i=>`<i class="${i<PIN.buf.length?'on':''}"></i>`).join('')}</div><div class="small" id="pinmsg" style="min-height:18px;color:var(--bad)">${PIN.msg||''}</div>
   <div class="keypad">${['1','2','3','4','5','6','7','8','9','','0','⌫'].map(x=>x?`<button data-act="pin" data-k="${x}" aria-label="${x==='⌫'?'Delete':x}">${x}</button>`:'<span></span>').join('')}</div>
   ${PIN.mode!=='unlock'?'<button class="link" data-act="pincancel">Cancel</button>':''}</div>`;

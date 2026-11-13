@@ -1,6 +1,6 @@
 # Paisa Planner: product, design and engineering map
 
-*Version: paisa-v29 · 13 November 2026 · Owner: Arpit Das*
+*Version: paisa-v30 · 13 November 2026 · Owner: Arpit Das*
 
 This document maps everything about Paisa Planner, in this order:
 1. **Product:** why it exists, who it's for, what it does.
@@ -149,41 +149,38 @@ While a sheet is open, the page behind it is `inert`: it can't be tapped, scroll
 
 ## 3. Design system
 
-### 3.1 Visual language
+### 3.1 Direction: Bahi (13 Nov)
 
-The redesign borrowed patterns (not branding) from premium Indian fintech apps:
-- a monochrome palette;
-- one hero number per screen;
-- pill controls;
-- uppercase tracked labels;
-- circular icon wells;
-- a card stack for accounts and cards;
-- generous whitespace.
+Money is emotional, so the app's first job is to calm, the second to inform. The direction comes from the *bahi-khata*, the red-bound ledger Indian families and shops have kept for generations: warm paper, ink, ruled lines, one marigold thread, and a clay *gullak* (coin bank) as the mark.
 
-### 3.2 Tokens (CSS custom properties on `:root`)
-
-| Group | Tokens |
+| Principle | How it shows up |
 |---|---|
-| Surfaces | `--bg #F4F4F2`, `--surface #FFF`, `--sunk #EDEDEA`, `--hero #F1F1EE`, `--line #E3E3DF` |
-| Ink | `--ink #121314`, `--muted #6A6D70`, `--accent #111213` (black is the accent) |
-| Navigation | `--nav #0D0E0F`, `--nav-ink #8C8F93` |
-| Status (the only colour) | `--good #1D7F52`, `--bad #BF3328`, `--warn #9A6411`, plus `-soft` backgrounds |
-| Charts | `--c-income`, `--c-savings`, `--c-bills`, `--c-expenses`, `--c-debt` |
-| Spacing | `--sp1 4px` … `--sp6 32px` (4/8 grid) |
-| Type scale | `--t-cap 12` · `--t-sm 13` · `--t-md 14` · `--t-body 16` · `--t-lg 20` · `--t-xl 24` · `--t-2xl 32` · `--t-hero 44` |
-| Touch | `--tap 44px` minimum target |
+| **Calm over alarm** | Warm paper and ink instead of stark black and white; colour only for meaning (good, bad, warn) or celebration (marigold) |
+| **The number is a headline** | Left to spend, plan amounts, balances and titles are set in **Fraunces**, a serif with optical sizes; reading text stays in Manrope |
+| **Time is the hidden variable** | The **pace ribbon** on Today: a marigold mark for how far through the month you are, a bar for how much free money is used |
+| **Indian, not ornamental** | Faint ruled lines and a marigold thread on Today's hero; ruled double lines under each day in Entries; card colours from clay, peacock, neem, turmeric and jamun; the gullak icon |
+| **Delight only for a reason** | The number counts to its new value when it changes; marigold petals fall once when every bill of the month is done; nothing else moves for attention |
+| **Accessible by default** | Every text colour meets WCAG AA on every surface it sits on, checked by a test; axe-core finds no serious issues on any screen in either theme; 44px targets; reduced motion turns movement off |
 
-Dark mode redefines the same tokens under `prefers-color-scheme: dark` (background `#0C0D0E`).
+### 3.2 Tokens (CSS custom properties on `:root`, last block of `css/app.css`)
+
+| Group | Light (paper) | Dark (night ledger) |
+|---|---|---|
+| Page / card / sunk / hero | `#F5F0E6` / `#FFFCF6` / `#ECE4D4` / `#EEE5D2` | `#15130F` / `#1E1B16` / `#29251E` / `#1B1813` |
+| Ink / muted / line | `#1F1B16` / `#5F574B` / `#E2D8C5` | `#F2EBDD` / `#ADA392` / `#36302A` |
+| Marigold / clay | `#E3A21A` / `#C8643B` | `#E8B04A` / `#E0875F` |
+| Good / bad / warn | `#2B7548` / `#AE3724` / `#865A00` | `#7CC593` / `#F0907A` / `#E9BB5C` |
+| Navigation | ink bar `#1F1B16`, labels `#B0A595`, active label marigold | `#0D0B09`, labels `#958B7B` |
+
+Measured contrast (light): ink on paper 15.1:1, muted on paper 6.3:1, muted on hero 5.7:1, warn on hero 4.8:1, nav labels 7.1:1. Dark: ink 15.6:1, muted 7.5:1, nav labels 5.9:1.
+
+Spacing stays on the 4/8 grid (`--sp1`…`--sp6`), touch targets 44px (`--tap`), and the type scale `--t-cap 12` … `--t-hero 44`.
 
 ### 3.3 Typography
 
-**Manrope** (variable, weights 200–800) is self-hosted:
-- Two `woff2` subsets: Latin, and Latin-ext, which includes ₹.
-- The Latin subset is preloaded.
-- A metric-matched local fallback (`Manrope Fallback`: Arial with size-adjust and ascent/descent overrides) means text doesn't reflow when the font arrives.
-- No request goes to Google.
-
-The font was Inter until 11 Nov; we switched for a warmer, rounder look with the same clarity in numbers.
+- **Fraunces** (variable, optical sizes, OFL) for numbers and titles: the Today number at optical size 144, titles at 40, plan amounts at 36. Two self-hosted subsets; the Latin one is preloaded, the Latin-ext one carries ₹. A Georgia-based fallback with matched metrics keeps the layout still while it loads (layout shift measured at 0).
+- **Manrope** (variable, OFL) for everything people read: labels, rows, buttons, help.
+- No request goes to Google; both fonts ship with the app and are cached offline.
 
 ### 3.4 Components
 
@@ -198,6 +195,9 @@ The font was Inter until 11 Nov; we switched for a warmer, rounder look with the
 | Row | `.row` | Entries, bills, categories |
 | Sheet | `.scrim` + `.sheet` | All pop-ups |
 | Toast | `.toast` | Confirmations with optional Undo; only the button catches taps |
+| Pace ribbon | `.pace` | Time through the month against free money used, on Today |
+| Gullak mark | `.mark` + `GULLAK` | Brand mark on sign-in, lock and empty states; the app icon |
+| Petals | `.petals` | One-time celebration when every bill of the month is done |
 | Eyebrow | `.eyebrow` | Uppercase section labels |
 | FAQ | `.faqs` + `details.faq` | Help answers |
 | Step bar | `.dsteps` | Multi-step sheets (Delete data) |
@@ -616,6 +616,7 @@ The tests live in the repo (`tests/`) and run on every push with GitHub Actions 
 | **Reminder logic** | `npm run test:unit` | 8 checks running the real `send-reminders` logic with the shared rules: linked card bills (renamed, other card), statement reminders, messages |
 | **Browser** | `npm run test:e2e` (`tests/run-e2e.mjs`) | Serves the app, builds a realistic seeded budget, runs 16 Playwright suites on an iPhone 13 profile; any thrown error, timeout or page error fails the run |
 | **Sweep** | `npm run test:sweep` | Taps every button on every screen and every button in each sheet it opens, from a fresh seeded budget |
+| **Accessibility** | part of `npm run test:e2e` (`a11y.test.js`) | axe-core WCAG 2.1 A/AA on 11 screens in light and dark (fails on serious or critical issues), and contrast of every text colour on every surface |
 | **Layout** | `node tests/e2e/narrow.js`, `audit.js` | No sideways overflow, layout shift, small inputs or squeezed text at 320/375/390px |
 
 Browser suites: `flows` (first run, guessing, questions, wrap), `quick`, `money-v2`, `feat` (entries, accounts, transfers, repeats, split, net worth, import, export, loans, goals), `remind`, `card_states`, `settings-design`, `screens`, `kb` (keyboard and inert page), `logic` (card double count, card paid by transfer, same-day balance), `del` (every Delete data path), `faq`, `qtext` (type or paste), `recon` (weekly check and bank start), `hab` (Your habits), `stm` (statement matching).
@@ -773,6 +774,12 @@ See §16.
 - **Fixed (foundations):** card bills linked to cards; field-level merges for family edits (`v4.sql`, tested on Postgres); load only what changed; one shared copy of the money rules for the app and server; tests moved into the repo with CI.
 - **Built (trust and habit):** type or paste; weekly bank check with log-the-difference; starting money from the banks; bank statement matching; Your habits; card statement reminders.
 - **Redesigned:** the Month plan as commitments, savings and free to spend; tabs by cadence (Today, Month, Money, More); More's duplicate Money grid removed; the code split into a shell, a stylesheet and ten ordered scripts.
+
+### Stage 16: Bahi, the design direction (13 Nov)
+- **Asked for:** "first-principles, innovative design thinking; take artistic licence; do all the checks."
+- **Thinking:** money is emotional, so calm first and inform second. Time is the hidden variable behind any balance. The look should be Indian without being ornamental.
+- **Built:** the bahi-khata direction (§3.1): paper and ink palette with a night-ledger dark mode; Fraunces for numbers and titles; the pace ribbon; the count-up; petals when every bill is done; ruled ledger touches; card colours from Indian pigments; the gullak mark and a new app icon (the old blue icon dated from before both redesigns); the policy pages in the same palette.
+- **Checked:** a new accessibility test (axe-core WCAG 2.1 A/AA on 11 screens in both themes, plus a contrast check of every text colour). It found and fixed five real issues: wrong roles on the This month / Recent switch and the Money strip, spoken labels that didn't match visible text, and a table that a keyboard couldn't reach. Plus the full suite, the every-button sweep, narrow screens and layout shift.
 
 ---
 

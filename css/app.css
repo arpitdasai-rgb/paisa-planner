@@ -567,3 +567,82 @@ textarea.mono{resize:vertical;white-space:pre;overflow:auto}
 body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
+
+/* ===== Bahi: the design direction (Nov 13) ===============================================
+   Inspired by the bahi-khata ledger: warm paper, ink, one marigold thread, a clay gullak.
+   Calm by default; colour carries meaning (good / bad / warn) or celebration (marigold).
+   Numbers and titles are set in Fraunces (optical sizes); reading text stays in Manrope. */
+@font-face{font-family:"Fraunces";font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/fraunces-latin.woff2) format("woff2");
+  unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Fraunces";font-style:normal;font-weight:100 900;font-display:swap;src:url(../fonts/fraunces-latin-ext.woff2) format("woff2");
+  unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Fraunces Fallback";src:local("Georgia"),local("Times New Roman");size-adjust:103%;ascent-override:94%;descent-override:24%;line-gap-override:0%}
+:root{
+  --bg:#F5F0E6; --surface:#FFFCF6; --sunk:#ECE4D4; --ink:#1F1B16; --muted:#5F574B; --line:#E2D8C5;
+  --accent:#1F1B16; --accent-ink:#FFFCF6; --accent-soft:#ECE4D4; --hero:#EEE5D2; --nav:#1F1B16; --nav-ink:#B0A595; --gold:#E3A21A; --clay:#C8643B;
+  --good:#2B7548; --good-soft:#E1EEDF; --bad:#AE3724; --bad-soft:#F7E2DA; --warn:#865A00; --warn-soft:#F6EACB;
+  --c-income:#8C8478; --c-savings:#2B7548; --c-bills:#C8643B; --c-expenses:#E3A21A; --c-debt:#5B3A29;
+  --shadow:0 1px 2px rgba(60,40,10,.06),0 10px 28px rgba(60,40,10,.08);
+  --f-num:"Fraunces","Fraunces Fallback",Georgia,serif; --rule:rgba(31,27,22,.05);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#15130F; --surface:#1E1B16; --sunk:#29251E; --ink:#F2EBDD; --muted:#ADA392; --line:#36302A;
+  --accent:#F2EBDD; --accent-ink:#15130F; --accent-soft:#29251E; --hero:#1B1813; --nav:#0D0B09; --nav-ink:#958B7B; --gold:#E8B04A; --clay:#E0875F;
+  --good:#7CC593; --good-soft:#1E3326; --bad:#F0907A; --bad-soft:#3A221B; --warn:#E9BB5C; --warn-soft:#3A2F17;
+  --c-income:#9A9184; --c-savings:#7CC593; --c-bills:#E0875F; --c-expenses:#E8B04A; --c-debt:#C9A58E;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35); --rule:rgba(242,235,221,.035); color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#15130F; --surface:#1E1B16; --sunk:#29251E; --ink:#F2EBDD; --muted:#ADA392; --line:#36302A;
+  --accent:#F2EBDD; --accent-ink:#15130F; --accent-soft:#29251E; --hero:#1B1813; --nav:#0D0B09; --nav-ink:#958B7B; --gold:#E8B04A; --clay:#E0875F;
+  --good:#7CC593; --good-soft:#1E3326; --bad:#F0907A; --bad-soft:#3A221B; --warn:#E9BB5C; --warn-soft:#3A2F17;
+  --c-income:#9A9184; --c-savings:#7CC593; --c-bills:#E0875F; --c-expenses:#E8B04A; --c-debt:#C9A58E;
+  --shadow:0 1px 2px rgba(0,0,0,.4),0 10px 28px rgba(0,0,0,.35); --rule:rgba(242,235,221,.035); color-scheme:dark}
+body,.topbar{background:var(--bg)}
+::selection{background:color-mix(in srgb,var(--gold) 38%,transparent)}
+:focus-visible{outline:2.5px solid var(--gold);outline-offset:2px}
+
+/* type: the month's number is a headline */
+.hero3 .big,.topbar h1,.dq,.p3h b,.reveal-num,.onb-num,.pc-amt,.hab-v,.onb-q{font-family:var(--f-num);font-optical-sizing:auto}
+.hero3 .big{font-weight:560;letter-spacing:-.025em;font-variation-settings:"opsz" 144;font-size:clamp(48px,14vw,64px)}
+.topbar h1{font-weight:600;letter-spacing:-.015em;font-variation-settings:"opsz" 40}
+.p3h b{font-weight:600;font-variation-settings:"opsz" 36}
+.p3.free .p3h b{font-size:26px}
+.pc-amt{font-weight:600;letter-spacing:-.01em}
+.hab-v{font-weight:600}
+
+/* the ledger page: Today's hero has faint ruled lines and a marigold thread */
+.hero3{background-color:var(--hero);background-image:repeating-linear-gradient(to bottom,transparent 0 31px,var(--rule) 31px 32px);box-shadow:inset 0 -3px 0 var(--gold)}
+.dayh{border-bottom:3px double var(--line);padding-bottom:6px;margin-bottom:2px}
+
+/* navigation: ink bar, marigold add button */
+.tabs a[aria-current="page"]{color:var(--bg)}
+.tabs a[aria-current="page"] svg{filter:none}
+.tabs a[aria-current="page"] span{color:var(--gold)}
+.fab{background:radial-gradient(circle at 50% 28%,#F4C553 0%,#E3A21A 55%,#C98A0C 100%);color:#1F1B16;border:0;box-shadow:0 0 0 7px var(--nav),0 10px 28px rgba(0,0,0,.35);font-weight:400}
+.fab:focus-visible{outline-color:var(--bg)}
+
+/* brand mark: the gullak */
+.mark{background:#1F1B16;color:var(--gold);padding:0;overflow:hidden}
+.mark svg{width:100%;height:100%;display:block}
+
+/* pace ribbon: how far through the month you are, against how much free money is used */
+.pace{margin:16px auto 2px;max-width:330px;text-align:left}
+.pace-track{position:relative;height:8px;border-radius:8px;background:color-mix(in srgb,var(--ink) 11%,transparent)}
+.pace-fill{position:absolute;left:0;top:0;bottom:0;border-radius:8px;background:var(--ink);transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.pace-fill.fast{background:var(--warn)}.pace-fill.over{background:var(--bad)}
+.pace-now{position:absolute;top:-5px;bottom:-5px;width:3px;margin-left:-1.5px;border-radius:3px;background:var(--gold)}
+.pace-lbl{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;color:var(--muted);margin-top:8px}
+.pace-lbl b{color:var(--ink);font-weight:600}
+.pace-lbl .fast{color:var(--warn)}.pace-lbl .over{color:var(--bad)}
+
+/* card stack colours from the same world: ink, clay, peacock, neem, turmeric, jamun */
+.g0{background:linear-gradient(135deg,#1F1B16,#3E362C)}.g1{background:linear-gradient(135deg,#7A3319,#B9582F)}.g2{background:linear-gradient(135deg,#0B3533,#1C6560)}
+.g3{background:linear-gradient(135deg,#27321C,#55663A)}.g4{background:linear-gradient(135deg,#4F3405,#8C5F0B)}.g5{background:linear-gradient(135deg,#341A29,#66364F)}
+
+/* petals: only when every bill of the month is done */
+.petals{position:fixed;inset:0;pointer-events:none;z-index:70;overflow:hidden}
+.petal{position:absolute;top:-28px;width:14px;height:10px;border-radius:80% 0 80% 0;background:var(--gold);opacity:.95;animation:petal 2.2s cubic-bezier(.3,.1,.5,1) forwards}
+.petal:nth-child(3n){background:#F08A24}.petal:nth-child(4n){background:#F4C553}
+@keyframes petal{to{transform:translate(var(--dx),108vh) rotate(var(--r));opacity:.15}}
+@media (prefers-reduced-motion:reduce){.petals{display:none}.pace-fill{transition:none}}
+.bigc,.amtdisp{font-family:var(--f-num);font-optical-sizing:auto;font-weight:580;letter-spacing:-.02em;font-variation-settings:"opsz" 96}

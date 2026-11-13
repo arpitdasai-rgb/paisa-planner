@@ -27,6 +27,36 @@ function renderTabs(){
   $('#tabs').innerHTML='<nav>'+[['home','Today'],['budget','Month']].map(item).join('')+'<span class="navgap" aria-hidden="true"></span>'+[['plan','Money'],['more','More']].map(item).join('')+'</nav>';
 }
 
+/* ---- Today: pace, count-up, petals ---- */
+// How far through the month you are, against how much of the free-to-spend money is used.
+function paceHTML(m){
+  const P=planParts(m);if(!(P.free>0))return'';
+  const total=daysBetween(mStart(VM),mEnd(VM))+1,day=clamp(daysBetween(mStart(VM),todayISO())+1,1,total),time=day/total,used=P.everyday/P.free;
+  const ahead=P.everyday-P.free*time;const tone=used>1?'over':ahead>P.free*.08?'fast':'';
+  const note=used>1?`<span class="over">${fmt(P.everyday-P.free)} past free money</span>`:tone?`<span class="fast">${fmt(Math.round(ahead/10000)*10000)} ahead of pace</span>`:'<span>On pace</span>';
+  return`<div class="pace" role="img" aria-label="Day ${day} of ${total}. ${Math.round(used*100)} percent of free money used. ${tone==='over'?'Over':tone?'Ahead of pace':'On pace'}.">
+    <div class="pace-track"><div class="pace-fill ${tone}" style="width:${Math.min(100,Math.round(used*100))}%"></div><div class="pace-now" style="left:${Math.round(time*100)}%"></div></div>
+    <div class="pace-lbl"><span>Day <b>${day}</b> of ${total} · <b>${Math.round(used*100)}%</b> of free money used</span>${note}</div></div>`;
+}
+// The number counts to its new value when it changes (not on first view, not with reduced motion).
+let HERO_LAST=null;
+function heroCount(){
+  const el=document.querySelector('.hero3 .big');if(!el)return;const to=month(VM).left,key=VM;
+  const from=HERO_LAST&&HERO_LAST.k===key?HERO_LAST.v:null;HERO_LAST={k:key,v:to};
+  if(from==null||from===to||matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const t0=performance.now(),D0=520;const step=t=>{const f=Math.min(1,(t-t0)/D0),e=1-Math.pow(1-f,3);el.textContent=fmt(Math.round((from+(to-from)*e)/100)*100);if(f<1)requestAnimationFrame(step);else el.textContent=fmt(to)};
+  requestAnimationFrame(step);
+}
+// Marigold petals, once, when every bill and EMI of the month is paid or skipped.
+function petalsIfDone(){
+  const k=curKey();if(VM!==k)return;const bl=billsFor(k);if(bl.length<2||!bl.every(b=>b.st==='paid'||b.st==='skip'))return;
+  const key='paisa-petals-'+(FID||'local')+'-'+k;if(lsGet(key))return;lsSet(key,'1');
+  setTimeout(()=>toast(`Every bill for ${mLong(k)} is done. ${bl.length} out of ${bl.length}.`),300);
+  if(matchMedia('(prefers-reduced-motion: reduce)').matches)return;
+  const box=document.createElement('div');box.className='petals';box.setAttribute('aria-hidden','true');
+  for(let i=0;i<26;i++){const p=document.createElement('i');p.className='petal';p.style.left=Math.round(Math.random()*100)+'%';p.style.animationDelay=(Math.random()*.6).toFixed(2)+'s';p.style.setProperty('--dx',Math.round(Math.random()*120-60)+'px');p.style.setProperty('--r',Math.round(Math.random()*540-270)+'deg');box.appendChild(p)}
+  document.body.appendChild(box);setTimeout(()=>box.remove(),3200);
+}
 /* ---- Home ---- */
 let HVIEW='spend';
 function homeView(){
@@ -45,11 +75,12 @@ function homeView(){
   const skipKey=urgent&&canWrite()?'bill.overdue:'+urgent.id:null;const badgeN=needs.filter(n=>n.key!==skipKey).length;
   const hero=`<section class="hero2 hero3" aria-label="Left to spend">
     <div class="hbar"><a class="ibtn" href="#reports" aria-label="Yearly report">${ui('chart')}</a>
-      <div class="ptoggle" role="tablist"><button role="tab" data-act="hview" data-k="spend" aria-pressed="${HVIEW==='spend'}">This month${badgeN?`<i class="badge">${badgeN}</i>`:''}</button><button role="tab" data-act="hview" data-k="recent" aria-pressed="${HVIEW==='recent'}">Recent</button></div>
+      <div class="ptoggle" role="group" aria-label="Show"><button data-act="hview" data-k="spend" aria-pressed="${HVIEW==='spend'}">This month${badgeN?`<i class="badge">${badgeN}</i>`:''}</button><button data-act="hview" data-k="recent" aria-pressed="${HVIEW==='recent'}">Recent</button></div>
       <a class="ibtn" href="#prefs" aria-label="Settings">${ui('gear')}</a></div>
     <div class="heyebrow"><button class="ar" data-act="mprev" aria-label="Previous month">‹</button><span>Left to spend · ${isCur?(daysLeft+' day'+(daysLeft===1?'':'s')+' to go'):mLabel(VM)}</span><button class="ar" data-act="mnext" aria-label="Next month">›</button></div>
-    <button class="bigbtn" data-act="breakdown" aria-label="How this is worked out"><span class="big num ${m.left<0&&!waitInc?'neg':''}">${fmt(m.left)}</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
+    <button class="bigbtn" data-act="breakdown" aria-label="${fmt(m.left)} left to spend. See how it adds up"><span class="big num ${m.left<0&&!waitInc?'neg':''}">${fmt(m.left)}</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <p class="heroline">${line}${waitInc&&m.left<=0?'. Below zero only because that income isn\'t logged yet':''}</p>
+    ${isCur?paceHTML(m):''}
     ${cta}
     ${isCur&&!needs.some(n=>n.rank===1)?nextStepHTML():''}
   </section>`;
@@ -97,13 +128,13 @@ function cardState(id){
 function dueDateFn(day){const k=curKey();let d=dueDate({dueDay:day},k);if(d<todayISO())d=dueDate({dueDay:day},addM(k,1));return d}
 function pcardHTML(it,sel){
   if(it.kind==='acct'){const a=it.a,bal=acctBalance(a.id);
-    return `<button class="pcard ${gradOf(a.id)} ${sel?'sel':''}" data-act="wpick" data-id="${it.key}" aria-label="${esc(acctLabel(a))}, balance ${fmt(bal)}">
+    return `<button class="pcard ${gradOf(a.id)} ${sel?'sel':''}" data-act="wpick" data-id="${it.key}">
       <span class="pc-row"><span class="pc-bank">${esc(a.bank||'Bank')}</span><span class="pc-amt num">${fmt(bal)}</span></span>
       <span class="pc-row pc-sub"><span>${esc((a.type||'Savings').toUpperCase())}${a.last4?' ·· '+esc(a.last4):''}</span><span>${bal<0?'Overdrawn':'Balance'}</span></span>
       <span class="pc-chip" aria-hidden="true"></span>
       <span class="pc-row pc-foot"><span class="pc-name">${esc((a.nick||MYNAME||'').toUpperCase())}</span>${sel&&canAdmin()?'<span class="pc-act" data-act="checkacct" data-id="'+a.id+'">Check balance</span>':''}</span></button>`}
   const c=it.c,s=cardState(it.id);
-  return `<button class="pcard ${gradOf(it.id)} ${sel?'sel':''}" data-act="wpick" data-id="${it.key}" aria-label="${esc(c.name)} card, ${esc(s.label)}">
+  return `<button class="pcard ${gradOf(it.id)} ${sel?'sel':''}" data-act="wpick" data-id="${it.key}">
     <span class="pc-row"><span class="pc-bank">${esc(c.bank||c.name)}</span><span class="pc-amt num">${s.st?(s.full?'<span class="ok">✓</span> ':'')+fmt(s.full?s.st.amt:s.due):'—'}</span></span>
     <span class="pc-row pc-sub"><span>${esc(c.name.toUpperCase())}</span><span>${esc(s.label.toUpperCase())}</span></span>
     <span class="pc-chip" aria-hidden="true"></span>
@@ -119,8 +150,8 @@ function walletView(){
   const tile=(k,label,val)=>`<button class="mtile" data-act="goplan" data-k="${k}"><span class="mt-l">${label}</span><span class="mt-v">${val} ›</span></button>`;
   return `<header class="topbar"><h1>Money</h1>${canAdmin()?'<button class="btn sm" data-act="waddmenu">+ Add</button>':''}</header>
   <section class="wsum"><div class="eyebrow">In ${acctList().length} account${acctList().length===1?'':'s'}</div><div class="bigc num">${fmt(tot)}</div>${dues?`<div class="small muted">Card dues ${fmt(dues)}</div>`:''}</section>
-  ${items.length?`<div class="cstrip" role="tablist">
-    <button class="cs-all" data-act="wfilter" data-k="${WFILTER==='all'?'acct':WFILTER==='acct'?'card':'all'}" aria-label="Filter">${WFILTER==='all'?'All':WFILTER==='acct'?'Banks':'Cards'} (${items.length})</button>
+  ${items.length?`<div class="cstrip" role="group" aria-label="Accounts and cards">
+    <button class="cs-all" data-act="wfilter" data-k="${WFILTER==='all'?'acct':WFILTER==='acct'?'card':'all'}" aria-label="${WFILTER==='all'?'All':WFILTER==='acct'?'Banks':'Cards'} (${items.length}), tap to filter">${WFILTER==='all'?'All':WFILTER==='acct'?'Banks':'Cards'} (${items.length})</button>
     ${items.map(i=>`<button class="cs-thumb ${gradOf(i.id)}" data-act="wpick" data-id="${i.key}" aria-pressed="${i.key===WSEL}" aria-label="${esc(i.kind==='acct'?acctLabel(i.a):i.c.name)}"><span>${esc(((i.kind==='acct'?i.a.bank:i.c.bank||i.c.name)||'').slice(0,1))}</span></button>`).join('')}
     ${canAdmin()?'<button class="cs-add" data-act="waddmenu" aria-label="Add account or card">+</button>':''}</div>
   <div class="cstack">${sel?pcardHTML(sel,true):''}</div>
@@ -239,7 +270,7 @@ function prefTiles(s,hasPin){
 
 /* ================= Family ================= */
 const ROLE_ROWS=[['See budgets and entries',1,1,1,1],['Add expenses and income',1,1,1,0],['Edit their own entries',1,1,1,0],["Edit anyone's entries",1,1,0,0],['Mark bills paid',1,1,1,0],['Change budgets and due dates',1,1,0,0],['Manage accounts, loans, goals',1,1,0,0],['Invite and remove people',1,1,0,0],['Delete the family',1,0,0,0]];
-function rolesSheet(){openSheet(`${sheetHead('What each role can do')}<div class="tablewrap"><table><thead><tr><th></th><th>Owner</th><th>Admin</th><th>Member</th><th>Viewer</th></tr></thead><tbody>${ROLE_ROWS.map(r=>`<tr><td style="white-space:normal;min-width:130px">${r[0]}</td>${r.slice(1).map(v=>`<td style="text-align:center">${v?'✓':'<span class="muted">–</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`)}
+function rolesSheet(){openSheet(`${sheetHead('What each role can do')}<div class="tablewrap" tabindex="0" role="region" aria-label="Month by month table"><table><thead><tr><th></th><th>Owner</th><th>Admin</th><th>Member</th><th>Viewer</th></tr></thead><tbody>${ROLE_ROWS.map(r=>`<tr><td style="white-space:normal;min-width:130px">${r[0]}</td>${r.slice(1).map(v=>`<td style="text-align:center">${v?'✓':'<span class="muted">–</span>'}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`)}
 function activitySheet(){const logs=Object.values(D.log).sort((a,b)=>b.at-a.at).slice(0,50);openSheet(`${sheetHead('Activity')}${logs.map(l=>`<div class="row"><div class="grow"><div class="small"><b>${esc(who(l.user))}</b> ${esc(l.action)} ${esc(l.entity)}${l.detail?': '+esc(l.detail):''}</div><div class="s">${new Date(l.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}</div></div></div>`).join('')||'<p class="small muted">No changes yet.</p>'}`)}
 function inviteSheet(){
   openSheet(`${sheetHead('Invite by Gmail')}

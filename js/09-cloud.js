@@ -119,7 +119,7 @@ async function cloudBoot(){
 function showSignIn(msg){
   MODE='signin';
   screen(`<div class="stack" style="padding-top:18vh;text-align:center;align-items:center">
-    <div class="mark" style="width:64px;height:64px;font-size:32px;border-radius:18px">₹</div>
+    <div class="mark" style="width:72px;height:72px;border-radius:20px">${GULLAK}</div>
     <h1 style="font-size:28px">Paisa Planner</h1>
     <p class="muted" style="margin:0;max-width:320px">Plan the month, log spending in seconds and never miss a bill or EMI. Share one budget with your family.</p>
     <div style="height:8px"></div>
@@ -177,7 +177,7 @@ async function cloudNoFamily(){
   const invs=(data||[]).filter(i=>new Date(i.expires_at)>new Date());
   let localN=0;try{const o=JSON.parse(lsGet('paisa-local')||'null');if(o&&o.settings&&o.settings.main)localN=Object.keys(o.tx||{}).length+1}catch(e){}
   screen(`<div class="stack" style="padding-top:28px">
-    <div class="brand"><div class="mark">₹</div><span class="label">Signed in as ${esc(EMAIL)}</span></div>
+    <div class="brand"><div class="mark">${GULLAK}</div><span class="label">Signed in as ${esc(EMAIL)}</span></div>
     <h1 style="font-size:26px">Hi ${esc(MYNAME.split(' ')[0])}</h1>
     ${invs.map(i=>`<section class="card"><div class="label" style="margin-bottom:4px">Invite</div><h2>${esc(i.inviter_name||'Someone')} invited you to ${esc(i.family_name||'their family budget')}</h2>
       <p class="small muted" style="margin:6px 0 12px">You'll join as <b>${ROLEN[i.role]}</b>: ${ROLEHELP[i.role].charAt(0).toLowerCase()+ROLEHELP[i.role].slice(1)} Expires ${new Date(i.expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}.</p>

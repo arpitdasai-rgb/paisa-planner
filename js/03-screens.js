@@ -227,7 +227,7 @@ function reportsView(){
     <div><div class="label">Plan used</div><div class="num ${used>plan&&plan?'over':''}" style="font-weight:700;font-size:17px">${plan?Math.round(used/plan*100)+'%':'–'}</div></div>
   </section>
   <section class="card">${chart}<div class="legend"><span><span class="sw" style="background:var(--c-income)"></span>Income</span><span><span class="sw" style="background:var(--c-debt)"></span>Total outflow</span></div></section>
-  <section class="card" style="padding-inline:12px"><div class="tablewrap"><table>
+  <section class="card" style="padding-inline:12px"><div class="tablewrap" tabindex="0" role="region" aria-label="Month by month table"><table>
     <thead><tr><th>Month</th><th>Income</th><th>Savings</th><th>Bills+Exp</th><th>EMIs</th><th>Closing</th><th>Save %</th></tr></thead>
     <tbody>${rows.map(r=>`<tr><td>${MON[Number(r.k.slice(5))-1]}${r.has?'':' <span class="muted">·</span>'}</td><td>${fmtShort(r.inc)}</td><td>${fmtShort(r.sav)}</td><td>${fmtShort(r.be)}</td><td>${fmtShort(r.emi)}</td><td class="${r.close<0?'over':''}">${fmtShort(r.close)}</td><td>${r.inc?Math.round(r.sav/r.inc*100)+'%':'–'}</td></tr>`).join('')||`<tr><td colspan="7" class="muted" style="text-align:left">No months in ${reportYear}.</td></tr>`}</tbody>
     ${withData.length?`<tfoot><tr><td>Total</td><td>${fmtShort(inc)}</td><td>${fmtShort(sav)}</td><td>${fmtShort(sum(r=>r.be))}</td><td>${fmtShort(sum(r=>r.emi))}</td><td></td><td>${inc?Math.round(sav/inc*100)+'%':'–'}</td></tr></tfoot>`:''}

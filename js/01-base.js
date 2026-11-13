@@ -2,6 +2,8 @@
    Classic script loaded in order with defer; it shares globals with the other js/ files. */
 "use strict";
 /* ================= constants ================= */
+// the brand mark: a clay gullak with a coin dropping in
+const GULLAK='<svg viewBox="0 0 512 512" aria-hidden="true"><circle cx="256" cy="98" r="40" fill="#E3A21A"/><circle cx="256" cy="98" r="26" fill="none" stroke="#1F1B16" stroke-opacity=".3" stroke-width="6"/><path d="M226 168h60l-4 22c56 14 106 64 106 128 0 76-60 124-132 124S124 394 124 318c0-64 50-114 106-128z" fill="#C8643B"/><path d="M168 262c14-26 38-46 64-56" fill="none" stroke="#F3A77E" stroke-width="12" stroke-linecap="round" opacity=".7"/><rect x="224" y="160" width="64" height="18" rx="9" fill="#D9774C"/><rect x="229" y="210" width="54" height="11" rx="5.5" fill="#1F1B16"/><path d="M136 338c74 28 166 28 240 0" fill="none" stroke="#F5F0E6" stroke-width="9" stroke-linecap="round" opacity=".8"/><path d="M146 364c70 24 150 24 220 0" fill="none" stroke="#E3A21A" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 17"/></svg>';
 const SECTIONS=[
   {k:'income',n:'Income'},{k:'savings',n:'Savings & Investments'},{k:'bills',n:'Bills'},
   {k:'expenses',n:'Expenses'},{k:'debt',n:'Debt / EMIs'}];
@@ -222,7 +224,7 @@ function render(){
   if(MODE==='cloud'&&!DOCS_READY){$('#tabs').hidden=true;$('#fab').hidden=true;app.innerHTML='<div class="stack" aria-busy="true" aria-label="Loading your family budget" style="padding-top:72px"><div class="skel" style="height:14px;width:30%"></div><div class="skel" style="height:44px;width:60%"></div><div class="skel" style="height:40px"></div><div class="skel" style="height:12px"></div><div class="skel" style="height:140px;margin-top:16px"></div><div class="skel" style="height:56px"></div><div class="skel" style="height:56px"></div></div>';return}
   if(!S()){
     $('#tabs').hidden=true;$('#fab').hidden=true;
-    app.innerHTML=canAdmin()?onboardingHTML():`<div class="empty-state" style="padding-top:22vh"><div class="mark" style="margin:0 auto 14px">₹</div><h2>Budget not set up yet</h2><p>The family Owner needs to finish setup first. This page updates by itself once they do.</p></div>`;
+    app.innerHTML=canAdmin()?onboardingHTML():`<div class="empty-state" style="padding-top:22vh"><div class="mark" style="margin:0 auto 14px">${GULLAK}</div><h2>Budget not set up yet</h2><p>The family Owner needs to finish setup first. This page updates by itself once they do.</p></div>`;
     return;
   }
   if(!VM)VM=curKey();
@@ -233,6 +235,7 @@ function render(){
   app.innerHTML=v();
   if(LAST_ROUTE===route&&keepY)window.scrollTo(0,keepY);LAST_ROUTE=route;
   if(route==='transactions')renderTxList();
+  if(route==='home'){heroCount();petalsIfDone()}
   if(SHARED&&!render.shareDone&&S()&&(MODE!=='cloud'||DOCS_READY)){render.shareDone=true;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}setTimeout(openShared,400)}
   if(route==='home'&&!render.wrapTried&&(MODE!=='cloud'||DOCS_READY)){render.wrapTried=true;const pw=wrapDue();if(pw)setTimeout(()=>{if(!$('#sheetRoot').innerHTML&&route==='home')openWrap(pw)},800)}
 }
