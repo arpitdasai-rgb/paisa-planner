@@ -1,0 +1,14 @@
+const {OUT,XLSX_JS,XLSX_NODE,URL}=require('./_env');
+const {chromium,devices}=require('playwright');
+const seed=require('fs').readFileSync(OUT+'/seed.json','utf8');
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({...devices['iPhone 13']});
+await ctx.route('**/config.js',r=>r.fulfill({contentType:'application/javascript',body:'window.PAISA_CONFIG={supabaseUrl:"",supabaseAnonKey:""};'}));
+await ctx.route('**/sw.js',r=>r.fulfill({status:404,body:''}));
+await ctx.addInitScript(s=>{if(!sessionStorage.getItem('seeded')){const o=JSON.parse(s);localStorage.clear();for(const k in o)localStorage.setItem(k,o[k]);sessionStorage.setItem('seeded','1')}},seed);
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const U=URL;
+await p.goto(U+'#home');await p.waitForTimeout(400);
+await p.click('#fab');for(const ch of '420')await p.click(`[data-act=key][data-k="${ch}"]`);await p.click('.chip[data-act=qcat] >> nth=0');await p.click('[data-act=qsave]');await p.waitForTimeout(300);
+console.log('secs recorded:',await p.evaluate(()=>Object.values(D.tx).sort((a,b)=>b.at-a.at)[0].secs));
+await p.goto(U+'#more');await p.waitForTimeout(300);await p.click('[data-act=go][data-k=habits]');await p.waitForTimeout(300);
+console.log((await p.textContent('#app')).replace(/\s+/g,' ').slice(0,700));await p.screenshot({path:OUT+'/hab.png',fullPage:true});
+console.log(errs.length?'ERRORS:\n'+errs.join('\n'):'no page errors');await b.close()})();

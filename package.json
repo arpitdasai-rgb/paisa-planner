@@ -1,0 +1,16 @@
+{
+  "name": "paisa-planner",
+  "private": true,
+  "description": "Monthly budget PWA for Indian families. No build step: the site is the repo root.",
+  "scripts": {
+    "test": "npm run test:unit && npm run test:e2e",
+    "test:unit": "node --experimental-strip-types --no-warnings tests/unit/money-core.test.mjs && node --experimental-strip-types --no-warnings tests/unit/reminders.test.mjs",
+    "test:e2e": "node tests/run-e2e.mjs",
+    "test:sweep": "node tests/run-e2e.mjs sweep",
+    "test:sql": "bash tests/sql/run.sh"
+  },
+  "devDependencies": {
+    "playwright": "1.63.0",
+    "xlsx": "0.18.5"
+  }
+}

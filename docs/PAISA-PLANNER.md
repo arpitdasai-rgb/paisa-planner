@@ -1,6 +1,6 @@
 # Paisa Planner: product, design and engineering map
 
-*Version: paisa-v23 · 11 November 2026 · Owner: Arpit Das*
+*Version: paisa-v29 · 13 November 2026 · Owner: Arpit Das*
 
 This document maps everything about Paisa Planner, in this order:
 1. **Product:** why it exists, who it's for, what it does.
@@ -85,6 +85,20 @@ In the PRD's example month, credit card payments ran ₹40,000 against a ₹20,0
 6. **Works offline, feels native.** Installable PWA, instant start, no iPhone zoom or bounce, no layout jumps.
 7. **Private by design.** Device-only by default. Family data is protected by database-level rules. Only the last 4 digits of an account number are stored.
 
+### 1.5 Where we went beyond the PRD (first-principles rethink, 13 Nov)
+
+The PRD assumed people would type every expense and that a carried-forward balance is good enough. Working from what must be true for the app to be useful at all, we changed five assumptions:
+
+| What must be true | The PRD assumed | What we built instead |
+|---|---|---|
+| **The number must match the bank**, or people stop trusting it | Money at the start carries over from last month | A **weekly bank check** in Needs you; a gap is logged as missed spending in one tap; the month can **start from what the banks held** (minus card dues) |
+| **Typing every expense doesn't last** | Manual entry, with SMS detection on Android only | **Type or paste** on every phone ("350 swiggy" or a bank SMS); **bank statement matching** that adds only what's missing |
+| **Rules must survive renaming** | Card bills recognised by their name | Card bills **linked to the card**; one shared copy of the money rules for the app and the reminder service |
+| **A family edits at the same time** | One shared record per month | **Field-level merges** on the server (`v4.sql`), so two people's edits both survive |
+| **You can't improve what you don't measure** | Success metrics in the PRD, never measured | **Your habits**: the PRD's own targets (5-second entry, 4 days a week, months closed, late payments) worked out from the family's data |
+
+It also reshaped the plan itself: people think in **commitments, savings and free to spend**, not five spreadsheet sections, and in **how often** they do things. So the tabs became **Today / Month / Money / More**.
+
 ---
 
 ## 2. Information architecture and screens
@@ -94,27 +108,30 @@ In the PRD's example month, credit card payments ran ₹40,000 against a ₹20,0
 The bottom bar is dark, with a raised centre **+**:
 
 ```
- Home   Budget   [ + ]   Wallet   More
+ Today   Month   [ + ]   Money   More
 ```
+
+The tabs follow how often things happen: **Today** (the number, adding entries, what's due), **Month** (the plan and bills), **Money** (accounts, cards, loans, goals, net worth), **More** (search, family, settings, help). Routes keep their original names (`#home`, `#budget`, `#plan`), so links and tests still work.
 
 - **+** opens Add entry from anywhere.
 - The bar and **+** hide while the keyboard is open.
-- Sub-pages (Entries, Bills, Family, Settings, Yearly report, Help) highlight their parent tab: Home or More.
+- Sub-pages highlight their parent tab: Entries → Today; Bills → Month; Family, Settings, Yearly report, Help and Your habits → More.
 
 ### 2.2 Screen map (hash routes)
 
 | Route | Screen | Reached from | Purpose |
 |---|---|---|---|
 | `#home` | Home | Tab | Left to spend, main action, Needs you, Coming up, charts |
-| `#budget` | Budget | Tab | Month breakdown, sections with Budget vs Actual, Edit budgets, Starting money, Clear month |
-| `#plan` | Wallet | Tab | Bank accounts and cards as a card stack; Money matters tiles: Loans, Goals, Repeats, Net worth, Cards |
-| `#more` | More | Tab | Search (entries, categories, features, help); shortcuts; Money grid; Manage list |
+| `#budget` | Month plan | Tab | Money in, commitments, savings and free to spend; Bills summary; categories grouped the same way; Edit budgets, Starting money, How it adds up, Clear month |
+| `#plan` | Money | Tab | Bank accounts and cards as a card stack; Money matters tiles: Loans, Goals, Repeats, Net worth, Cards |
+| `#more` | More | Tab | Search (entries, categories, features, help); shortcuts; Manage list (Family, Repeats, Cards, Import & export, Settings, Your habits, Help) |
 | `#transactions` | Entries | Home → Recent, More | Month's entries with filters, swipe edit/delete, Select mode |
-| `#bills` | Bills & EMIs | Home → All bills | Overdue / This week / Later / Done; Paid, Skip |
+| `#bills` | Bills & EMIs | Month, Today → All bills | Overdue / This week / Later / Done; Paid, Skip |
 | `#reports` | Yearly report | Home chart icon, More | Income, outflow, savings rate, month table, export |
 | `#family` | Family | More, Settings | People row, invites, roles, activity (cloud); backup (device-only) |
 | `#prefs` | Settings | Home gear, More | Tiles: Budget, Security, Data, About, Danger; each opens a sub-page |
-| `#help` | Help & FAQ | More, Settings → About, More search | 52 answers in 10 topics with search |
+| `#help` | Help & FAQ | More, Settings → About, More search | 59 answers in 10 topics with search |
+| `#habits` | Your habits | More | The PRD's success measures from the family's own data |
 | `#pushsetup` | Reminder setup | Settings (Owner only) | One-time server setup for scheduled reminders |
 | `#add` | (deep link) | Notifications, home-screen shortcut | Opens Home with Add entry |
 
@@ -122,9 +139,9 @@ The bottom bar is dark, with a raised centre **+**:
 
 Most actions open a sheet instead of a page:
 - Add entry, the month breakdown, category, account, card, statement, loan, goal and asset editors;
-- export, import, Delete data, Start fresh;
+- export, import, **Match a bank statement**, Delete data, Start fresh;
 - invites, roles, activity, the member menu;
-- check balance, the month-end wrap and confirm dialogs.
+- check balance (with log-the-difference), the month-end wrap and confirm dialogs.
 
 While a sheet is open, the page behind it is `inert`: it can't be tapped, scrolled or focused.
 
@@ -230,7 +247,8 @@ Every in-app prompt is defined once in the `MSG` registry. `needsItems(k)` retur
 
 ```
 ┌──────────────────────── Phone (PWA) ─────────────────────────┐
-│ index.html: styles + logic + screens (vanilla JS)            │
+│ index.html (shell) + css/app.css + js/01–10 (vanilla JS)     │
+│ money-core.js: shared money rules (also used by the server)  │
 │   store adapter ──► local mode: localStorage 'paisa-local'   │
 │                └──► cloud mode: Supabase (cache + outbox)    │
 │ sw.js: offline shell, library cache, push display            │
@@ -241,7 +259,7 @@ Every in-app prompt is defined once in the `MSG` registry. `needsItems(k)` retur
 │ Postgres: profiles, families, family_members, invites, docs, │
 │           push_subscriptions   + row-level security          │
 │ RPC functions: family management, push subscriptions,        │
-│           delete my account                                  │
+│           delete my account, patch_doc (field-level merges)  │
 │ Realtime: docs + family_members changes                      │
 │ Edge Function send-reminders ◄── pg_cron 'paisa-hourly'      │
 └───────────────┬──────────────────────────────────────────────┘
@@ -249,13 +267,11 @@ Every in-app prompt is defined once in the `MSG` registry. `needsItems(k)` retur
           Phone notification ──► sw.js ──► opens #bills / #add
 ```
 
-**Why a single HTML file with no build step:**
-- The app started as a single-file artifact.
-- Keeping it as one file meant any static host works (GitHub Pages today).
-- The service worker caches one file.
-- There's no toolchain to maintain.
-
-**The trade-off:** a large file (about 350 KB, 3,600 lines). It's organised in labelled sections (§9.1) and covered by end-to-end tests (§13).
+**Why plain files with no build step:**
+- The app started as one file inside an artifact; on 13 Nov it was split into a 2 KB `index.html` shell, `css/app.css` and ten ordered scripts in `js/` (§9.1).
+- Any static host works (GitHub Pages today) and there's no toolchain to maintain.
+- The scripts are classic scripts loaded with `defer`, so they run in order after the page is parsed and share globals exactly as the single file did.
+- **One copy of the money rules** (`supabase/functions/_shared/money-core.js`) is an ES module: the app loads it first (it sets `globalThis.PaisaCore`), and the reminder service imports it. The app and the server can no longer disagree about dates, budgets or whether a bill is paid.
 
 **External code:**
 - `@supabase/supabase-js@2.45.4` (jsDelivr), loaded only in family mode;
@@ -272,8 +288,8 @@ All budget data is a set of **collections** of JSON documents, held in memory as
 | Collection | Key | Fields (amounts in **paise**) |
 |---|---|---|
 | `settings` | `main` | `name`, `startDay` (1–28), `startMonth` (`YYYY-MM`), `opening`, `household`, `hideIncome`, `owner` |
-| `cats` | id | `name`, `section` (income/savings/bills/expenses/debt), `order`, `archived`, `dueDay`, `hist: [{from:'YYYY-MM', amt}]` |
-| `tx` | id | `cat`, `amt`, `date` (`YYYY-MM-DD`), `mode` (UPI/Card/Cash/Net banking/Auto-debit), `note`, `card`, `acct`, `src` (manual/import/recurring/share), `rec`, `split`, `by`, `byName`, `at`, `ub`, `uat` · **transfers:** `type:'xfer'`, `from`, `to` (an account id or `card:<id>`), no `cat` |
+| `cats` | id | `name`, `section` (income/savings/bills/expenses/debt), `order`, `archived`, `dueDay`, `hist: [{from:'YYYY-MM', amt}]`, `card` (the card this bill pays) |
+| `tx` | id | `cat`, `amt`, `date` (`YYYY-MM-DD`), `mode` (UPI/Card/Cash/Net banking/Auto-debit), `note`, `card`, `acct`, `src` (manual/import/recurring/share/statement/reconcile), `rec`, `split`, `secs` (seconds it took to add), `by`, `byName`, `at`, `ub`, `uat` · **transfers:** `type:'xfer'`, `from`, `to` (an account id or `card:<id>`), no `cat` |
 | `months` | `YYYY-MM` | `b: {catId: amt}` (one-month budget overrides), `open` (starting-money override) |
 | `bills` | `YYYY-MM` | `skip: {catId:true}`, `skipRec: {recId:true}` |
 | `loans` | id | `name`, `lender`, `original`, `rate`, `emi`, `outstanding`, `asOf`, `cat` (linked EMI category) |
@@ -342,6 +358,8 @@ The `schema.sql` tests covered 41 role scenarios when it was written.
 - Offline, or on a network error, the operation goes to the **outbox** (`paisa-outbox-<fid>`), which is flushed when the app comes back online or becomes visible.
 - If the server refuses a write (wrong role), the app re-fetches that document to undo the change locally and shows a toast.
 - **Bulk writes** (`bulkSet`): Delete data and restore upsert up to **1,000 rows per request**. Each request is a single statement, so it either all applies or none of it does.
+- **Field-level merges** (`store.patch` → `patch_doc`, from `v4.sql`): a month's budget overrides and starting money, bill marks and card statements change **one field at a time** on the server, inside a row lock, so two people editing the same month both keep their changes. Offline field changes queue individually. Until `v4.sql` is run, the app falls back to whole-record saves.
+- **Load only what changed:** opening the app fetches rows with `updated_at` after the last sync (`paisa-sync-<fid>`), including deletions, with a full reload once a week.
 - **Cache:** the whole family dataset is cached at `paisa-cloud-<fid>`, so the app opens instantly and works offline.
 
 ---
@@ -353,11 +371,13 @@ The `schema.sql` tests covered 41 role scenarios when it was written.
 | Phone registration | Settings → Reminders. The app subscribes with the public VAPID key from `config.js` and calls `save_push_subscription` with the person's preferences. |
 | Preferences | `bills` (on by default, hour `billsHour`, default 8), `evening` (opt-in, `eveningHour` 21), `weekly` (opt-in, `weeklyDay` 0 = Sunday, `weeklyHour` 19) |
 | Scheduler | `pg_cron` job `paisa-hourly` at `30 * * * *` calls the function with `kind=auto` and an `x-cron-secret` header |
-| Sender | Edge Function `send-reminders` (Deno, `web-push@3.6.7`, service role) |
+| Sender | Edge Function `send-reminders` (Deno, `web-push@3.6.7`, service role), importing `../_shared/money-core.js` |
 | Display | `sw.js` `push` handler; tapping the notification opens `#bills`, `#add` or `#home` |
 
 **What gets sent** (in IST, at each person's chosen hour):
-- **Bills:** 3 days before, on the day, and the morning after if still unpaid and not skipped. A Credit card bill counts as paid when money was transferred to a card that month, the same rule as the app.
+- **Bills:** 3 days before, on the day, and the morning after if still unpaid and not skipped. A card bill counts as paid when money was transferred to **its linked card** that month.
+- **Card statements:** an unpaid statement 3 days before its due date, on the day and the morning after; on the statement day, a nudge to add the amount if it isn't in yet.
+- All of these rules come from `money-core.js`, the same file the app uses.
 - **Evening:** "Spent anything today?", only if the person logged nothing that day.
 - **Weekly:** "This week: ₹X spent", with the biggest category.
 - **Test:** sent only to the signed-in person, using their sign-in token instead of the cron secret.
@@ -372,29 +392,23 @@ Dead push addresses (404/410) are deleted automatically.
 
 ## 9. Frontend engineering
 
-### 9.1 Layout of `index.html`
+### 9.1 Files and load order
 
-The file is organised in labelled sections, in this order:
+`index.html` is a 2 KB shell: metas, the manifest, the font preload, `css/app.css`, then the scripts in this order:
 
-1. `<head>`: metas, theme colours, manifest, font preload, `<style>` (tokens, components, screens, dark mode, narrow-screen rules)
-2. **utils:** `$`, `esc`, `fmt`, `fmtShort`, `parseAmt`, dates (`addM`, `addDays`, `daysBetween`, `iso`)
-3. **store:** the `D` collections, `store.set/del`, `saveLocal`, `log`, `writeErr`
-4. **calculations:** `keyOf`, `mStart/mEnd`, `catsAll`, `txIndex`, `budgetOf`, `opening`, `month`, `dueDate`, `billsFor`, `loanCalc`, `loanOutstanding`, `goalCalc`
-5. **shell:** `render`, `scheduleRender`, `setRoute`, `topbar`, `monthSwitch`, `renderTabs`
-6. **onboarding** (60-second first run) and **in-the-moment questions** (`afterSaveAsk`)
-7. **month-end wrap**
-8. **screens:** `homeView`, `budgetView`, `txView` + `renderTxList`, `billsView`, `planView` (Wallet and sub-views), `reportsView`
-9. **sheets:** `openSheet/closeSheet`, Add entry (`openQuick`, `renderQuick`, `quickSave`), the editors
-10. **import / export:** `handleImport` → `IMP` steps → `doImport`; `openExport` → `renderExport` → `runExport` / `printReport`
-11. **accounts, recurring, share target, net worth, yearly**
-12. **Wallet card stack** (`pcardHTML`, `cardState`)
-13. **Settings** (`prefsView` + `prefTiles`, the `PREFSEC` sub-pages), **Family** (`familyCloudView`, `familyView`, `memberMenu`, sheets), **More** (`moreView`, `moreSearch`)
-14. **messages** (`MSG`, `needsItems`, `attentionHTML`), **reminders** (`remindersCardHTML`, `pushSetupView`, `syncPush`)
-15. **delete data** (`openDelete`, `delPlan`, `delCommit`, `bulkSet`, trash, `openFresh`, `openCatDelete`, select mode)
-16. **help** (`FAQ`, `faqFind`, `helpView`)
-17. **events:** one delegated `click` handler (a `switch` on `data-act`, about 185 actions), plus `input` and `change`
-18. **cloud:** Supabase client, sign-in, family load, realtime, outbox, cache
-19. **lock, backup and restore, boot**
+| File | What's in it |
+|---|---|
+| `supabase/functions/_shared/money-core.js` (module) | Shared money rules: dates, budget months, budgets over time, bill paid status, card links, card due dates and reminders |
+| `js/01-base.js` | Constants, formatting, the store (`set`, `del`, `patch`), money calculations (`month`, `billsFor`, `planParts`, loans, goals), rendering and routing |
+| `js/02-flows.js` | First run, category guessing and merchant memory, in-the-moment questions, next step, month-end wrap, icons |
+| `js/03-screens.js` | Entries, Month plan, Bills, Yearly report, Money sub-views, Settings sections |
+| `js/04-sheets.js` | Add entry (keypad, type or paste, split), editors, goals, import, export, warnings, reminders and their setup page, iPhone viewport |
+| `js/05-money.js` | Bank accounts and balances (now and on a date), the weekly check, transfers, repeats, share target, net worth |
+| `js/06-shell.js` | Tab bar, Today, the Money card stack, the messages registry, Settings tiles, Family, More |
+| `js/07-tools.js` | Delete data, Recently deleted, Start fresh, Your habits, Help & FAQ, bank statement matching |
+| `js/08-events.js` | One delegated click handler (`data-act`), inputs, keyboard |
+| `js/09-cloud.js` | Supabase sign-in, family, realtime, field merges, incremental sync, outbox, cache |
+| `js/10-boot.js` | PWA plumbing, app lock, backup and restore, start-up (runs last) |
 
 ### 9.2 Rendering
 
@@ -475,6 +489,22 @@ per day     = projected ÷ days left in the month   (shown rounded down to ₹10
 - Self transfers have no category, so they **never change** left to spend.
 - Earlier months are computed iteratively and memoised, so a long history doesn't recurse deeply.
 
+### 10.1a The plan in three parts (Month page)
+
+```
+money in        = open + income received + income still to come
+commitments     = Σ max(budget, actual) over bills + EMIs      (paid = actual + card transfers)
+savings         = Σ max(budget, actual) over savings
+free to spend   = money in − commitments − savings
+free left       = free to spend − everyday spending so far
+```
+
+Everyday categories can have limits, but don't need them: free to spend is the pot.
+
+### 10.1b Starting money from the banks
+
+`bankStart(k)` = Σ each account's balance on the first day of month k − card statements of the previous month still unpaid. If it differs from money at the start by ₹500 or more (and no starting money was set for that month), Needs you offers **Use banks**, which sets `months[k].open` with a field merge.
+
 ### 10.2 Dates
 
 - `keyOf(date)`: if the day of the month is before `min(startDay, days in month)`, the date belongs to the previous month.
@@ -486,7 +516,7 @@ per day     = projected ÷ days left in the month   (shown rounded down to ₹10
 
 | Status | Rule |
 |---|---|
-| Paid | Any entry in that category this month, **or** for a "credit card" category, a transfer to a card this month |
+| Paid | Any entry in that category this month, **or** for a card bill (`cat.card`), a transfer to that card this month. Budgets with no links at all fall back to a name match ("credit card"). |
 | Skipped | `bills[k].skip[catId]` |
 | Overdue / Due / Upcoming | By days to the due date: `<0`, `0–3`, `>3` |
 
@@ -498,13 +528,15 @@ balance = opening + adj + Σ entries since asOf
 ```
 
 - Entries logged earlier on the same day the account was added are skipped (`createdAt`), because the typed balance already includes them.
-- **Check balance** adjusts `adj` so the balance matches what the bank shows.
+- **Weekly check:** any account not checked for 7 days appears in Needs you ("Does HDFC show ₹X?"). If the bank differs, the gap can be **logged as missed spending or income** (an entry with `src:'reconcile'`, so the budget stays true) or **only corrected** (`adj`, for charges or interest).
+- **Balance on a date** (`acctBalanceAt`) uses the same rules for entries before that date.
 
 ### 10.5 Credit cards
 
 - Card purchases (mode **Card**) count as spending when they're made.
 - Paying the bill is a **Self transfer to the card**, which doesn't count twice.
-- If someone logs the card bill as an expense while card purchases already exist (last 62 days), Add entry warns them and offers **Pay card instead**.
+- A card's editor sets the **budget line that pays it** (`cat.card`). Paying the card with a transfer marks that bill paid and drops it from still-to-pay.
+- If someone logs a card bill as an expense while card purchases already exist (last 62 days), Add entry warns them and offers **Pay card instead**, which goes to the linked card.
 
 ### 10.6 Loans and goals
 
@@ -539,11 +571,11 @@ A snapshot is saved once a month (`assets` with `kind:'snap'`) to draw the trend
 | Area | What a person can do |
 |---|---|
 | **First run** | Salary day → income → fixed outgoings as tiles with a live "left for everything else" → household → the reveal. About 60 seconds. |
-| **Add entry** | Number pad, Expense / Income / Self transfer, recent categories and one-tap repeats, a category guess (amount, time, merchant memory), date, mode, account or card, note, split across categories, "Repeats every month" |
+| **Add entry** | Number pad or **type or paste** ("350 swiggy", a bank SMS; Done saves when the category is certain), Expense / Income / Self transfer, recent categories and one-tap repeats, a category guess (amount, time, merchant memory), date, mode, account or card, note, split across categories, "Repeats every month" |
 | **Entries** | Filter by search, category, mode or account. Swipe right to edit, left to delete. Select mode for bulk delete. |
-| **Budget** | Month breakdown, sections with progress, Edit budgets (whole month with a live total), per-category editor (rename, due day, move, archive, delete with move/delete entries), Starting money, Clear data for the month |
+| **Month plan** | Money in, commitments, savings and free to spend; Bills summary; sections with progress, Edit budgets (whole month with a live total), per-category editor (rename, due day, move, archive, delete with move/delete entries), Starting money, Clear data for the month |
 | **Bills & EMIs** | Grouped by urgency, Paid (prefilled from repeats), Skip/Undo, reminder settings |
-| **Wallet** | Accounts and cards card stack, Check balance, statements and dues, Pay now, Loans, Goals, Repeats, Net worth |
+| **Money** | Accounts and cards card stack, weekly check with log-the-difference, Match a bank statement, card ↔ bill link, statements and dues, Pay now, Loans, Goals, Repeats, Net worth |
 | **Yearly report** | Income, outflow, savings rate, plan used, monthly table, export |
 | **More** | Search across entries, categories, features and help. Shortcuts, Money grid, Manage list. |
 | **Family** | Invite by Gmail with a role, pending invites, change role, make Owner, remove, leave, roles explained, activity history |
@@ -551,7 +583,9 @@ A snapshot is saved once a month (`assets` with `kind:'snap'`) to draw the trend
 | **Import** | Excel/CSV → detected categories (placed by name, changeable) → month totals → confirm |
 | **Export** | Period (month/year/range/all) × format (Excel/CSV/PDF/backup) × sections × filters |
 | **Delete data** | What (10 kinds) → period → filters → preview with impact → typed count for 20+ items → Undo → 30-day Recently deleted. Also Start fresh. |
-| **Help & FAQ** | 52 answers, 10 topics, ranked search with highlights, a button to the feature in each answer |
+| **Match a bank statement** | Excel/CSV from any Indian bank → lines already logged skipped (same amount and direction within 3 days) → missing ones listed with merchant and category guessed → added in one batch with Undo → balance confirmed when it matches |
+| **Your habits** | Time to add an entry, days logged a week, share not typed by hand, months closed cleanly, late payments, accounts checked this week |
+| **Help & FAQ** | 59 answers, 10 topics, ranked search with highlights, a button to the feature in each answer |
 | **Month-end wrap** | Saved vs plan, where you went over, raise a budget in one tap, next month's number |
 | **App lock** | PIN on open |
 
@@ -573,30 +607,20 @@ A snapshot is saved once a month (`assets` with `kind:'snap'`) to draw the trend
 
 ## 13. Quality: how the app is tested
 
-All tests are Playwright scripts against a local server, on an iPhone 13 profile unless noted. Supabase and `sw.js` are stubbed, so they run in device-only mode.
+The tests live in the repo (`tests/`) and run on every push with GitHub Actions (`.github/workflows/test.yml`). `npm test` runs the rule and browser tests locally.
 
-| Suite | Covers |
-|---|---|
-| `flows_test` | Onboarding, quick add, category guessing, merchant memory, loan question, month-end wrap |
-| `quick_test`, `v2_test`, `feat_test` | Add entry, accounts, transfers, repeats, split, net worth, import, export, loans and goals |
-| `remind_test`, `card_states` | Reminder card states and permissions |
-| `design`, `screens_test` | Settings tiles and sub-pages, More, Family, routing |
-| `kb_test` | No keyboard over the number pad; page `inert` behind sheets |
-| `logic_test` | Card double-count warning, card bill paid by transfer, same-day account balance |
-| `del_test` | Every Delete data path, both balance modes, Undo, restore, typed count, select mode, category move, Start fresh, member rules |
-| `faq_test` | Help search ranking, topics, all 37 answer buttons, More search link, dark mode |
-| `fuzz` | Taps **every** button on every screen and every button inside each sheet it opens, from a fresh seeded budget (about 410 taps in this version) |
-| `audit` / `narrow` | No sideways overflow, no layout shift, no small inputs or taps; 320/375px checks for squeezed text and cut titles |
-| Edge Function logic | The pure logic section runs under Node with sample families (bills due, card paid by transfer, weekly with transfers) |
+| Layer | Command | What it proves |
+|---|---|---|
+| **Database** | `npm run test:sql` (`tests/sql/run.sh`) | Loads the real `schema.sql`, `push.sql`, `v2.sql`, `v3.sql`, `v4.sql` on Postgres 16 with a small Supabase stand-in, then checks: two edits to one month merge; a member's bill mark merges with the owner's; members can't change budgets; viewers can't change anything; members can save to Recently deleted |
+| **Shared money rules** | `npm run test:unit` | 18 checks on `money-core.js`: start days, due dates, budget history and overrides, card links and due dates |
+| **Reminder logic** | `npm run test:unit` | 8 checks running the real `send-reminders` logic with the shared rules: linked card bills (renamed, other card), statement reminders, messages |
+| **Browser** | `npm run test:e2e` (`tests/run-e2e.mjs`) | Serves the app, builds a realistic seeded budget, runs 16 Playwright suites on an iPhone 13 profile; any thrown error, timeout or page error fails the run |
+| **Sweep** | `npm run test:sweep` | Taps every button on every screen and every button in each sheet it opens, from a fresh seeded budget |
+| **Layout** | `node tests/e2e/narrow.js`, `audit.js` | No sideways overflow, layout shift, small inputs or squeezed text at 320/375/390px |
 
-**Release checklist:**
-1. Syntax check.
-2. All suites green.
-3. Fuzz with no page errors.
-4. Narrow check clean.
-5. Bump `sw.js` `VERSION`.
-6. Commit and push.
-7. Confirm the GitHub Pages deploy succeeded.
+Browser suites: `flows` (first run, guessing, questions, wrap), `quick`, `money-v2`, `feat` (entries, accounts, transfers, repeats, split, net worth, import, export, loans, goals), `remind`, `card_states`, `settings-design`, `screens`, `kb` (keyboard and inert page), `logic` (card double count, card paid by transfer, same-day balance), `del` (every Delete data path), `faq`, `qtext` (type or paste), `recon` (weekly check and bank start), `hab` (Your habits), `stm` (statement matching).
+
+**Release checklist:** tests green locally or in CI → bump `sw.js` `VERSION` → commit and push → confirm the Pages deploy.
 
 ---
 
@@ -606,9 +630,10 @@ All tests are Playwright scripts against a local server, on an iPhone 13 profile
 |---|---|
 | **Host** | GitHub Pages from `main` (repo `arpitdasai-rgb/paisa-planner`). Any static HTTPS host works. |
 | **Release** | Bump `VERSION` in `sw.js`, then push. Phones update in the background; the next open shows it. |
-| **New Supabase project** | `schema.sql` → `v2.sql` → `v3.sql` → `push.sql`, then Google sign-in (see `SETUP-SUPABASE.md`) |
+| **New Supabase project** | `schema.sql` → `v2.sql` → `v3.sql` → `v4.sql` → `push.sql`, then Google sign-in (see `SETUP-SUPABASE.md`) |
+| **Existing project** | Run `v4.sql` once (field-level merges) |
 | **Reminders setup (once)** | Settings → Reminders → Reminder setup (Owner): create keys, set secrets, deploy `send-reminders`, schedule the hourly job |
-| **After editing the Edge Function** | Redeploy `send-reminders` in Supabase |
+| **After editing the Edge Function or `money-core.js`** | Redeploy `send-reminders`. It imports `../_shared/money-core.js`: with the Supabase CLI, `supabase functions deploy send-reminders` bundles it; in the dashboard editor, add `money-core.js` next to `index.ts` and change the import to `./money-core.js` |
 | **Health check** | Call the function with `kind=auto` and the cron secret. It returns `{sent, skipped}`. |
 | **Google consent screen** | Must be published (In production) so any Gmail can sign in; while in Testing, only listed test users can |
 
@@ -616,7 +641,7 @@ All tests are Playwright scripts against a local server, on an iPhone 13 profile
 
 ## 15. The journey: how we got to this version
 
-All of this happened over two days (10–11 November 2026), in 23 commits. Each step below says what changed and **why**.
+All of this happened between 10 and 13 November 2026. Each step below says what changed and **why**.
 
 ### Stage 0: PRD to a working app (before git)
 - **Input:** a 20-page PRD for replacing the Excel tracker.
@@ -739,8 +764,15 @@ All of this happened over two days (10–11 November 2026), in 23 commits. Each 
 - **Asked for:** an FAQ with search.
 - **Built:** 52 answers in 10 topics with ranked, highlighted search and a button to the feature in each answer. Every answer was checked against the app's real labels.
 
-### Stage 14: Engineering audit and this document (this version)
+### Stage 14: Engineering audit and this document (`54921d9`)
 See §16.
+
+### Stage 15: First-principles rebuild (13 Nov)
+- **Asked for:** "think from first principles; fix, build and redesign everything, even if it means rethinking the PRD."
+- **Reasoning:** see §1.5. The app had nearly every PRD feature, but its number rested on manual typing, two sources of truth and name-based rules, and nobody had measured anything.
+- **Fixed (foundations):** card bills linked to cards; field-level merges for family edits (`v4.sql`, tested on Postgres); load only what changed; one shared copy of the money rules for the app and server; tests moved into the repo with CI.
+- **Built (trust and habit):** type or paste; weekly bank check with log-the-difference; starting money from the banks; bank statement matching; Your habits; card statement reminders.
+- **Redesigned:** the Month plan as commitments, savings and free to spend; tabs by cadence (Today, Month, Money, More); More's duplicate Money grid removed; the code split into a shell, a stylesheet and ten ordered scripts.
 
 ---
 
@@ -789,20 +821,19 @@ See §16.
 
 | Limit | Note |
 |---|---|
-| iPhone share target | iOS doesn't let web apps receive shares. A "paste from SMS" button would cover it. |
+| Bank data without any typing | Needs RBI's Account Aggregator framework through a licensed partner (e.g. Setu, Finvu, OneMoney). It's a business and compliance step, not just code. Statement matching is the bridge until then. |
+| iPhone share target | iOS doesn't let web apps receive shares; **Type or paste** covers it |
 | iPhone reminders | Need the app installed to the home screen, iOS 16.4+ |
 | Invite emails | The app gives you the message to send yourself. Automatic email needs an email service. |
-| Recently deleted across the family | Needs `v3.sql`; until then copies stay on the phone that deleted |
-| File size | About 350 KB in one file. Splitting into modules with a small build step is the natural next step if more people work on it. |
-| Open choices | Logo direction (two concepts offered); message analytics |
+| Server updates to run | `v3.sql` (shared Recently deleted) and `v4.sql` (field merges); redeploy `send-reminders` with `money-core.js` |
+| Real-world data | Habits are measured on each phone. Before building more, put 5 families on it for 4 weeks and read their Habits pages. |
+| Open choices | Logo direction (two concepts offered) |
 
-**Candidate roadmap:**
-- paste-from-SMS on iPhone;
-- category rules ("always Swiggy → Eating out");
-- a card statement reminder on the statement day;
+**Candidate roadmap (after real usage):**
+- Account Aggregator partner for automatic bank data;
+- category rules ("always Swiggy → Eating out") editable in Settings;
 - shared goals;
-- a CSV bank-statement matcher;
-- module split with screenshot regression tests.
+- hide or remove features that real usage shows nobody opens.
 
 ---
 
@@ -812,12 +843,17 @@ See §16.
 
 | Path | Lines / size | Role |
 |---|---|---|
-| `index.html` | about 3,600 lines, 350 KB | The app |
+| `index.html` | 2 KB | Shell: metas, stylesheet, scripts in order |
+| `css/app.css` | 46 KB | All styles |
+| `js/01-base.js` … `js/10-boot.js` | 340 KB in 10 files | The app (§9.1) |
+| `supabase/functions/_shared/money-core.js` | 5 KB | Shared money rules (app and server) |
+| `tests/` | — | SQL, unit and browser tests; `run-e2e.mjs` runner |
+| `.github/workflows/test.yml` | — | CI on every push |
 | `sw.js` | 64 lines | Offline and push |
 | `manifest.webmanifest` | — | Install and share target |
 | `config.js` | — | Supabase URL, anon key, public VAPID key |
 | `supabase/schema.sql` | — | Tables, security, family functions |
-| `supabase/push.sql`, `v2.sql`, `v3.sql` | — | Updates |
+| `supabase/push.sql`, `v2.sql`, `v3.sql`, `v4.sql` | — | Updates |
 | `supabase/functions/send-reminders/index.ts` | about 160 lines | Reminder sender |
 | `privacy.html`, `terms.html` | — | Policies |
 | `fonts/`, `icons/` | — | Assets |

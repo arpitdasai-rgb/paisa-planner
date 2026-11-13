@@ -1,2 +1,5 @@
 *.zip
 .DS_Store
+node_modules/
+tests/e2e/.out/
+tests/unit/.reminders-logic.tmp.ts

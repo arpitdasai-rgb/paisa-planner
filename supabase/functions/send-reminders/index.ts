@@ -1,6 +1,6 @@
 // Paisa Planner · send-reminders (Supabase Edge Function)
 // Sends push notifications to family members' phones, even when the app is closed.
-//   kind=morning  8:00 am IST  bills and EMIs due in 3 days, due today, or missed yesterday
+//   kind=morning  8:00 am IST  bills, EMIs and card statements due in 3 days, due today, or missed yesterday; statement-day nudges
 //   kind=evening  9:00 pm IST  "Spent anything today?" if the person logged nothing (opt-in)
 //   kind=weekly   Sunday 7 pm  this week's spending in one line (opt-in)
 //   kind=auto     run every hour; each person gets reminders at the times they chose in Settings
@@ -10,60 +10,43 @@
 
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 import webpush from "npm:web-push@3.6.7";
+import { addM, addDays, daysBetween, keyOfWith, dueDateWith, budgetAt, billPaidIn, cardReminders } from "../_shared/money-core.js";
 
-// ---- BEGIN LOGIC (pure functions, tested outside Supabase) ----
-const pad = (n: number) => String(n).padStart(2, "0");
-const dim = (y: number, m: number) => new Date(Date.UTC(y, m, 0)).getUTCDate();
-const ym = (y: number, m: number) => `${y}-${pad(m)}`;
-function addM(k: string, n: number) { let [y, m] = k.split("-").map(Number); m += n; y += Math.floor((m - 1) / 12); m = ((m - 1) % 12 + 12) % 12 + 1; return ym(y, m); }
-function addDays(ds: string, n: number) { const d = new Date(ds + "T00:00:00Z"); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10); }
-const daysBetween = (a: string, b: string) => Math.round((Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 864e5);
-function istNow(now = Date.now()) { return new Date(now + 330 * 60000); }          // India is UTC+5:30
-function istToday(now = Date.now()) { return istNow(now).toISOString().slice(0, 10); }
-function keyOf(ds: string, sd: number) { const [y, m, d] = ds.split("-").map(Number); return d < Math.min(sd, dim(y, m)) ? addM(ym(y, m), -1) : ym(y, m); }
-function dueDate(k: string, day: number, sd: number) {
-  const [y, m] = k.split("-").map(Number);
-  if (sd === 1 || day >= sd) return `${ym(y, m)}-${pad(Math.min(day, dim(y, m)))}`;
-  const n = addM(k, 1); const [y2, m2] = n.split("-").map(Number); return `${n}-${pad(Math.min(day, dim(y2, m2)))}`;
-}
+// ---- BEGIN LOGIC (pure functions; the money rules come from ../_shared/money-core.js, the same file the app uses) ----
+const istNow = (now = Date.now()) => new Date(now + 330 * 60000);          // India is UTC+5:30
+const istToday = (now = Date.now()) => istNow(now).toISOString().slice(0, 10);
 const inr = (p: number) => "₹" + Math.round(Math.abs(p) / 100).toLocaleString("en-IN");
-type Cat = { name: string; section: string; dueDay?: number | null; archived?: boolean; hist?: { from: string; amt: number }[] };
-type Tx = { cat?: string; amt: number; date: string; type?: string; to?: string };
-function budgetOf(c: Cat, id: string, k: string, months: Record<string, any>) {
-  const ov = months[k]?.b?.[id]; if (ov != null) return ov;
-  const h = (c.hist || []).slice().sort((a, b) => a.from.localeCompare(b.from)); let v = h.length ? h[0].amt : 0;
-  for (const e of h) if (e.from <= k) v = e.amt; return v;
-}
+type Fam = { settings: any; cats: Record<string, any>; tx: any[]; bills: Record<string, any>; months: Record<string, any>; cards: Record<string, any> };
+type Due = { name: string; when: string; amt: number; dd: number };
 // Which bills deserve a nudge this morning: 3 days before, on the day, and the morning after if still unpaid.
-function morningDues(fam: { settings: any; cats: Record<string, Cat>; tx: Tx[]; bills: Record<string, any>; months: Record<string, any> }, today: string) {
-  const sd = fam.settings?.startDay || 1; const out: { name: string; when: string; amt: number; dd: number }[] = [];
+function morningDues(fam: Fam, today: string): Due[] {
+  const sd = fam.settings?.startDay || 1; const out: Due[] = []; const cur = keyOfWith(today, sd);
   // a bill due early next month or late last month can matter today, so check three months
-  for (const k of [addM(keyOf(today, sd), -1), keyOf(today, sd), addM(keyOf(today, sd), 1)]) {
+  for (const k of [addM(cur, -1), cur, addM(cur, 1)]) {
     for (const [id, c] of Object.entries(fam.cats)) {
-      if (c.archived || !c.dueDay || (c.section !== "bills" && c.section !== "debt")) continue;
-      const due = dueDate(k, c.dueDay, sd); const dd = daysBetween(today, due);
+      if (!c || c.archived || !c.dueDay || (c.section !== "bills" && c.section !== "debt")) continue;
+      const due = dueDateWith(k, c.dueDay, sd); const dd = daysBetween(today, due);
       if (dd !== 3 && dd !== 0 && dd !== -1) continue;
-      // a Credit card bill also counts as paid when money was moved to a card that month (same rule as the app)
-      const paid = fam.tx.some((t) => keyOf(t.date, sd) === k && (t.cat === id || (/credit card/i.test(c.name) && t.type === "xfer" && String(t.to || "").startsWith("card:"))));
-      const skipped = !!fam.bills[k]?.skip?.[id];
-      if (paid || skipped) continue;
-      out.push({ name: c.name, amt: budgetOf(c, id, k, fam.months), dd, when: dd === 3 ? "due in 3 days" : dd === 0 ? "due today" : "was due yesterday" });
+      if (fam.bills[k]?.skip?.[id] || billPaidIn({ id, c, k, sd, tx: fam.tx, cats: fam.cats, cards: fam.cards })) continue;
+      out.push({ name: c.name, amt: budgetAt(c, id, k, fam.months), dd, when: dd === 3 ? "due in 3 days" : dd === 0 ? "due today" : "was due yesterday" });
     }
   }
+  // credit-card statements: unpaid amounts near their due date, and statement-day nudges
+  for (const r of cardReminders(fam.cards, today, sd)) out.push({ name: r.name, amt: r.amt, dd: r.dd, when: r.when });
   return out.sort((a, b) => a.dd - b.dd);
 }
-function morningMessage(dues: { name: string; when: string; amt: number; dd: number }[]) {
+function morningMessage(dues: Due[]) {
   if (!dues.length) return null;
   const missed = dues.filter((d) => d.dd === -1);
   const title = dues.length === 1 ? `${dues[0].name} ${dues[0].when}` : missed.length ? `${missed.length} payment${missed.length > 1 ? "s" : ""} missed, ${dues.length - missed.length} coming up` : `${dues.length} payments coming up`;
-  const body = dues.slice(0, 4).map((d) => `${d.name} · ${inr(d.amt)} · ${d.when}`).join("\n");
+  const body = dues.slice(0, 4).map((d) => `${d.name}${d.amt ? " · " + inr(d.amt) : ""} · ${d.when}`).join("\n");
   return { title, body, url: "./#bills", tag: "paisa-bills" };
 }
-function weeklyMessage(cats: Record<string, Cat>, tx: Tx[], today: string) {
+function weeklyMessage(cats: Record<string, any>, tx: any[], today: string) {
   const from = addDays(today, -6); const week = tx.filter((t) => t.date >= from && t.date <= today && t.cat && cats[t.cat] && cats[t.cat].section !== "income");
   if (!week.length) return { title: "Your week in money", body: "Nothing logged this week. Add what you spent to keep your daily number honest.", url: "./#add", tag: "paisa-weekly" };
   const total = week.reduce((s, t) => s + t.amt, 0); const by: Record<string, number> = {};
-  week.forEach((t) => { const n = cats[t.cat!].name; by[n] = (by[n] || 0) + t.amt; });
+  week.forEach((t) => { const n = cats[t.cat].name; by[n] = (by[n] || 0) + t.amt; });
   const top = Object.entries(by).sort((a, b) => b[1] - a[1])[0];
   return { title: `This week: ${inr(total)} spent`, body: `${week.length} entries. Biggest: ${top[0]} ${inr(top[1])}.`, url: "./#home", tag: "paisa-weekly" };
 }
@@ -121,9 +104,9 @@ Deno.serve(async (req) => {
 
   // load what each family needs: settings, categories, months, bill skips, and recent entries
   const since = addDays(today, -75);
-  const fams: Record<string, any> = {}; famIds.forEach((f) => { fams[f] = { settings: null, cats: {}, months: {}, bills: {}, tx: [], txRaw: [] }; });
+  const fams: Record<string, any> = {}; famIds.forEach((f) => { fams[f] = { settings: null, cats: {}, months: {}, bills: {}, cards: {}, tx: [], txRaw: [] }; });
   for (let from = 0; famIds.length; from += 1000) {
-    const { data, error } = await db.from("docs").select("family_id,col,id,data,created_by,updated_at").in("family_id", famIds).eq("deleted", false).in("col", ["settings", "cats", "months", "bills"]).range(from, from + 999);
+    const { data, error } = await db.from("docs").select("family_id,col,id,data,created_by,updated_at").in("family_id", famIds).eq("deleted", false).in("col", ["settings", "cats", "months", "bills", "cards"]).range(from, from + 999);
     if (error) return json({ error: error.message }, 500);
     for (const r of data) { const f = fams[r.family_id]; if (r.col === "settings") f.settings = r.data; else f[r.col][r.id] = r.data; }
     if (data.length < 1000) break;

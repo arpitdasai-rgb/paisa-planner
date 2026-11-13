@@ -1,0 +1,25 @@
+// The shared money rules (used by the app and the reminder service).
+import assert from 'node:assert/strict';
+import C from '../../supabase/functions/_shared/money-core.js';
+let n = 0; const ok = (got, want, msg) => { assert.deepEqual(got, want, msg); n++; console.log('ok ', msg); };
+ok(C.keyOfWith('2026-11-24', 25), '2026-10', 'a date before the start day belongs to the previous month');
+ok(C.keyOfWith('2026-11-25', 25), '2026-11', 'the start day begins the month');
+ok(C.keyOfWith('2026-02-28', 31), '2026-02', 'a start day past the month end clamps to the last day');
+ok(C.mStartWith('2026-02', 30), '2026-02-28', 'month start clamps in February');
+ok(C.dueDateWith('2026-11', 5, 25), '2026-12-05', 'a due day before the start day falls in the next calendar month');
+ok(C.dueDateWith('2026-11', 28, 25), '2026-11-28', 'a due day after the start day stays in the month');
+ok(C.dueDateWith('2026-02', 31, 1), '2026-02-28', 'due day clamps to the month length');
+ok(C.addM('2026-12', 1), '2027-01', 'months roll over the year');
+ok(C.addDays('2026-03-01', -1), '2026-02-28', 'days roll back over a month');
+const cat = { hist: [{ from: '2026-01', amt: 100 }, { from: '2026-06', amt: 200 }] };
+ok(C.budgetAt(cat, 'c', '2026-03', {}), 100, 'budget uses the history entry in force');
+ok(C.budgetAt(cat, 'c', '2026-07', {}), 200, 'later history wins');
+ok(C.budgetAt(cat, 'c', '2026-07', { '2026-07': { b: { c: 50 } } }), 50, 'a one-month override wins');
+const cats = { a: { name: 'Credit card bill' }, b: { name: 'Axis', card: 'k1' } }, cards = { k1: { name: 'Magnus' } };
+ok(C.cardOfCat(cats.b, cats, cards), 'k1', 'a linked bill points to its card');
+ok(C.cardOfCat(cats.a, cats, cards), null, 'once any bill is linked, names no longer count');
+ok(C.cardOfCat({ name: 'Credit card bill' }, { x: { name: 'Credit card bill' } }, {}), '*', 'unlinked budgets fall back to the name');
+ok(C.paidToCard(cats.b, cats, cards, [{ type: 'xfer', to: 'card:k1', amt: 500 }, { type: 'xfer', to: 'card:k2', amt: 9 }]), 500, 'only transfers to the linked card count');
+ok(C.cardDueDate({ stmtDay: 12, dueDay: 2 }, '2026-11'), '2026-12-02', 'a due day before the statement day is next month');
+ok(C.cardDueDate({ stmtDay: 12, dueDay: 30 }, '2026-11'), '2026-11-30', 'a due day after the statement day is the same month');
+console.log(`all ${n} money-core checks passed`);

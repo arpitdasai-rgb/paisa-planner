@@ -25,6 +25,7 @@ Dashboard menus get renamed now and then. If a label below doesn't match exactly
 5. Then run these updates the same way, in this order. Each one is safe to run again and keeps your data:
    - `supabase/v2.sql`: bank accounts, repeats, net worth, delete my account
    - `supabase/v3.sql`: Recently deleted shared across the family
+   - `supabase/v4.sql`: family edits merge field by field, so two people editing the same month both keep their changes
    - `supabase/push.sql`: phone push addresses for scheduled reminders
 
 The script creates:
@@ -104,7 +105,7 @@ Row-level security enforces the PRD's role table on the server:
 
 ## Scheduled reminders
 
-Reminders while the app is closed come from the `send-reminders` Edge Function, run every hour by a `pg_cron` job. The Owner sets it up once from the app: **Settings → Reminders → Reminder setup**. That page creates the keys on the phone and lists each step (secrets, deploying the function, the schedule). After any change to `supabase/functions/send-reminders/index.ts`, deploy the function again.
+Reminders while the app is closed come from the `send-reminders` Edge Function, run every hour by a `pg_cron` job. The Owner sets it up once from the app: **Settings → Reminders → Reminder setup**. That page creates the keys on the phone and lists each step (secrets, deploying the function, the schedule). After any change to `supabase/functions/send-reminders/index.ts` or `supabase/functions/_shared/money-core.js`, deploy the function again. The function imports the shared money rules: `supabase functions deploy send-reminders` (CLI) bundles `../_shared/money-core.js` automatically; in the dashboard editor, add `money-core.js` as a second file and change the import to `./money-core.js`.
 
 ## Not included yet
 

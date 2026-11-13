@@ -1,6 +1,6 @@
 /* Paisa Planner service worker: offline app shell (fonts are bundled), cached Excel and Supabase libraries, push reminders. */
-const VERSION = 'paisa-v27';
-const SHELL = ['./', './index.html', './manifest.webmanifest', './config.js', './privacy.html', './terms.html', './fonts/manrope-latin.woff2', './fonts/manrope-latin-ext.woff2', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
+const VERSION = 'paisa-v29';
+const SHELL = ['./', './index.html', './manifest.webmanifest', './config.js', './css/app.css', './supabase/functions/_shared/money-core.js', './js/01-base.js', './js/02-flows.js', './js/03-screens.js', './js/04-sheets.js', './js/05-money.js', './js/06-shell.js', './js/07-tools.js', './js/08-events.js', './js/09-cloud.js', './js/10-boot.js', './privacy.html', './terms.html', './fonts/manrope-latin.woff2', './fonts/manrope-latin-ext.woff2', './icons/icon.svg', './icons/icon-192.png', './icons/icon-512.png', './icons/maskable-512.png', './icons/apple-touch-icon.png'];
 const RUNTIME_HOSTS = ['cdnjs.cloudflare.com', 'cdn.jsdelivr.net'];   // Excel library and Supabase client
 // Supabase API, auth and realtime traffic is never cached: it always goes to the network.
 

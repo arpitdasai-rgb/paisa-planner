@@ -1,0 +1,21 @@
+const {OUT,XLSX_JS,XLSX_NODE,URL}=require('./_env');
+const {chromium,devices}=require('playwright');
+const seed=require('fs').readFileSync(OUT+'/seed.json','utf8');
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({...devices['iPhone 13']});
+await ctx.route('**/config.js',r=>r.fulfill({contentType:'application/javascript',body:'window.PAISA_CONFIG={supabaseUrl:"",supabaseAnonKey:""};'}));
+await ctx.route('**/sw.js',r=>r.fulfill({status:404,body:''}));
+await ctx.addInitScript(s=>{if(!sessionStorage.getItem('seeded')){const o=JSON.parse(s);localStorage.clear();for(const k in o)localStorage.setItem(k,o[k]);sessionStorage.setItem('seeded','1')}},seed);
+const p=await ctx.newPage();p.setDefaultTimeout(5000);const errs=[];p.on('pageerror',e=>errs.push(e.message));const U=URL;const log=(...a)=>console.log(...a);
+await p.goto(U+'#home');await p.waitForTimeout(500);
+log('parse:',JSON.stringify(await p.evaluate(()=>['350 swiggy','groceries 2400','salary 150000','2.5k rent','Rs.499.00 debited from A/c XX4821 on 12-11-26 to VPA zomato@okicici UPI Ref 1234','uber'].map(s=>{QA={qtext:s};const o=qtextResolve();return s.slice(0,18)+' => '+[o.type||'out',o.amt,o.note,o.cat&&D.cats[o.cat].name].join('|')}))));
+const n0=await p.evaluate(()=>Object.keys(D.tx).length);
+await p.click('#fab');await p.click('[data-act=qtexton]');await p.waitForTimeout(150);log('focused:',await p.evaluate(()=>document.activeElement.id));
+await p.fill('#q-text','350 swiggy');await p.waitForTimeout(100);log('hint:',(await p.textContent('#q-text-hint')).trim());
+await p.screenshot({path:OUT+'/qt1.png'});
+const t0=Date.now();await p.press('#q-text','Enter');await p.waitForTimeout(300);log('saved by Enter:',await p.evaluate(()=>Object.keys(D.tx).length)-n0,'entry | sheet closed:',!(await p.$('#sheetRoot .sheet')),'| toast:',await p.textContent('.toast').catch(()=>''));
+const last=await p.evaluate(()=>{const t=Object.values(D.tx).sort((a,b)=>b.at-a.at)[0];return[t.amt,t.note,D.cats[t.cat].name,t.src].join('|')});log('  entry:',last);
+// unknown word: falls back to the keypad view with the amount filled
+await p.waitForTimeout(1200);if(await p.$('#sheetRoot .sheet'))await p.click('[data-act=close]');
+await p.click('#fab');await p.click('[data-act=qtexton]');await p.fill('#q-text','780 xyzzy');await p.press('#q-text','Enter');await p.waitForTimeout(200);
+log('unknown merchant: sheet still open:',!!(await p.$('#sheetRoot .sheet')),'| amount shows',await p.textContent('#q-amt'),'| keypad back:',!!(await p.$('.keypad')));
+log(errs.length?'ERRORS:\n'+errs.join('\n'):'no page errors');await b.close()})();

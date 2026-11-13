@@ -1,0 +1,32 @@
+# Runs on every push and pull request: database rules on Postgres, the shared money rules,
+# the reminder logic, and every browser test.
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_PASSWORD: postgres }
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Database rules (schema + every update, merges and roles)
+        run: bash tests/sql/run.sh
+        env: { PGHOST: localhost, PGPORT: 5432, PGUSER: postgres, PGPASSWORD: postgres }
+      - name: Shared money rules and reminder logic
+        run: npm run test:unit
+      - name: Browser tests
+        run: npm run test:e2e
+      - name: Screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with: { name: e2e-output, path: tests/e2e/.out, retention-days: 7 }

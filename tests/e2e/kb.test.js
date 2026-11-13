@@ -1,0 +1,14 @@
+const {OUT,XLSX_JS,XLSX_NODE,URL}=require('./_env');
+const {chromium,devices}=require('playwright');
+(async()=>{const b=await chromium.launch();const ctx=await b.newContext({...devices['iPhone 13']});
+await ctx.route('**/config.js',r=>r.fulfill({contentType:'application/javascript',body:'window.PAISA_CONFIG={supabaseUrl:"",supabaseAnonKey:""};'}));
+await ctx.route('**/sw.js',r=>r.fulfill({status:404,body:''}));
+const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const U=URL;
+await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="150000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.fill('#onb-open','40000');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');
+await p.goto(U+'#more');await p.focus('#m-q');console.log('before:',await p.evaluate(()=>document.activeElement.id));
+await p.evaluate(()=>document.getElementById('fab').click());await p.waitForTimeout(300);
+console.log('after open: focused =',await p.evaluate(()=>document.activeElement.tagName+'#'+document.activeElement.id),'| page inert =',await p.evaluate(()=>document.getElementById('app').inert));
+await p.click('[data-act=qmore]');await p.waitForTimeout(200);console.log('note focused:',await p.evaluate(()=>document.activeElement.id));
+await p.click('[data-act=key][data-k="5"]');console.log('after keypad tap:',await p.evaluate(()=>document.activeElement.tagName),'| amount',await p.textContent('#q-amt'));
+await p.click('[data-act=close]');console.log('after close inert =',await p.evaluate(()=>document.getElementById('app').inert));
+console.log(errs.length?'ERRORS:\n'+errs.join('\n'):'no page errors');await b.close()})();
