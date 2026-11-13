@@ -493,6 +493,8 @@ a.trow{text-decoration:none}
 #help-q{font-size:16px}
 input[type=search]::-webkit-search-cancel-button{filter:grayscale(1) brightness(.4)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) input[type=search]::-webkit-search-cancel-button{filter:grayscale(1) invert(1)}}
+.qtextbtn{display:block;margin:-6px auto 4px;padding:4px 8px}
+.qtext{margin:0 0 6px}
 details.more{border-top:1px solid var(--line);padding-block:var(--sp2)}
 details.more>summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;min-height:var(--tap);font-weight:600}
 details.more>summary::-webkit-details-marker{display:none}
@@ -1004,7 +1006,6 @@ function nextStep(){
   const sal=catsAll().find(c=>c.section==='income'&&!c.archived&&/salary/i.test(c.name));
   if(canAdmin()&&sal&&!recForCat(sal.id))steps.push({k:'salrep',t:'Make your salary appear by itself every month.',b:'Set up',a:'editrec',kk:sal.id,amt:budgetOf(sal,k),day:sd()});
   const stale=acctList().find(a=>!a.checkedAt||daysBetween(a.checkedAt,todayISO())>=30);
-  if(canAdmin()&&stale)steps.push({k:'chk-'+stale.id+'-'+k,t:`Does ${esc(acctLabel(stale))} show ${fmt(acctBalance(stale.id))}?`,b:'Check',a:'checkacct',id:stale.id});
   if(canWrite()&&!(txIndex()[k]||{list:[]}).list.length)steps.push({k:'first',t:'Log your first spend and watch your daily number move.',b:'Add a spend',a:'fab'});
   const noDue=catsAll().filter(c=>!c.archived&&(c.section==='bills'||c.section==='debt')&&!c.dueDay);
   if(canAdmin()&&noDue.length)steps.push({k:'due',t:`Add due dates for ${noDue.length===1?esc(noDue[0].name):noDue.length+' bills and EMIs'} so nothing slips.`,b:'Add dates',a:'duedates',meta:'30 sec'});
@@ -1492,9 +1493,13 @@ function renderQuick(){
       <button class="btn primary block" style="margin-top:12px" data-act="qsave" ${(!QA.amt||!QA.from||!QA.to)?'disabled':''}>Save transfer${QA.from&&QA.to?' · '+esc(acctName(QA.from))+' → '+esc(acctName(QA.to)):''}</button>`;
   }else{
     const splitSum=(QA.split||[]).reduce((s,r)=>{const v=parseAmt(r.amt);return s+(isNaN(v)?0:v)},0);const total=parseAmt(QA.amt)||0;
-    body=`${amtDisp}
+    body=`${QA.text?`<div class="qtext"><input class="input" id="q-text" data-qtext autocomplete="off" enterkeyhint="done" placeholder='e.g. "350 swiggy" or paste a bank SMS' value="${esc(QA.qtext||'')}" aria-label="Type or paste an entry">
+      <div class="btns" style="margin-top:8px">${navigator.clipboard&&navigator.clipboard.readText?'<button class="btn sm" data-act="qpaste">Paste SMS</button>':''}<button class="btn sm" data-act="qtextoff">Use keypad</button></div>
+      <p class="small muted" id="q-text-hint" style="margin:8px 2px 0">${qtextHint()}</p></div>`
+      :(editing?'':`<button class="link small qtextbtn" data-act="qtexton">Type or paste instead</button>`)}
+    ${amtDisp}
     ${reps.length?`<div class="hscroll">${reps.map((r,i)=>`<button class="chip ghost" data-act="qrep" data-i="${i}">${esc(r.label)} <b class="num">${fmt(r.amt)}</b></button>`).join('')}</div>`:''}
-    ${keypad}
+    ${QA.text?'':keypad}
     ${QA.split?`<div class="splitbox"><div class="flabel" style="margin-bottom:6px">Split ${QA.amt?fmt(total):''} across categories</div>
       ${QA.split.map((r,i)=>`<div class="srow"><select class="input" data-split-cat="${i}" aria-label="Category ${i+1}">${cats.map(c=>`<option value="${c.id}" ${r.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select><input class="input num" inputmode="decimal" data-split-amt="${i}" value="${esc(r.amt)}" placeholder="₹"><button class="x sm" data-act="splitdel" data-k="${i}" aria-label="Remove">×</button></div>`).join('')}
       <div class="btns" style="justify-content:space-between;align-items:center"><button class="link small" data-act="splitadd">+ Add category</button><span class="small ${splitSum===total?'':'over'}" id="split-left">${splitSum===total?'Adds up':(total-splitSum>0?fmt(total-splitSum)+' left to assign':fmt(splitSum-total)+' too much')}</span></div>
@@ -1522,6 +1527,32 @@ function renderQuick(){
 // paying a card bill as an expense double-counts purchases already logged with mode Card
 function ccDouble(q){if(!q||q.type==='xfer'||q.split||!q.cat||!isCardBill(D.cats[q.cat]))return false;
   const from=addDays(todayISO(),-62);return Object.values(D.tx).some(t=>t&&t.mode==='Card'&&!isXfer(t)&&t.date>=from)}
+/* ---- type or paste: "350 swiggy", "salary 150000", "2.5k rent", or a whole bank SMS ---- */
+function parseQuick(s){
+  s=String(s||'').trim();if(!s)return{};
+  if(s.length>45||/debited|credited|a\/c|acct|upi ref|avl bal|txn/i.test(s)){const o=parseShared(s);o.sms=true;return o}
+  const m=s.match(/(?:₹|rs\.?\s*)?(\d[\d,]*(?:\.\d{1,2})?)\s*(k|l|lakh|lac)?\b/i);const out={};
+  if(m){let v=parseFloat(m[1].replace(/,/g,''));const u=(m[2]||'').toLowerCase();if(u==='k')v*=1e3;else if(u)v*=1e5;out.amt=String(Math.round(v*100)/100);s=(s.slice(0,m.index)+' '+s.slice(m.index+m[0].length)).trim()}
+  s=s.replace(/^(on|for|at|to)\s+/i,'').replace(/\s+/g,' ').trim();
+  if(/^(salary|income|received|got|refund|bonus)\b/i.test(s))out.type='in';
+  // a category named in the text wins; otherwise the rest is the note
+  const lc=s.toLowerCase();const cat=catsAll().filter(c=>!c.archived).find(c=>lc&&(lc===c.name.toLowerCase()||lc.includes(c.name.toLowerCase())));
+  if(cat){out.cat=cat.id;if(cat.section==='income')out.type='in';const rest=s.replace(new RegExp(cat.name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i'),'').trim();if(rest)out.note=rest}
+  else if(s)out.note=s.replace(/\b\w/g,c=>c.toUpperCase()).slice(0,40);
+  return out;
+}
+function qtextResolve(){const o=parseQuick(QA.qtext);if(!o.amt)return o;if(!o.cat){const g=guessCat(parseAmt(o.amt),o.note);if(g&&(o.type!=='in')===(D.cats[g].section!=='income'))o.cat=g}return o}
+function qtextHint(){const o=qtextResolve();if(!QA.qtext)return'Amount and a word or two. Paisa picks the category from your past entries. Press Done to save.';
+  if(!o.amt)return'Add an amount, like 350.';const c=o.cat&&D.cats[o.cat];
+  return`${o.type==='in'?'Income':'Expense'} · <b>${fmt(parseAmt(o.amt))}</b>${o.note?' · '+esc(o.note):''} · ${c?esc(c.name):'<span class="over">pick a category below</span>'}`}
+function qtextApply(save){
+  const o=qtextResolve();if(!o.amt){toast('Add an amount, like 350.');return}
+  QA.amt=o.amt;if(o.note)QA.note=o.note;if(o.mode)QA.mode=o.mode;if(o.card)QA.card=o.card;if(o.acct)QA.acct=o.acct;QA.type=o.type==='in'?'in':'out';QA.src=o.sms?'share':'manual';
+  if(o.cat){QA.cat=o.cat;QA.guessed=false}else if(QA.cat&&D.cats[QA.cat]&&(D.cats[QA.cat].section==='income')!==(QA.type==='in'))QA.cat=null;
+  lsSet('paisa-qtext','1');
+  if(save&&QA.cat){QA.text=false;quickSave();return}
+  QA.text=false;renderQuick();
+}
 function qSyncSplit(){if(!QA||!QA.split)return;document.querySelectorAll('[data-split-cat]').forEach(s=>{QA.split[+s.dataset.splitCat].cat=s.value});document.querySelectorAll('[data-split-amt]').forEach(s=>{QA.split[+s.dataset.splitAmt].amt=s.value})}
 function quickKey(k){
   if(!QA)return;let a=QA.amt;
@@ -2218,6 +2249,20 @@ function acctBalance(id){
   return memo.bal[id]=b;
 }
 
+function acctBalanceAt(id,date){
+  const a=D.accounts[id];if(!a)return 0;if(a.asOf&&date<a.asOf)return null;let b=(a.opening||0)+(a.checkedAt&&a.checkedAt<date?(a.adj||0):0);const since=a.asOf||'0000-00-00';
+  for(const t of Object.values(D.tx)){if(!t||t.date<since||t.date>=date)continue;if(t.date===since&&a.createdAt&&(t.at||0)<a.createdAt)continue;
+    if(isXfer(t)){if(t.to===id)b+=t.amt;if(t.from===id)b-=t.amt;continue}
+    if(t.acct!==id||t.mode==='Card')continue;const c=D.cats[t.cat];if(!c)continue;b+=c.section==='income'?t.amt:-t.amt}
+  return b;
+}
+// What the banks held when month k began, minus what was still owed on cards: the month's real starting money
+function bankStart(k){
+  const L=acctList();if(!L.length)return null;const d=mStart(k);let s=0;
+  for(const a of L){const v=acctBalanceAt(a.id,d);if(v==null)return null;s+=v}
+  const pk=addM(k,-1);Object.values(D.cards).forEach(c=>{const st=c.stmts&&c.stmts[pk];if(st)s-=Math.max(0,(st.amt||0)-(st.paid||0))});
+  return s;
+}
 /* ---- accounts screen ---- */
 function accountsBody(){
   const L=acctList();const tot=L.reduce((s,a)=>s+acctBalance(a.id),0);
@@ -2262,7 +2307,17 @@ function openCheck(id){
   openSheet(`${sheetHead('Check balance')}<p class="onb-q" style="font-size:20px;margin:0 0 6px">Does ${esc(acctLabel(a))} show ${fmt(bal)}?</p><p class="small muted" style="margin:0 0 14px">Open your bank app and compare. Small differences are normal if something wasn't logged.</p>
     <div class="btns" style="margin-bottom:14px"><button class="btn primary" data-act="checkyes" data-id="${id}">Yes, it matches</button></div>
     <div class="field"><label for="ck-bal">No, it shows (₹)</label><input class="input num" id="ck-bal" inputmode="decimal" placeholder="${rupees(bal)}"></div>
-    <button class="btn block" data-act="checkfix" data-id="${id}">Update balance</button>`);
+    <button class="btn block" data-act="checkfix" data-id="${id}">Next</button>`);
+}
+function openCheckDiff(id,v){
+  const a=acctById(id),cur=acctBalance(id),d=v-cur;const out=d<0;
+  const cats=catsAll().filter(c=>!c.archived&&(out?c.section==='expenses':c.section==='income'));const def=(cats.find(c=>/misc/i.test(c.name))||cats[0]||{}).id;
+  openSheet(`${sheetHead('Bank shows '+fmt(v))}<p class="small" style="margin-top:0">Paisa has ${fmt(cur)} for ${esc(acctLabel(a))}, so ${fmt(Math.abs(d))} ${out?'went out':'came in'} without an entry.</p>
+    ${cats.length?`<div class="field"><label for="ck-cat">Log it as ${out?'spending':'income'} in</label><select class="input" id="ck-cat">${cats.map(c=>`<option value="${c.id}" ${c.id===def?'selected':''}>${esc(c.name)}</option>`).join('')}</select></div>
+    <button class="btn primary block" data-act="checklog" data-id="${id}" data-k="${v}">Log ${fmt(Math.abs(d))} ${out?'spent':'received'}</button>
+    <p class="small muted" style="margin:6px 2px 12px">Best when you know money moved but didn't log it: your budget and left to spend stay true.</p>`:''}
+    <button class="btn block" data-act="checkadj" data-id="${id}" data-k="${v}">Only correct the balance</button>
+    <p class="small muted" style="margin:6px 2px 0">For bank charges or interest you don't want in the budget.</p>`);
 }
 
 /* ---- recurring entries ---- */
@@ -2562,6 +2617,8 @@ const MSG={
   'month.over':  {rank:1,tone:'bad',make:m=>({title:`Spent ${fmt(-m.left)} more than you had`,detail:'This month so far',act:{a:'go',k:'transactions',l:'See entries'}})},
   'card.part':   {rank:1,tone:'bad',make:([id,cd,st])=>({title:`${cd.name} bill part-paid`,detail:`Interest on ${fmt(st.amt-(st.paid||0))}`,act:canWrite()?{a:'wpay',id,l:'Pay'}:null})},
   'repeat.due':  {rank:2,tone:'cat',make:r=>({title:r.note||r.c.name,detail:`${r.c.section==='income'?'+':''}${fmt(r.amt)} · ${r.c.section==='income'?'usually arrives':'usually goes out'} ${relDay(r.date)}`,act:canWrite()?{a:'recok',id:r.id,l:'Confirm'}:null,alt:canWrite()?{a:'recskip',id:r.id,l:'Skip'}:null,cat:r.c})},
+  'acct.check':  {rank:2,tone:'muted',make:a=>({title:`Does ${acctLabel(a)} show ${fmt(acctBalance(a.id))}?`,detail:'Weekly bank check · keeps left to spend true',act:{a:'checkacct',id:a.id,l:'Check'}})},
+  'month.start': {rank:3,tone:'muted',dismiss:'month',make:([bank,open])=>({title:`Your banks say you began with ${fmt(bank)}`,detail:`Paisa has ${fmt(open)} as money at the start`,act:canAdmin()?{a:'useopenbank',l:'Use banks'}:null})},
   'cat.over':    {rank:3,tone:'warn',dismiss:'month',make:c=>({title:`${c.name} is ${fmt(-c.left)} over`,detail:`Budget ${fmt(c.budget)}`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}})},
   'cat.pace':    {rank:3,tone:'warn',dismiss:'month',make:([c,over])=>({title:`${c.name} heading ${fmt(over)} over`,detail:`At this pace · budget ${fmt(c.budget)}`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}})},
   'cat.near':    {rank:3,tone:'warn',dismiss:'month',make:([c,days])=>({title:`${fmt(c.left)} left in ${c.name}`,detail:`For ${days} more day${days===1?'':'s'}`,act:{a:'catentries',id:c.id,l:'See entries'}})},
@@ -2577,6 +2634,8 @@ function needsItems(k){
   Object.entries(D.cards).forEach(([id,cd])=>{const st=cd.stmts&&cd.stmts[k];if(cardStatus(st)==='part')add('card.part',[id,cd,st],'card.part:'+id);
     if(st&&cd.limit&&st.amt/cd.limit>.3)add('card.limit',[id,cd,Math.round(st.amt/cd.limit*100)],'card.limit:'+id)});
   recDue(k).forEach(r=>add('repeat.due',r,'repeat.due:'+r.id));
+  if(isCur&&canAdmin()){const due=acctList().filter(a=>!a.checkedAt||daysBetween(a.checkedAt,todayISO())>=7).sort((x,y)=>(x.checkedAt||'').localeCompare(y.checkedAt||''))[0];if(due)add('acct.check',due,'acct.check:'+due.id);
+    const bs=bankStart(k);if(bs!=null&&Math.abs(bs-m.open)>=50000&&!(D.months[k]&&D.months[k].open!=null))add('month.start',[bs,m.open],'month.start')}
   m.cats.filter(c=>OUT.includes(c.section)&&c.budget>0&&c.left<0).sort((a,b)=>a.left-b.left).forEach(c=>add('cat.over',c,'cat.over:'+c.id));
   if(isCur){const total=daysBetween(mStart(k),mEnd(k))+1,gone=daysBetween(mStart(k),todayISO())+1,f=clamp(gone/total,0,1),left=total-gone;
     if(f<.92)m.cats.filter(c=>c.section==='expenses'&&c.budget>0&&c.actual>0&&c.left>=0).forEach(c=>{const used=c.actual/c.budget;
@@ -3143,6 +3202,9 @@ document.addEventListener('click',async e=>{
     case 'wrapnext':WRAP.step++;openWrap(WRAP.prev);break;
     case 'wrapclose':closeWrap();break;
     case 'wrapraise':wrapRaise(id,el.dataset.k);break;
+    case 'qtexton':QA.text=true;renderQuick();setTimeout(()=>{const i=$('#q-text');if(i)i.focus()},60);break;
+    case 'qtextoff':{const o=qtextResolve();if(o.amt)qtextApply(false);else{QA.text=false;renderQuick()}break}
+    case 'qpaste':navigator.clipboard.readText().then(s=>{QA.qtext=s||'';const i=$('#q-text');if(i)i.value=QA.qtext;const h=$('#q-text-hint');if(h)h.innerHTML=qtextHint()}).catch(()=>toast('Allow paste, or long-press the box and tap Paste.'));break;
     case 'qpaycard':{qSync();const lk=cardOfCat(D.cats[QA.cat]);const cid=lk&&lk!=='*'?lk:Object.keys(D.cards)[0];QA.type='xfer';QA.cat=null;QA.from=QA.acct||defaultAcct();QA.to=cid?'card:'+cid:'';renderQuick();break}
     case 'key':{const a=document.activeElement;if(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName))a.blur()}quickKey(el.dataset.k);break;
     case 'qcat':qSync();QA.cat=id;QA.guessed=false;renderQuick();break;
@@ -3162,8 +3224,13 @@ document.addEventListener('click',async e=>{
     case 'saveacct':saveAccount(id);break;
     case 'archacct':confirmSheet('Remove '+esc(acctName(id))+'?','Past entries keep their history. You can add it again later.','Remove',async()=>{await store.set('accounts',id,{...D.accounts[id],archived:true,isDefault:false}).catch(()=>{});toast('Account removed.')});break;
     case 'checkacct':openCheck(id);break;
+    case 'checklog':{const v=Number(el.dataset.k);const cur=acctBalance(id),d=v-cur,cat=$('#ck-cat').value;if(!cat||!d)break;closeSheet();const now=Date.now();
+      await store.set('tx',uid(),{byName:MYNAME||'',cat,amt:Math.abs(d),date:todayISO(),mode:'UPI',note:'Found in bank check',card:'',acct:id,src:'reconcile',by:ME||'local',at:now,ub:ME||'local',uat:now}).catch(()=>{});
+      await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});log('logged','bank check',`${acctName(id)} ${fmt(Math.abs(d))}`);toast(`Logged ${fmt(Math.abs(d))} · ${D.cats[cat].name}. ${acctName(id)} now matches your bank.`);break}
+    case 'useopenbank':{const bs=bankStart(VM);if(bs==null)break;store.patch('months',VM,['open'],bs).then(()=>log('changed','opening balance',mLabel(VM)+' '+fmt(bs)+' from banks')).catch(()=>{});toast(`${mLong(VM)} now starts with ${fmt(bs)}, from your banks.`);break}
     case 'checkyes':{closeSheet();await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});toast('Balance confirmed.');break}
-    case 'checkfix':{const v=amtOrNull('ck-bal');if(v==null){toast('Enter what your bank shows.');break}const cur=acctBalance(id);closeSheet();await store.set('accounts',id,{...D.accounts[id],adj:(D.accounts[id].adj||0)+(v-cur),checkedAt:todayISO()}).catch(()=>{});log('corrected','balance',acctName(id)+' to '+fmt(v));toast('Balance updated to '+fmt(v)+'.');break}
+    case 'checkfix':{const v=amtOrNull('ck-bal');if(v==null){toast('Enter what your bank shows.');break}if(v===acctBalance(id)){closeSheet();await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});toast('Balance confirmed.');break}openCheckDiff(id,v);break}
+    case 'checkadj':{const v=Number(el.dataset.k);const cur=acctBalance(id);closeSheet();await store.set('accounts',id,{...D.accounts[id],adj:(D.accounts[id].adj||0)+(v-cur),checkedAt:todayISO()}).catch(()=>{});log('corrected','balance',acctName(id)+' to '+fmt(v));toast('Balance updated to '+fmt(v)+'.');break}
     case 'recok':confirmRec(id);break;
     case 'recskip':{store.patch('bills',curKey(),['skipRec',id],true).catch(()=>{});toast('Skipped for this month.');break}
     case 'editrec':closeSheet();openRec(id,id?{}:(el.dataset.k?{cat:el.dataset.k,amt:Number(el.dataset.amt)||null,day:Number(el.dataset.day)||1,mode:'Net banking'}:{}));break;
@@ -3290,6 +3357,7 @@ document.addEventListener('click',async e=>{
     case 'toastact':{const f=TOASTFN;TOASTFN=null;$('#toastRoot').innerHTML='';if(f)f();break}
   }
 });
+document.addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.id==='q-text'&&QA){e.preventDefault();QA.qtext=e.target.value;qtextApply(true)}});
 document.addEventListener('input',e=>{
   const t=e.target;
   if(t.dataset.onb){ONB[t.dataset.onb]=t.value.replace(/[^0-9]/g,'');if(t.value!==ONB[t.dataset.onb])t.value=ONB[t.dataset.onb];const nb=document.querySelector('[data-act=onb-go]');if(nb&&ONB.step===2)nb.disabled=!(onbIncome()>0)}
@@ -3298,6 +3366,7 @@ document.addEventListener('input',e=>{
   else if(t.dataset.filter){F[t.dataset.filter]=t.value;renderTxList()}
   else if('delf' in t.dataset){delLive()}
   else if('helpq' in t.dataset){HELPQ=t.value;helpRefresh()}
+  else if('qtext' in t.dataset&&QA){QA.qtext=t.value;const h=$('#q-text-hint');if(h)h.innerHTML=qtextHint()}
   else if('frtype' in t.dataset){const g=$('#fr-go');if(g)g.disabled=t.value.trim().toUpperCase()!=='FRESH'}
   else if(t.dataset.msearch!=null){moreSearch(t.value)}
   else if(t.dataset.splitAmt!=null&&QA&&QA.split){qSyncSplit();const tot=parseAmt(QA.amt)||0,sum=QA.split.reduce((s,r)=>{const v=parseAmt(r.amt);return s+(isNaN(v)?0:v)},0);const l=$('#split-left');if(l){l.textContent=sum===tot?'Adds up':(tot-sum>0?fmt(tot-sum)+' left to assign':fmt(sum-tot)+' too much');l.className='small '+(sum===tot?'':'over')}const b=document.querySelector('[data-act=qsave]');if(b)b.disabled=sum!==tot||!tot}
