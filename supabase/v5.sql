@@ -17,8 +17,11 @@ create table if not exists public.events (
   mode       text check (char_length(mode) <= 12)
 );
 alter table public.events enable row level security;
-drop policy if exists events_insert on public.events;
-create policy events_insert on public.events for insert to anon, authenticated with check (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'events' and policyname = 'events_insert') then
+    create policy events_insert on public.events for insert to anon, authenticated with check (true);
+  end if;
+end $$;
 grant insert on public.events to anon, authenticated;
 grant usage on sequence public.events_id_seq to anon, authenticated;
 
@@ -32,7 +35,10 @@ create table if not exists public.feedback (
   app_v      text check (char_length(app_v) <= 20)
 );
 alter table public.feedback enable row level security;
-drop policy if exists feedback_insert on public.feedback;
-create policy feedback_insert on public.feedback for insert to anon, authenticated with check (true);
+do $$ begin
+  if not exists (select 1 from pg_policies where schemaname = 'public' and tablename = 'feedback' and policyname = 'feedback_insert') then
+    create policy feedback_insert on public.feedback for insert to anon, authenticated with check (true);
+  end if;
+end $$;
 grant insert on public.feedback to anon, authenticated;
 grant usage on sequence public.feedback_id_seq to anon, authenticated;
