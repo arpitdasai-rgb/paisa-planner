@@ -2,7 +2,7 @@
 -- Run once in Supabase → SQL Editor (after v4.sql). Safe to run again. Keeps all your data.
 
 -- The app asks this to know whether the Owner still has updates to run.
-create or replace function public.paisa_schema_version() returns int language sql stable as $$ select 5 $$;
+create or replace function public.paisa_schema_version() returns int language sql stable set search_path = '' as $$ select 5 $$;
 grant execute on function public.paisa_schema_version() to anon, authenticated;
 
 -- Opt-in usage counts: event names and small counts only. No amounts, notes, names or emails.

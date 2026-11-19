@@ -91,6 +91,15 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 - Loans, goals and net worth tiles on Money (now in More tools).
 - Activity on the Family page (now in More tools).
 
+## Database updates applied to the live project (paisa-planner)
+
+| File | Applied | How |
+|---|---|---|
+| `schema.sql`, `push.sql`, `v2.sql`, `v3.sql` | Before 19 Nov | By hand in the SQL Editor |
+| `v4.sql` (field-by-field merges) | 19 Nov 2026 | Supabase connector, recorded as migration `v4_field_merges` |
+| `v5.sql` (usage counts, feedback, version check) | Not yet | The connector's confirmation got no answer in time; nothing was applied |
+| `v6.sql` (security hardening from the advisors) | Not yet | Waiting on `v5` |
+
 ## Proposed, not built (19 Nov replan)
 
 - **P0:** opt-in anonymous measurement, a "Tell us what's confusing" button, and a "More tools" group for unproven features (net worth, goals, loan maths, insight card, activity history, advanced delete).

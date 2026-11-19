@@ -72,4 +72,10 @@ do $$ begin insert into public.feedback (install,screen,text) values ('x','home'
 exception when check_violation then raise notice 'ok  malformed rows are refused';
 end $$;
 reset role;
+-- v6: signed-out callers can't reach family functions; signed-in flows above still worked
+set role anon;
+do $$ begin perform public.create_family('x'); raise exception 'FAILED: anon called create_family';
+exception when insufficient_privilege then raise notice 'ok  signed-out callers cannot call family functions';
+end $$;
+reset role;
 \echo ALL SQL CHECKS PASSED

@@ -4,7 +4,7 @@
 
 -- set one field deep inside a JSON object, creating parents as needed; a null value removes the field
 create or replace function public.jsonb_set_deep(t jsonb, p text[], v jsonb) returns jsonb
-language plpgsql immutable as $$
+language plpgsql immutable set search_path = '' as $$
 declare base jsonb := case when jsonb_typeof(t) = 'object' then t else '{}'::jsonb end;
 begin
   if p is null or array_length(p, 1) is null then return coalesce(v, base); end if;
@@ -31,5 +31,5 @@ begin
     on conflict (family_id, col, id) do update set data = public.jsonb_set_deep(docs.data, p_path, p_value), deleted = false;
   end if;
 end $$;
-revoke all on function public.patch_doc(text, text, text[], jsonb) from anon;
+revoke all on function public.patch_doc(text, text, text[], jsonb) from public, anon;
 grant execute on function public.patch_doc(text, text, text[], jsonb) to authenticated;
