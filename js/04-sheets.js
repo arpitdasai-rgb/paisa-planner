@@ -15,7 +15,7 @@ function openSheet(html,{onClose}={}){
   const f=$('#sheetRoot [autofocus]');if(f)f.focus();
 }
 function closeSheet(){$('#sheetRoot').innerHTML='';for(const id of ['app','tabs']){const n=document.getElementById(id);if(n)n.inert=false}const c=sheetClose;sheetClose=null;QA=null;if(c)c()}
-const sheetHead=t=>`<div class="sheet-h"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`;
+const sheetHead=t=>`<div class="sheet-h"><h2>${t}</h2><button class="x" data-act="close" aria-label="Close">${ui('close',20)}</button></div>`;
 
 /* ---- Quick add ---- */
 let QA=null;
@@ -60,9 +60,9 @@ function renderQuick(){
   const amtTxt=QA.amt?INR.format(Number(QA.amt.split('.')[0]))+(QA.amt.includes('.')?'.'+QA.amt.split('.')[1]:''):'0';
   const types=hideInc()?[['out','Expense'],['xfer','Self transfer']]:[['out','Expense'],['in','Income'],['xfer','Self transfer']];
   const head=QA.title||editing
-    ?`<div class="sheet-h"><h2>${editing?(xf?'Edit transfer':'Edit entry'):esc(QA.title)}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>`
-    :`<div class="sheet-h"><div class="seg qtype" role="group" aria-label="Entry type">${types.map(([k,l])=>`<button data-act="qtype" data-k="${k}" aria-pressed="${QA.type===k}">${l}</button>`).join('')}</div><button class="x" data-act="close" aria-label="Close">×</button></div>`;
-  const keypad=`<div class="keypad">${['1','2','3','4','5','6','7','8','9','.','0','⌫'].map(x=>`<button data-act="key" data-k="${x}" aria-label="${x==='⌫'?'Delete digit':x}">${x}</button>`).join('')}</div>`;
+    ?`<div class="sheet-h"><h2>${editing?(xf?'Edit transfer':'Edit entry'):esc(QA.title)}</h2><button class="x" data-act="close" aria-label="Close">${ui('close',20)}</button></div>`
+    :`<div class="sheet-h"><div class="seg qtype" role="group" aria-label="Entry type">${types.map(([k,l])=>`<button data-act="qtype" data-k="${k}" aria-pressed="${QA.type===k}">${l}</button>`).join('')}</div><button class="x" data-act="close" aria-label="Close">${ui('close',20)}</button></div>`;
+  const keypad=`<div class="keypad">${['1','2','3','4','5','6','7','8','9','.','0','⌫'].map(x=>`<button data-act="key" data-k="${x}" aria-label="${x==='⌫'?'Delete digit':x}">${x==='⌫'?ui('erase',24):x}</button>`).join('')}</div>`;
   const amtDisp=`<div class="amtdisp num ${QA.amt?'':'empty'} ${inc?'is-in':''}" id="q-amt">${inc&&QA.amt?'+':''}₹${amtTxt}</div>`;
   const meta=`<button class="qmeta" data-act="qmore" aria-expanded="${!!QA.more}"><span>${dl}${xf?'':' · '+QA.mode+cardName+acctBit} · ${QA.note?esc(QA.note):'<span class="muted">Add a note</span>'}</span>${CHEV}</button>`;
   const dateNote=`<div class="two"><div class="field"><label for="q-date">Date</label><input class="input" type="date" id="q-date" value="${QA.date}"></div>
@@ -87,7 +87,7 @@ function renderQuick(){
     ${reps.length?`<div class="hscroll">${reps.map((r,i)=>`<button class="chip ghost" data-act="qrep" data-i="${i}">${esc(r.label)} <b class="num">${fmt(r.amt)}</b></button>`).join('')}</div>`:''}
     ${QA.text?'':keypad}
     ${QA.split?`<div class="splitbox"><div class="flabel" style="margin-bottom:6px">Split ${QA.amt?fmt(total):''} across categories</div>
-      ${QA.split.map((r,i)=>`<div class="srow"><select class="input" data-split-cat="${i}" aria-label="Category ${i+1}">${cats.map(c=>`<option value="${c.id}" ${r.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select><input class="input num" inputmode="decimal" data-split-amt="${i}" value="${esc(r.amt)}" placeholder="₹"><button class="x sm" data-act="splitdel" data-k="${i}" aria-label="Remove">×</button></div>`).join('')}
+      ${QA.split.map((r,i)=>`<div class="srow"><select class="input" data-split-cat="${i}" aria-label="Category ${i+1}">${cats.map(c=>`<option value="${c.id}" ${r.cat===c.id?'selected':''}>${esc(c.name)}</option>`).join('')}</select><input class="input num" inputmode="decimal" data-split-amt="${i}" value="${esc(r.amt)}" placeholder="₹"><button class="x sm" data-act="splitdel" data-k="${i}" aria-label="Remove">${ui('close',20)}</button></div>`).join('')}
       <div class="btns" style="justify-content:space-between;align-items:center"><button class="link small" data-act="splitadd">+ Add category</button><span class="small ${splitSum===total?'':'over'}" id="split-left">${splitSum===total?'Adds up':(total-splitSum>0?fmt(total-splitSum)+' left to assign':fmt(splitSum-total)+' too much')}</span></div>
       <button class="link small" data-act="splitoff">Don't split</button></div>`
     :`<div class="hscroll">${top.map(chip).join('')}${!inc&&cats.length>top.length?`<button class="chip ghost" data-act="qall">${QA.all?'Less':'More'}</button>`:''}</div>
@@ -302,7 +302,7 @@ function drawLock(){
   const titles={unlock:'Enter your PIN',set:'Choose a 4-digit PIN',confirm:'Enter the PIN again'};
   $('#lockRoot').innerHTML=`<div class="lock" role="dialog" aria-modal="true" aria-label="App lock"><div class="mark">${GULLAK}</div><h2>${titles[PIN.mode]}</h2>
   <div class="dots" aria-hidden="true">${[0,1,2,3].map(i=>`<i class="${i<PIN.buf.length?'on':''}"></i>`).join('')}</div><div class="small" id="pinmsg" style="min-height:18px;color:var(--bad)">${PIN.msg||''}</div>
-  <div class="keypad">${['1','2','3','4','5','6','7','8','9','','0','⌫'].map(x=>x?`<button data-act="pin" data-k="${x}" aria-label="${x==='⌫'?'Delete':x}">${x}</button>`:'<span></span>').join('')}</div>
+  <div class="keypad">${['1','2','3','4','5','6','7','8','9','','0','⌫'].map(x=>x?`<button data-act="pin" data-k="${x}" aria-label="${x==='⌫'?'Delete':x}">${x==='⌫'?ui('erase',24):x}</button>`:'<span></span>').join('')}</div>
   ${PIN.mode!=='unlock'?'<button class="link" data-act="pincancel">Cancel</button>':''}</div>`;
 }
 async function pinKey(k){
@@ -524,7 +524,7 @@ function impMonthStats(k){
 }
 function openImportStep(){
   const I=IMP;const steps=impSteps();const st=steps[I.step];const dots=`<div class="onb-dots" style="justify-content:flex-start">${steps.map((_,i)=>`<i class="${i<=I.step?'on':''}" style="width:${Math.max(8,Math.min(22,240/steps.length))}px"></i>`).join('')}</div>`;
-  const head=`<div class="sheet-h">${dots}<button class="x" data-act="close" aria-label="Cancel import">×</button></div>`;
+  const head=`<div class="sheet-h">${dots}<button class="x" data-act="close" aria-label="Cancel import">${ui('close',20)}</button></div>`;
   const kept=I.tx.filter(t=>!I.skip[t.k]);
   if(st==='intro'){
     const span=I.months.length?(I.months.length===1?mLabel(I.months[0]):`${mLabel(I.months[0])} to ${mLabel(I.months[I.months.length-1])}`):'';

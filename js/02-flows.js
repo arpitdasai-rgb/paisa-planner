@@ -225,7 +225,7 @@ function openWrap(prev){
     `<p class="label" style="margin:0">${mLong(k)} is ready</p><div class="reveal-num num" style="font-size:40px">${fmt(Math.max(0,spendable))}</div><p class="onb-q" style="font-size:20px;margin:0 0 6px">to spend after your plan, about ${fmt(Math.floor(Math.max(0,spendable)/days/100)*100)} a day.</p>`
   ];
   const last=WRAP.step===3;
-  openSheetW(`<div class="sheet-h"><div class="onb-dots">${[1,2,3].map(i=>`<i class="${i<=WRAP.step?'on':''}"></i>`).join('')}</div><button class="x" data-act="wrapclose" aria-label="Close">×</button></div>
+  openSheetW(`<div class="sheet-h"><div class="onb-dots">${[1,2,3].map(i=>`<i class="${i<=WRAP.step?'on':''}"></i>`).join('')}</div><button class="x" data-act="wrapclose" aria-label="Close">${ui('close',20)}</button></div>
     <div class="wrapcard">${cards[WRAP.step-1]}</div>
     ${WRAP.step===2&&over&&canAdmin()?'':`<button class="btn primary block" style="margin-top:18px" data-act="${last?'wrapclose':'wrapnext'}">${last?'Start '+mLong(k):'Next'}</button>`}`);
 }

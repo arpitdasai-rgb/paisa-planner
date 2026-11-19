@@ -218,8 +218,8 @@ function insightHTML(k){
   const f=gone/total;const prev=[1,2,3].map(i=>addM(k,-i)).filter(x=>txIndex()[x]);if(prev.length<2)return'';
   const m=month(k);let best=null;
   m.cats.filter(c=>c.section==='expenses').forEach(c=>{const avg=prev.reduce((s,x)=>s+((txIndex()[x].byCat[c.id])||0),0)/prev.length;if(avg<100000)return;const proj=c.actual/f;const d=proj/avg-1;if(d>=.3&&proj-avg>=100000&&(!best||d>best.d))best={c,avg,proj,d}});
-  if(best&&!dismissed('ins:'+best.c.id,k))return `<div class="insight"><span class="grow"><b>${esc(best.c.name)}</b> is heading ${Math.round(best.d*100)}% above your usual ${fmt(Math.round(best.avg/10000)*10000)}.</span><button class="x sm" data-act="dismsg" data-k="ins:${best.c.id}" aria-label="Hide">×</button></div>`;
+  if(best&&!dismissed('ins:'+best.c.id,k))return `<div class="insight"><span class="grow"><b>${esc(best.c.name)}</b> is heading ${Math.round(best.d*100)}% above your usual ${fmt(Math.round(best.avg/10000)*10000)}.</span><button class="x sm" data-act="dismsg" data-k="ins:${best.c.id}" aria-label="Hide">${ui('close',20)}</button></div>`;
   const avgAll=prev.reduce((s,x)=>s+month(x).sec.expenses.a,0)/prev.length;const projAll=m.sec.expenses.a/f;
-  if(avgAll>0&&projAll<avgAll*.85&&!dismissed('ins:good',k))return `<div class="insight good"><span class="grow">Everyday spending is ${Math.round((1-projAll/avgAll)*100)}% below your usual. Nice.</span><button class="x sm" data-act="dismsg" data-k="ins:good" aria-label="Hide">×</button></div>`;
+  if(avgAll>0&&projAll<avgAll*.85&&!dismissed('ins:good',k))return `<div class="insight good"><span class="grow">Everyday spending is ${Math.round((1-projAll/avgAll)*100)}% below your usual. Nice.</span><button class="x sm" data-act="dismsg" data-k="ins:good" aria-label="Hide">${ui('close',20)}</button></div>`;
   return'';
 }

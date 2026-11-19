@@ -9,6 +9,7 @@ const NAVI={
   more:'<rect x="4" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="4" width="6.5" height="6.5" rx="1.8"/><rect x="4" y="13.5" width="6.5" height="6.5" rx="1.8"/><rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.8"/>'
 };
 const UI={
+  back:'<path d="M15 5l-7 7 7 7"/>',next:'<path d="M9 5l7 7-7 7"/>',close:'<path d="M6 6l12 12M18 6L6 18"/>',erase:'<path d="M9 6h11v12H9l-6-6z"/><path d="M12.5 9.5l5 5M17.5 9.5l-5 5"/>',plus:'<path d="M12 5v14M5 12h14"/>',
   chart:'<path d="M5 19V11M10 19V6M15 19v-5M20 19V9"/>',gear:'<circle cx="12" cy="12" r="3"/><path d="M12 3.5l1.6 2.2 2.7-.5.6 2.7 2.4 1.3-1.1 2.5 1.1 2.5-2.4 1.3-.6 2.7-2.7-.5L12 20.5l-1.6-2.2-2.7.5-.6-2.7-2.4-1.3 1.1-2.5-1.1-2.5 2.4-1.3.6-2.7 2.7.5z"/>',
   search:'<circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/>',users:'<circle cx="9" cy="8" r="3.2"/><circle cx="17" cy="9.5" r="2.5"/><path d="M3 19c.6-3.4 3-5 6-5s5.4 1.6 6 5M14.5 14.6c2.8-.6 5.6.6 6.5 4.4"/>',
   receipt:'<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/>',list:'<path d="M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01"/>',
@@ -77,7 +78,7 @@ function homeView(){
     <div class="hbar"><a class="ibtn" href="#reports" aria-label="Yearly report">${ui('chart')}</a>
       <div class="ptoggle" role="group" aria-label="Show"><button data-act="hview" data-k="spend" aria-pressed="${HVIEW==='spend'}">This month${badgeN?`<i class="badge">${badgeN}</i>`:''}</button><button data-act="hview" data-k="recent" aria-pressed="${HVIEW==='recent'}">Recent</button></div>
       <a class="ibtn" href="#prefs" aria-label="Settings">${ui('gear')}</a></div>
-    <div class="heyebrow"><button class="ar" data-act="mprev" aria-label="Previous month">‹</button><span>Left to spend · ${isCur?(daysLeft+' day'+(daysLeft===1?'':'s')+' to go'):mLabel(VM)}</span><button class="ar" data-act="mnext" aria-label="Next month">›</button></div>
+    <div class="heyebrow"><button class="ar" data-act="mprev" aria-label="Previous month">${ui('back',20)}</button><span>Left to spend · ${isCur?(daysLeft+' day'+(daysLeft===1?'':'s')+' to go'):mLabel(VM)}</span><button class="ar" data-act="mnext" aria-label="Next month">${ui('next',20)}</button></div>
     <button class="bigbtn" data-act="breakdown" aria-label="${fmt(m.left)} left to spend. See how it adds up"><span class="big num ${m.left<0&&!waitInc?'neg':''}">${fmt(m.left)}</span><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <p class="heroline">${line}${waitInc&&m.left<=0?'. Below zero only because that income isn\'t logged yet':''}</p>
     ${isCur?paceHTML(m):''}
@@ -86,7 +87,7 @@ function homeView(){
   </section>`;
   if(HVIEW==='recent'){
     const list=Object.entries(D.tx).map(([id,x])=>({...x,id})).filter(x=>x&&x.date&&(!hideInc()||isXfer(x)||!(D.cats[x.cat]&&D.cats[x.cat].section==='income'))).sort((a,b)=>b.date.localeCompare(a.date)||(b.at||0)-(a.at||0)).slice(0,15);
-    return `<div class="home">${topbar(S().name)}${hero}<section class="sect"><div class="sect-head"><h2>Recent</h2><a class="link small" href="#transactions">View all ›</a></div>
+    return `<div class="home">${topbar(S().name)}${hero}<section class="sect"><div class="sect-head"><h2>Recent</h2><a class="link small" href="#transactions">View all</a></div>
       ${list.map(x=>{if(isXfer(x))return `<button class="rowbtn" data-act="edittx" data-id="${x.id}"><div class="row">${icon({name:'bank',section:'debt'})}<div class="grow"><div class="t">${esc(x.note||'Self transfer')}</div><div class="s">${dShort(x.date)} · ${esc(acctName(x.from))} → ${esc(acctName(x.to))}</div></div><div class="amt num muted">${fmt(x.amt)}</div></div></button>`;
         const c=D.cats[x.cat];const inc=c&&c.section==='income';return `<button class="rowbtn" data-act="edittx" data-id="${x.id}"><div class="row">${icon(c||{section:'expenses'})}<div class="grow"><div class="t">${esc(x.note||(c?c.name:''))}</div><div class="s">${dShort(x.date)}${x.note&&c?' · '+esc(c.name):''} · ${esc(x.mode||'')}</div></div><div class="amt num" style="${inc?'color:var(--good)':''}">${inc?'+':''}${fmt(x.amt)}</div></div></button>`}).join('')||'<p class="empty-state">Nothing logged yet. Tap + to add your first entry.</p>'}
       </section></div>`;
@@ -94,19 +95,19 @@ function homeView(){
   return `<div class="home">${topbar(S().name)}${hero}<div class="stack">
   ${attentionHTML(VM,skipKey)}
   ${isCur&&!needs.length&&!nextStep()?insightHTML(VM):''}
-  <section class="sect"><div class="sect-head"><h2>Coming up</h2><a class="link small" href="#bills">All bills ›</a></div>
+  <section class="sect"><div class="sect-head"><h2>Coming up</h2><a class="link small" href="#bills">All bills</a></div>
     ${dues.length?dues.map(b=>`<div class="row">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s">Goes out ${relDay(b.due)}</div></div><div class="amt num">${fmt(b.budget)}</div>${canWrite()?`<button class="btn sm" data-act="paybill" data-id="${b.id}">Paid</button>`:''}</div>`).join('')
       :`<p class="small muted" style="margin:4px 0 8px">Nothing else is due ${isCur?'this month':'in '+mLong(VM)}.</p>`}
   </section>
   <details class="more" id="home-more" ${lsGet('paisa-home-more')==='1'?'open':''}><summary>Where the money went ${CHEV}</summary>
-  <section class="sect"><div class="sect-head"><h2>Plan vs actual</h2><a class="link small" href="#reports">Yearly report ›</a></div>${bvaChart(m)}</section>
+  <section class="sect"><div class="sect-head"><h2>Plan vs actual</h2><a class="link small" href="#reports">Yearly report</a></div>${bvaChart(m)}</section>
   <section class="sect"><h2 style="margin-bottom:10px">Split by section</h2>${donut(m)}</section>
   <section class="sect"><h2 style="margin-bottom:10px">Everyday spending</h2>${expBars(m)}</section>
   </details></div></div>`;
 }
 function nextStepHTML(){
   const s=nextStep();if(!s)return'';
-  return `<div class="nudge"><button class="nudge-main" data-act="${s.a}" ${s.id?`data-id="${s.id}"`:''} ${s.kk?`data-k="${s.kk}" data-amt="${s.amt||''}" data-day="${s.day||''}"`:''}><span>${s.t}</span>${CHEV}</button><button class="nudge-x" data-act="snooze" data-k="${s.k}" aria-label="Not now">×</button></div>`;
+  return `<div class="nudge"><button class="nudge-main" data-act="${s.a}" ${s.id?`data-id="${s.id}"`:''} ${s.kk?`data-k="${s.kk}" data-amt="${s.amt||''}" data-day="${s.day||''}"`:''}><span>${s.t}</span>${CHEV}</button><button class="nudge-x" data-act="snooze" data-k="${s.k}" aria-label="Not now">${ui('close',20)}</button></div>`;
 }
 
 /* ---- Wallet: accounts and cards as a stack ---- */
@@ -147,7 +148,7 @@ function walletView(){
   const tot=acctList().reduce((s,a)=>s+acctBalance(a.id),0),dues=cardDues();
   const nw=hideInc()?null:netWorth().total;const loans=Object.values(D.loans).reduce((s,l)=>s+loanOutstanding(l),0);
   const goals=Object.keys(D.goals).length,reps=recList().length;
-  const tile=(k,label,val)=>`<button class="mtile" data-act="goplan" data-k="${k}"><span class="mt-l">${label}</span><span class="mt-v">${val} ›</span></button>`;
+  const tile=(k,label,val)=>`<button class="mtile" data-act="goplan" data-k="${k}"><span class="mt-l">${label}</span><span class="mt-v">${val}</span></button>`;
   return `<header class="topbar"><h1>Money</h1>${canAdmin()?'<button class="btn sm" data-act="waddmenu">+ Add</button>':''}</header>
   <section class="wsum"><div class="eyebrow">In ${acctList().length} account${acctList().length===1?'':'s'}</div><div class="bigc num">${fmt(tot)}</div>${dues?`<div class="small muted">Card dues ${fmt(dues)}</div>`:''}</section>
   ${items.length?`<div class="cstrip" role="group" aria-label="Accounts and cards">
@@ -155,7 +156,7 @@ function walletView(){
     ${items.map(i=>`<button class="cs-thumb ${gradOf(i.id)}" data-act="wpick" data-id="${i.key}" aria-pressed="${i.key===WSEL}" aria-label="${esc(i.kind==='acct'?acctLabel(i.a):i.c.name)}"><span>${esc(((i.kind==='acct'?i.a.bank:i.c.bank||i.c.name)||'').slice(0,1))}</span></button>`).join('')}
     ${canAdmin()?'<button class="cs-add" data-act="waddmenu" aria-label="Add account or card">+</button>':''}</div>
   <div class="cstack">${sel?pcardHTML(sel,true):''}</div>
-  ${sel?`<div class="center"><button class="btn sm ghostpill" data-act="wdetail" data-id="${sel.key}">View details ›</button></div>`:''}
+  ${sel?`<div class="center"><button class="btn sm ghostpill" data-act="wdetail" data-id="${sel.key}">View details</button></div>`:''}
   ${rest.length?`<div class="peeks">${rest.map(i=>pcardHTML(i,false)).join('')}</div>`:''}`
   :`<section class="empty-wallet"><p class="heroline" style="text-align:center;margin:0 auto 14px">Add your bank accounts and credit cards to see balances, dues and where money moves.</p>${canAdmin()?'<div class="center"><button class="pillbtn" data-act="editacct">Add bank account</button></div>':''}</section>`}
   <section class="sect"><h2 style="margin-bottom:10px">Money matters</h2><div class="mtiles">
@@ -243,7 +244,7 @@ function attentionHTML(k,skip){
   const lead=i=>i.cat?icon(i.cat):`<span class="dot" style="color:var(--${i.tone==='bad'?'bad':i.tone==='warn'?'warn':'muted'})"></span>`;
   return `<section class="attn" aria-label="Needs you"><div class="attn-h">Needs you · ${items.length}</div>
     ${shown.map(i=>`<div class="attn-item">${lead(i)}<div class="grow"><div class="nt">${esc(i.title)}</div><div class="nd">${esc(i.detail)}</div></div>
-      <div class="nacts">${i.alt?`<button class="link small" data-act="${i.alt.a}" data-id="${i.alt.id}">${i.alt.l}</button>`:''}${i.act?`<button class="btn sm ${i.rank===1||i.rank===2?'primary':''}" data-act="${i.act.a}" ${i.act.id?`data-id="${i.act.id}"`:''} ${i.act.k?`data-k="${i.act.k}"`:''}>${i.act.l}</button>`:''}${i.dismiss?`<button class="x sm" data-act="dismsg" data-k="${esc(i.key)}" aria-label="Hide until next month">×</button>`:''}</div></div>`).join('')}
+      <div class="nacts">${i.alt?`<button class="link small" data-act="${i.alt.a}" data-id="${i.alt.id}">${i.alt.l}</button>`:''}${i.act?`<button class="btn sm ${i.rank===1||i.rank===2?'primary':''}" data-act="${i.act.a}" ${i.act.id?`data-id="${i.act.id}"`:''} ${i.act.k?`data-k="${i.act.k}"`:''}>${i.act.l}</button>`:''}${i.dismiss?`<button class="x sm" data-act="dismsg" data-k="${esc(i.key)}" aria-label="Hide until next month">${ui('close',20)}</button>`:''}</div></div>`).join('')}
     ${items.length>3?`<button class="link small" data-act="attall" style="padding:8px 0">${ATT_ALL?'Show fewer':'Show all '+items.length}</button>`:''}</section>`;
 }
 
@@ -257,7 +258,7 @@ function prefTiles(s,hasPin){
   const remSub=perm==='granted'?(p.bills?`On · bills at ${hourLabel(p.billsHour)}`:'Off'):perm==='denied'?'Blocked in phone settings':perm==='unsupported'?'Not available here':'Off';
   const famSub=MODE==='cloud'?`${MEMBERS.length||1} member${MEMBERS.length===1?'':'s'} · you're ${ROLE}`:'Only on this device';
   return `${MODE==='cloud'?`<button class="profile" data-act="prefsec" data-k="account"><div class="avatar lg">${esc((MYNAME||EMAIL||'?')[0].toUpperCase())}</div><span class="tt"><b>${esc(MYNAME)}</b><small>${esc(EMAIL)}</small></span>${CHEV}</button>`
-    :`<div class="profile"><div class="avatar lg">₹</div><span class="tt"><b>${esc(s.name)}</b><small>Saved on this device</small></span></div>`}
+    :`<div class="profile"><div class="mark" style="width:52px;height:52px;border-radius:16px">${GULLAK}</div><span class="tt"><b>${esc(s.name)}</b><small>Saved on this device</small></span></div>`}
   ${tgroup('Budget',[canAdmin()&&trow('prefsec','budget','budget','Budget setup',`${esc(s.name)} · month starts on the ${ordinal(s.startDay||1)}`),
     trow('go','family','users','Family & sharing',famSub),
     trow('prefsec','reminders','bell','Reminders',remSub)])}
@@ -288,7 +289,7 @@ function familyCloudView(){
   <section class="wsum"><div class="eyebrow">${esc(S()?S().name:'Family budget')}</div><div class="bigc">${MEMBERS.length||1} <span class="muted" style="font-size:20px;font-weight:600">of 8 members</span></div><div class="small muted">You're the ${ROLE}</div></section>
   <div class="people">${ms.map(m=>`<button class="person" data-act="memmenu" data-id="${m.id}">${av(m)}<span class="pn">${esc((m.id===ME?'You':(m.name||m.email).split(' ')[0]))}</span><span class="pr">${ROLEN[m.role]}</span></button>`).join('')}
     ${canAdmin()&&MEMBERS.length<8?`<button class="person" data-act="invsheet"><span class="avatar xl add">+</span><span class="pn">Invite</span><span class="pr">by Gmail</span></button>`:''}</div>
-  ${INVITES.length?tgroup('Waiting to join',INVITES.map(i=>`<div class="trow static"><span class="ti">${ui('users',20)}</span><span class="tt"><b>${esc(i.email)}</b><small>${ROLEN[i.role]} · expires ${new Date(i.expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</small></span><button class="btn sm" data-act="copyinv" data-email="${esc(i.email)}" data-role="${i.role}">Message</button><button class="x sm" data-act="revokeinv" data-id="${i.id}" aria-label="Revoke invite">×</button></div>`)):''}
+  ${INVITES.length?tgroup('Waiting to join',INVITES.map(i=>`<div class="trow static"><span class="ti">${ui('users',20)}</span><span class="tt"><b>${esc(i.email)}</b><small>${ROLEN[i.role]} · expires ${new Date(i.expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</small></span><button class="btn sm" data-act="copyinv" data-email="${esc(i.email)}" data-role="${i.role}">Message</button><button class="x sm" data-act="revokeinv" data-id="${i.id}" aria-label="Revoke invite">${ui('close',20)}</button></div>`)):''}
   ${tgroup('',[trow('rolessheet','','shield','What each role can do','Owner, Admin, Member, Viewer'),canAdmin()&&trow('activitysheet','','list','Activity','Who changed what'),trow('prefsec','reminders','bell','Reminders','For everyone on their own phone')])}
   ${IS_OWNER?'<p class="small muted center" style="margin:0">To leave, first make an Admin the Owner: tap them above.</p>':'<button class="btn danger block" data-act="leave">Leave family</button>'}
   </div>`;
@@ -313,7 +314,7 @@ function memberMenu(uid){
 function moreView(){
   const rq=recentQ();
   const circle=([n,a,k,ic])=>`<button class="circ" data-act="${a}" data-k="${k}"><span class="circ-i">${ui(ic,26)}</span><span class="circ-l">${n}</span></button>`;
-  return `<div class="msearchwrap"><div class="more-top"><label class="msearch">${ui('search',20)}<input id="m-q" type="search" placeholder='Search "rent" or "Swiggy"' data-msearch autocomplete="off" aria-label="Search entries, categories and settings"></label><a class="ibtn lg" href="#family" aria-label="Family">${ui('users',24)}</a></div>
+  return `<div class="msearchwrap"><div class="more-top"><label class="msearch">${ui('search',20)}<input id="m-q" type="search" placeholder='Search “rent” or “Swiggy”…' data-msearch autocomplete="off" aria-label="Search entries, categories and settings"></label><a class="ibtn lg" href="#family" aria-label="Family">${ui('users',24)}</a></div>
     <div class="msuggest">${rq.length?`<div class="eyebrow">Recent</div><div class="hscroll" style="margin:8px 0 12px">${rq.map(q=>`<button class="chip qchip" data-act="mq" data-k="${esc(q)}">${esc(q)}</button>`).join('')}</div>`:''}<div class="eyebrow">Try</div><div class="hscroll" style="margin-top:8px">${['bills due this week','eating out','salary','rent'].map(q=>`<button class="chip outline" data-act="mq" data-k="${q}">${q}</button>`).join('')}</div></div></div>
   <div id="mresults"></div>
   <div id="mhome">

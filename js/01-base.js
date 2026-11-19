@@ -3,7 +3,7 @@
 "use strict";
 /* ================= constants ================= */
 // the brand mark: a clay gullak with a coin dropping in
-const GULLAK='<svg viewBox="0 0 512 512" aria-hidden="true"><circle cx="256" cy="98" r="40" fill="#E3A21A"/><circle cx="256" cy="98" r="26" fill="none" stroke="#1F1B16" stroke-opacity=".3" stroke-width="6"/><path d="M226 168h60l-4 22c56 14 106 64 106 128 0 76-60 124-132 124S124 394 124 318c0-64 50-114 106-128z" fill="#C8643B"/><path d="M168 262c14-26 38-46 64-56" fill="none" stroke="#F3A77E" stroke-width="12" stroke-linecap="round" opacity=".7"/><rect x="224" y="160" width="64" height="18" rx="9" fill="#D9774C"/><rect x="229" y="210" width="54" height="11" rx="5.5" fill="#1F1B16"/><path d="M136 338c74 28 166 28 240 0" fill="none" stroke="#F5F0E6" stroke-width="9" stroke-linecap="round" opacity=".8"/><path d="M146 364c70 24 150 24 220 0" fill="none" stroke="#E3A21A" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 17"/></svg>';
+const GULLAK='<svg viewBox="0 0 512 512" aria-hidden="true"><g class="coin"><circle cx="256" cy="98" r="40" fill="#E3A21A"/><circle cx="256" cy="98" r="26" fill="none" stroke="#1F1B16" stroke-opacity=".3" stroke-width="6"/></g><path d="M226 168h60l-4 22c56 14 106 64 106 128 0 76-60 124-132 124S124 394 124 318c0-64 50-114 106-128z" fill="#C8643B"/><path d="M168 262c14-26 38-46 64-56" fill="none" stroke="#F3A77E" stroke-width="12" stroke-linecap="round" opacity=".7"/><rect x="224" y="160" width="64" height="18" rx="9" fill="#D9774C"/><rect x="229" y="210" width="54" height="11" rx="5.5" fill="#1F1B16"/><path d="M136 338c74 28 166 28 240 0" fill="none" stroke="#F5F0E6" stroke-width="9" stroke-linecap="round" opacity=".8"/><path d="M146 364c70 24 150 24 220 0" fill="none" stroke="#E3A21A" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 17"/></svg>';
 const SECTIONS=[
   {k:'income',n:'Income'},{k:'savings',n:'Savings & Investments'},{k:'bills',n:'Bills'},
   {k:'expenses',n:'Expenses'},{k:'debt',n:'Debt / EMIs'}];
@@ -198,6 +198,8 @@ function chainKeys(){const s=S();if(!s)return[];const out=[];let k=s.startMonth;
 const canWrite=()=>ROLE!=='Viewer';
 const canAdmin=()=>ROLE==='Owner'||ROLE==='Admin';
 const canEditTx=t=>canAdmin()||(ROLE==='Member'&&t.by===ME);
+const shared=()=>MODE==='cloud'&&MEMBERS.length>1;
+const whoTag=id=>shared()?' · '+esc(who(id)):'';
 const who=id=>!id||id==='local'?'You':(id===ME?'You':(NAMES[id]||(MODE==='cloud'?'Former member':'Family member')));
 
 /* ================= view state ================= */
@@ -240,6 +242,6 @@ function render(){
   if(route==='home'&&!render.wrapTried&&(MODE!=='cloud'||DOCS_READY)){render.wrapTried=true;const pw=wrapDue();if(pw)setTimeout(()=>{if(!$('#sheetRoot').innerHTML&&route==='home')openWrap(pw)},800)}
 }
 function topbar(title,{month:showM=true,back=null}={}){
-  return `<header class="topbar">${back?`<a class="x" href="#${back}" aria-label="Back" style="display:grid;place-items:center;text-decoration:none;color:inherit">‹</a>`:''}<h1>${esc(title)}</h1>${showM?monthSwitch():''}</header>${stale?`<div class="banner" style="margin-bottom:12px">Can't reach your data right now. Figures may be out of date.</div>`:''}${OFFLINE?`<div class="banner" style="margin-bottom:12px">You're offline. Everything still works and is saved on this device.</div>`:''}${PENDING&&MODE==='cloud'?`<div class="banner" style="margin-bottom:12px">${PENDING} change${PENDING>1?'s':''} waiting to sync. ${OFFLINE?'They will upload when you are back online.':'Uploading…'}</div>`:''}${UPDATE?`<div class="banner" style="margin-bottom:12px;display:flex;gap:10px;align-items:center"><span style="flex:1">A new version of the app is ready.</span><button class="btn sm primary" data-act="reload">Update</button></div>`:''}`;
+  return `<header class="topbar">${back?`<a class="x" href="#${back}" aria-label="Back" style="display:grid;place-items:center;text-decoration:none;color:inherit">${ui('back',20)}</a>`:''}<h1>${esc(title)}</h1>${showM?monthSwitch():''}</header>${stale?`<div class="banner" style="margin-bottom:12px">Can't reach your data right now. Figures may be out of date.</div>`:''}${OFFLINE?`<div class="banner" style="margin-bottom:12px">You're offline. Everything still works and is saved on this device.</div>`:''}${PENDING&&MODE==='cloud'?`<div class="banner" style="margin-bottom:12px">${PENDING} change${PENDING>1?'s':''} waiting to sync. ${OFFLINE?'They will upload when you are back online.':'Uploading…'}</div>`:''}${UPDATE?`<div class="banner" style="margin-bottom:12px;display:flex;gap:10px;align-items:center"><span style="flex:1">A new version of the app is ready.</span><button class="btn sm primary" data-act="reload">Update</button></div>`:''}`;
 }
-function monthSwitch(){return `<div class="mswitch"><button data-act="mprev" aria-label="Previous month">‹</button><span class="num"><b class="ml">${mLabel(VM)}</b><b class="ms">${MON[+VM.slice(5)-1]} ’${VM.slice(2,4)}</b></span><button data-act="mnext" aria-label="Next month">›</button></div>`}
+function monthSwitch(){return `<div class="mswitch"><button data-act="mprev" aria-label="Previous month">${ui('back',20)}</button><span class="num"><b class="ml">${mLabel(VM)}</b><b class="ms">${MON[+VM.slice(5)-1]} ’${VM.slice(2,4)}</b></span><button data-act="mnext" aria-label="Next month">${ui('next',20)}</button></div>`}

@@ -61,9 +61,9 @@ function renderTxList(){
     const d=days[ds];
     h+=`<div class="dayh"><span>${dLabel(ds)}</span><span class="num">${d.out?fmt(d.out)+' out':''}${d.out&&d.inc?' · ':''}${d.inc?'+'+fmt(d.inc)+' in':''}</span></div>`;
     d.items.forEach(t=>{const can=canEditTx(t);let ic,title,sub,amtH;
-      if(isXfer(t)){ic=icon({name:'bank',section:'debt'});title=t.note||'Self transfer';sub=`${esc(acctName(t.from))} → ${esc(acctName(t.to))} · ${esc(who(t.by))}`;amtH=`<div class="amt num muted">${fmt(t.amt)}</div>`}
+      if(isXfer(t)){ic=icon({name:'bank',section:'debt'});title=t.note||'Self transfer';sub=`${esc(acctName(t.from))} → ${esc(acctName(t.to))}${whoTag(t.by)}`;amtH=`<div class="amt num muted">${fmt(t.amt)}</div>`}
       else{const c=D.cats[t.cat];const inc=isInc(t);ic=icon(c||{section:'expenses'});title=t.note||(c?c.name:'Unknown category');
-        sub=`${t.note&&c?esc(c.name)+' · ':''}${esc(t.mode||'')}${t.acct?' · '+esc(acctName(t.acct)):''}${t.split?' · split':''}${t.rec?' · repeat':''} · ${esc(who(t.by))}${t.src==='import'?' · imported':''}`;
+        sub=`${t.note&&c?esc(c.name)+' · ':''}${esc(t.mode||'')}${t.acct?' · '+esc(acctName(t.acct)):''}${t.split?' · split':''}${t.rec?' · repeat':''}${whoTag(t.by)}${t.src==='import'?' · imported':''}`;
         amtH=`<div class="amt num" style="${inc?'color:var(--good)':''}">${inc?'+':''}${fmt(t.amt)}</div>`}
       h+=`<div class="swipe ${SEL&&SEL.has(t.id)?'picked':''} ${SEL?'selecting':''}" data-id="${t.id}" data-can="${can?1:0}"><div class="swipe-bg"><span class="sw-edit">Edit</span><span class="sw-del">${can?'Delete':''}</span></div>
       <button class="rowbtn swipe-fg" data-act="edittx" data-id="${t.id}"><div class="row">${ic}<div class="grow"><div class="t">${esc(title)}</div><div class="s">${sub}</div></div>${amtH}${can?CHEV:''}</div></button></div>`});
@@ -195,7 +195,7 @@ function billsView(){
   <p class="heroline" style="margin:0">${bl.length?`${paid} of ${bl.length} paid. <b class="num">${fmt(toGo)}</b> still to go out in ${mLong(VM)}.`:'Give Bills or Debt categories a due day on the Budget tab to track them here.'}</p>
   ${groups.slice(0,3).filter(g=>g[1].length).map(([n,items])=>`<section class="sect"><h2 style="margin-bottom:4px;${n==='Overdue'?'color:var(--bad)!important':''}">${n}</h2>${items.map(row).join('')}</section>`).join('')}
   ${groups[3][1].length?`<details class="more"><summary>Done · ${groups[3][1].length} ${CHEV}</summary>${groups[3][1].map(row).join('')}</details>`:''}
-  <button class="link small" data-act="prefsec" data-k="reminders">Reminder settings ›</button>
+  <button class="link small" data-act="prefsec" data-k="reminders">Reminder settings</button>
   </div>`;
 }
 
@@ -220,7 +220,7 @@ function reportsView(){
       return out+`<text x="${x+bw/2}" y="${H+14}" text-anchor="middle">${MON[i][0]}</text>`}).join('')}
     <text x="2" y="${H-H*.92-3}">${fmtShort(max)}</text></svg>`;
   return topbar('Yearly report',{month:false,back:'home'})+`<div class="stack">
-  <div class="mswitch" style="align-self:flex-start"><button data-act="yprev" aria-label="Previous year">‹</button><span class="num">${reportYear}</span><button data-act="ynext" aria-label="Next year">›</button></div>
+  <div class="mswitch" style="align-self:flex-start"><button data-act="yprev" aria-label="Previous year">${ui('back',20)}</button><span class="num">${reportYear}</span><button data-act="ynext" aria-label="Next year">${ui('next',20)}</button></div>
   <section class="card" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:left">
     <div><div class="label">Income</div><div class="num" style="font-weight:700;font-size:17px">${fmtShort(inc)}</div></div>
     <div><div class="label">Savings rate</div><div class="num" style="font-weight:700;font-size:17px">${inc?Math.round(sav/inc*100)+'%':'–'}</div></div>
@@ -281,7 +281,7 @@ function planView(){
     body=goalsBody();
   }
   const titles={loans:'Loans',cards:'Credit cards',goals:'Goals',recurring:'Repeats',networth:'Net worth'};
-  return `<header class="topbar"><button class="x" data-act="goplan" data-k="accounts" aria-label="Back to Money">‹</button><h1>${titles[planTab]||'Money'}</h1>${planTab==='cards'?monthSwitch():''}</header>${stale?'<div class="banner" style="margin-bottom:12px">Can\'t reach your data right now. Figures may be out of date.</div>':''}<div class="stack">${body}</div>`;
+  return `<header class="topbar"><button class="x" data-act="goplan" data-k="accounts" aria-label="Back to Money">${ui('back',20)}</button><h1>${titles[planTab]||'Money'}</h1>${planTab==='cards'?monthSwitch():''}</header>${stale?'<div class="banner" style="margin-bottom:12px">Can\'t reach your data right now. Figures may be out of date.</div>':''}<div class="stack">${body}</div>`;
 }
 
 /* ================= FAMILY ================= */
@@ -315,7 +315,7 @@ function prefsView(){
   <p class="small" style="margin:0 4px"><a href="privacy.html">Privacy policy</a> · <a href="terms.html">Terms</a></p>
 `,danger:`  ${IS_OWNER?`<section class="card"><h2 style="margin-bottom:6px">${MODE==='cloud'?'Delete family budget':'Delete all data'}</h2><p class="small muted" style="margin:0 0 10px">${MODE==='cloud'?'Deletes the family, its members and every category, entry, loan, card and goal from the database for everyone. Back up first if you might need it.':'Removes every category, entry, loan, card, goal and the activity log from this device. Back up first if you might need it.'}</p><button class="btn danger" data-act="wipe">Delete everything…</button></section>`:''}
 `};
-  if(PREFSEC&&SEC[PREFSEC]&&SEC[PREFSEC].trim())return `<header class="topbar"><button class="x" data-act="prefback" aria-label="Back to Settings">‹</button><h1>${PREF_TITLES[PREFSEC]}</h1></header><div class="stack subpage">${SEC[PREFSEC]}</div>`;
+  if(PREFSEC&&SEC[PREFSEC]&&SEC[PREFSEC].trim())return `<header class="topbar"><button class="x" data-act="prefback" aria-label="Back to Settings">${ui('back',20)}</button><h1>${PREF_TITLES[PREFSEC]}</h1></header><div class="stack subpage">${SEC[PREFSEC]}</div>`;
   PREFSEC=null;
   return topbar('Settings',{month:false,back:'more'})+`<div class="stack">${prefTiles(s,hasPin)}</div>`;
 }

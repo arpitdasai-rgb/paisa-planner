@@ -118,15 +118,15 @@ async function cloudBoot(){
 }
 function showSignIn(msg){
   MODE='signin';
-  screen(`<div class="stack" style="padding-top:18vh;text-align:center;align-items:center">
-    <div class="mark" style="width:72px;height:72px;border-radius:20px">${GULLAK}</div>
-    <h1 style="font-size:28px">Paisa Planner</h1>
-    <p class="muted" style="margin:0;max-width:320px">Plan the month, log spending in seconds and never miss a bill or EMI. Share one budget with your family.</p>
-    <div style="height:8px"></div>
+  screen(`<main class="signin">
+    <div class="mark drop" style="width:88px;height:88px;border-radius:24px">${GULLAK}</div>
+    <p class="si-name">Paisa Planner</p>
+    <h1 class="si-h">Know what’s left to spend, every day.</h1>
+    <p class="si-p">Plan the month, log spending in seconds and never miss a bill or EMI. One budget for the whole family.</p>
     <button class="gbtn" data-act="google">${GLOGO}<span>Continue with Google</span></button>
-    ${msg?`<div class="small" style="color:var(--bad)">${esc(msg)}</div>`:''}
-    <p class="small muted" style="margin:0;max-width:320px">We only receive your name, Gmail address and profile photo. We never see your inbox. <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
-  </div>`);
+    ${msg?`<p class="si-err" role="alert">${esc(msg)}</p>`:''}
+    <p class="small muted si-fine">We only receive your name, Gmail address and profile photo, never your inbox. <a href="privacy.html">Privacy</a> and <a href="terms.html">Terms</a>.</p>
+  </main>`);
 }
 async function googleSignIn(){
   const {error}=await SB.auth.signInWithOAuth({provider:'google',options:{redirectTo:location.origin+location.pathname,queryParams:{prompt:'select_account'}}});

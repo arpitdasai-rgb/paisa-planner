@@ -107,6 +107,7 @@ document.addEventListener('click',async e=>{
     case 'selcancel':SEL=null;render();break;
     case 'selall':document.querySelectorAll('#txlist .swipe[data-can="1"]').forEach(s=>SEL.add(s.dataset.id));render();break;
     case 'seldel':if(SEL&&SEL.size)openDelete({ids:[...SEL],step:3});break;
+    case 'skipmain':{const m=$('#app');m.setAttribute('tabindex','-1');m.focus();break}
     case 'deldata':openDelete();break;
     case 'stmmatch':closeSheet();openStmMatch(id);break;
     case 'stmtoggle':{const r=STM.rows[+el.dataset.i];document.querySelectorAll('[data-stmcat]').forEach(s=>{STM.rows[+s.dataset.stmcat].cat=s.value});r.on=!r.on;renderStm();break}
@@ -197,7 +198,7 @@ document.addEventListener('click',async e=>{
     case 'backup':backup();break;
     case 'dorestore':doRestore();break;
     case 'reload':location.reload();break;
-    case 'google':googleSignIn();break;
+    case 'google':{if(el.getAttribute('aria-busy')==='true')break;el.setAttribute('aria-busy','true');const s=el.querySelector('span');if(s)s.textContent='Opening Google…';googleSignIn();break}
     case 'signout':signOut();break;
     case 'createfam':createFamily(el);break;
     case 'acceptinv':acceptInvite(id,el);break;

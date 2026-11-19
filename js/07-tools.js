@@ -14,7 +14,7 @@ const DEL_TYPES=[
   ['accounts','Bank accounts','Accounts and their balances','bank',false],
   ['assets','Net worth','Investments, or just monthly snapshots for a period','chart',true],
   ['log','Activity history','Who added or changed what','doc',true]];
-const DEL_PERIODS=[['this','This month'],['last','Last month'],['month','Pick a month'],['3m','Last 3 months'],['fy','Financial year'],['range','Date range'],['all','Everything']];
+const DEL_PERIODS=[['this','This month'],['last','Last month'],['month','Pick a month'],['3m','Last 3 months'],['fy','Financial year'],['range','Date range'],['All','Everything']];
 const DEL_SRC=[['','Any way'],['import','Imported'],['manual','Typed in'],['recurring','From repeats']];
 let DEL=null;
 function delAllowed(k){if(ROLE==='Viewer')return false;if(ROLE==='Member')return k==='entries';return true}
@@ -46,7 +46,7 @@ function delPeriodLabel(){
 }
 function delKeysIn(a,b){const all=new Set([...Object.keys(D.months),...Object.keys(D.bills),...Object.keys(txIndex())]);return[...all].filter(k=>/^\d{4}-\d\d$/.test(k)&&mEnd(k)>=a&&mStart(k)<=b)}
 const delDated=()=>DEL_TYPES.some(([k,,,,d])=>d&&DEL.what[k]);
-const delPicky=()=>['repeats','loans','goals','accounts'].some(k=>DEL.what[k])||(DEL.period==='all'&&(DEL.what.cards||DEL.what.assets));
+const delPicky=()=>['repeats','loans','goals','accounts'].some(k=>DEL.what[k])||(DEL.period==='All'&&(DEL.what.cards||DEL.what.assets));
 function delSteps(){if(DEL.ids)return[3];const s=[0];if(delDated())s.push(1);if(DEL.what.entries||delPicky())s.push(2);s.push(3);return s}
 function delPickList(k){
   if(k==='repeats')return recList().map(r=>[r.id,(r.note||D.cats[r.cat].name)+' · '+fmt(r.amt)]);
@@ -77,7 +77,7 @@ function delEntries(){
 }
 // what deleting would remove (dels) and change (patches), with a plain summary
 function delPlan(){
-  const dels=[],P={},lines=[];const[a,b]=delRange();const all=DEL.period==='all'&&!DEL.ids;
+  const dels=[],P={},lines=[];const[a,b]=delRange();const all=DEL.period==='All'&&!DEL.ids;
   const patch=(col,id,fn)=>{const cur=P[col+'/'+id]?P[col+'/'+id].data:(D[col][id]?JSON.parse(JSON.stringify(D[col][id])):null);P[col+'/'+id]={col,id,data:fn(cur)}};
   const W=DEL.ids?{entries:true}:DEL.what;let ents=[];
   if(W.entries){ents=delEntries();ents.forEach(t=>dels.push({col:'tx',id:t.id}));
@@ -118,7 +118,7 @@ function delCountLine(){const p=delPlan();return p.lines.length?p.lines.join(' �
 function renderDelete(){
   const st=delSteps();if(!st.includes(DEL.step))DEL.step=st[0];const i=st.indexOf(DEL.step);
   const chip=(act,k,on,l,extra='')=>`<button class="chip" data-act="${act}" data-k="${k}" aria-pressed="${on}" ${extra}>${l}</button>`;
-  const head=`<div class="sheet-h"><h2>${DEL.ids?'Delete selected':'Delete data'}</h2><button class="x" data-act="close" aria-label="Close">×</button></div>
+  const head=`<div class="sheet-h"><h2>${DEL.ids?'Delete selected':'Delete data'}</h2><button class="x" data-act="close" aria-label="Close">${ui('close',20)}</button></div>
     ${st.length>1?`<div class="dsteps" aria-label="Step ${i+1} of ${st.length}">${st.map((s,j)=>`<i class="${j<=i?'on':''}"></i>`).join('')}</div>`:''}`;
   let body='';
   if(DEL.step===0){
@@ -136,8 +136,8 @@ function renderDelete(){
     ${DEL.period==='month'?`<input class="input" type="month" id="del-m" value="${DEL.month}" data-delf style="margin-bottom:12px">`:''}
     ${DEL.period==='fy'?`<select class="input" id="del-fy" data-delf style="margin-bottom:12px">${years.map(y=>`<option value="${y}" ${DEL.fy===y?'selected':''}>April ${y} – March ${y+1}</option>`).join('')}</select>`:''}
     ${DEL.period==='range'?`<div class="two" style="margin-bottom:6px"><div class="field"><label for="del-from">From</label><input class="input" type="date" id="del-from" value="${DEL.from}" data-delf></div><div class="field"><label for="del-to">To</label><input class="input" type="date" id="del-to" value="${DEL.to}" data-delf></div></div>`:''}
-    ${DEL.period!=='all'&&!DEL.what.entries&&DEL.what.cards?'<p class="small muted" style="margin:0 0 8px">For a period, only card statements are deleted. Pick Everything to delete whole cards.</p>':''}
-    ${delPicky()&&DEL.period!=='all'&&['repeats','loans','goals','accounts'].some(k=>DEL.what[k])?'<p class="small muted" style="margin:0 0 8px">Repeats, loans, goals and accounts aren\'t tied to dates. You\'ll pick them next.</p>':''}
+    ${DEL.period!=='All'&&!DEL.what.entries&&DEL.what.cards?'<p class="small muted" style="margin:0 0 8px">For a period, only card statements are deleted. Pick Everything to delete whole cards.</p>':''}
+    ${delPicky()&&DEL.period!=='All'&&['repeats','loans','goals','accounts'].some(k=>DEL.what[k])?'<p class="small muted" style="margin:0 0 8px">Repeats, loans, goals and accounts aren\'t tied to dates. You\'ll pick them next.</p>':''}
     <p class="small" id="del-count" style="color:var(--muted);margin:8px 0 0">${delPeriodLabel()} · ${delCountLine()}</p>`;
   }
   if(DEL.step===2){
@@ -160,7 +160,7 @@ function renderDelete(){
         <input class="input num" id="del-min" data-delf inputmode="decimal" placeholder="Min ₹" value="${esc(F0.min)}" aria-label="Minimum amount">
         <input class="input num" id="del-max" data-delf inputmode="decimal" placeholder="Max ₹" value="${esc(F0.max)}" aria-label="Maximum amount">
         <input class="input" id="del-q" data-delf style="grid-column:1/-1" placeholder="Note contains, e.g. Swiggy" value="${esc(F0.q)}" aria-label="Note contains"></div>`:''}`:''}
-      ${[...['repeats','loans','goals','accounts'],...(DEL.period==='all'?['cards','assets']:[])].filter(k=>DEL.what[k]).map(k=>{const L=delPickList(k);const name=DEL_TYPES.find(x=>x[0]===k)[1];
+      ${[...['repeats','loans','goals','accounts'],...(DEL.period==='All'?['cards','assets']:[])].filter(k=>DEL.what[k]).map(k=>{const L=delPickList(k);const name=DEL_TYPES.find(x=>x[0]===k)[1];
         return `<div class="flabel" style="margin:6px 0 6px">${name}</div>${L.length?`<div class="chips" style="margin-bottom:12px">${L.map(([id,l])=>chip('delpick',k,delPicked(k,id),esc(l),`data-id="${id}"`)).join('')}</div>`:'<p class="small muted" style="margin:0 0 12px">None added.</p>'}`}).join('')}
       <p class="small" id="del-count" style="color:var(--muted);margin:4px 0 0">${delPeriodLabel()} · ${delCountLine()}</p>`;
   }
@@ -257,8 +257,8 @@ function trashBody(){
   if(!L.length)return`<section class="card"><p class="small muted" style="margin:0">Nothing deleted in the last ${TRASH_DAYS} days. Anything you delete stays here for ${TRASH_DAYS} days so you can bring it back.</p></section>`;
   return`<p class="small muted" style="margin:0 2px">Deleted items stay here for ${TRASH_DAYS} days, then go for good.</p>
   <div class="tcard">${L.map(([id,t])=>{const left=Math.max(1,TRASH_DAYS-Math.floor((Date.now()-t.at)/864e5));
-    return`<div class="trow static"><span class="ti">${ui('backup',20)}</span><span class="tt"><b>${esc(t.label)}</b><small>${new Date(t.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})} · ${esc(who(t.by))} · ${left} day${left>1?'s':''} left</small></span>
-      <span class="nacts"><button class="pillbtn sm" data-act="trashrestore" data-id="${id}">Restore</button><button class="x sm" data-act="trashdrop" data-id="${id}" aria-label="Delete for good">×</button></span></div>`}).join('')}</div>`;
+    return`<div class="trow static"><span class="ti">${ui('backup',20)}</span><span class="tt"><b>${esc(t.label)}</b><small>${new Date(t.at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'})}${whoTag(t.by)} · ${left} day${left>1?'s':''} left</small></span>
+      <span class="nacts"><button class="pillbtn sm" data-act="trashrestore" data-id="${id}">Restore</button><button class="x sm" data-act="trashdrop" data-id="${id}" aria-label="Delete for good">${ui('close',20)}</button></span></div>`}).join('')}</div>`;
 }
 /* ---- Start fresh ---- */
 function openFresh(){
@@ -328,16 +328,16 @@ function habitsView(){
   return topbar('Your habits',{month:false,back:'more'})+`<div class="stack">
   <p class="heroline" style="margin:0">The few habits that keep left to spend true. Worked out on this phone from your own entries; nothing is sent anywhere.</p>
   <section class="tgroup"><div class="eyebrow">Logging</div><div class="tcard habs">
-    ${row('Time to add an entry',h.median==null?'—':h.median+'s','goal 5s',h.median==null?null:h.median<=5,h.secsN?`Middle of your last ${h.secsN>1?h.secsN+" entries":"entry"}. Try "Type or paste" or one-tap repeats to go faster.`:'Shows after your next few entries.')}
-    ${row('Days you logged',h.perWeek+' a week','goal 4',h.daysN?h.perWeek>=4:null,`${h.daysN} of the last 28 days.${h.perWeek<4?' The evening reminder helps: Settings → Reminders.':''}`)}
-    ${row('Entries that weren\'t typed by hand',h.recentN?Math.round((h.src.quick+h.src.import+h.src.recurring)/h.recentN*100)+'%':'—','more is easier',null,h.recentN?`Last 28 days: ${h.src.manual} on the keypad, ${h.src.quick} typed or pasted, ${h.src.recurring} from repeats, ${h.src.import} imported.`:'No entries in the last 28 days.')}
+    ${row('Time to add an entry',h.median==null?'—':h.median+'s','Goal: 5 s',h.median==null?null:h.median<=5,h.secsN?`Middle of your last ${h.secsN>1?h.secsN+" entries":"entry"}. Try “Type or paste” or one-tap repeats to go faster.`:'Shows after your next few entries.')}
+    ${row('Days you logged',h.perWeek+' days a week','Goal: 4',h.daysN?h.perWeek>=4:null,`${h.daysN} of the last 28 days.${h.perWeek<4?' The evening reminder helps: Settings → Reminders.':''}`)}
+    ${row('Entries that weren\'t typed by hand',h.recentN?Math.round((h.src.quick+h.src.import+h.src.recurring)/h.recentN*100)+'%':'—','More is easier',null,h.recentN?`Last 28 days: ${h.src.manual} on the keypad, ${h.src.quick} typed or pasted, ${h.src.recurring} from repeats, ${h.src.import} imported.`:'No entries in the last 28 days.')}
   </div></section>
   <section class="tgroup"><div class="eyebrow">Bills and months</div><div class="tcard habs">
-    ${row('Months closed cleanly',h.closed?`${h.done} of ${h.closed}`:'—','all bills done',h.closed?h.done===h.closed:null,h.closed?'Every bill and EMI marked paid or skipped.':'Shows after your first full month.')}
-    ${row('Late or missed payments',h.missedPerMonth==null?'—':h.missedPerMonth+' a month','goal 0',h.missedPerMonth==null?null:h.missedPerMonth<.2,h.closed?`${h.late} of ${h.billN} bills in the last ${h.closed} month${h.closed>1?'s':''} were paid more than 3 days late or not marked.`:'Shows after your first full month.')}
+    ${row('Months closed cleanly',h.closed?`${h.done} of ${h.closed}`:'—','All bills done',h.closed?h.done===h.closed:null,h.closed?'Every bill and EMI marked paid or skipped.':'Shows after your first full month.')}
+    ${row('Late or missed payments',h.missedPerMonth==null?'—':h.missedPerMonth+' a month','Goal: 0',h.missedPerMonth==null?null:h.missedPerMonth<.2,h.closed?`${h.late} of ${h.billN} bills in the last ${h.closed} month${h.closed>1?'s':''} were paid more than 3 days late or not marked.`:'Shows after your first full month.')}
   </div></section>
   ${h.accts?`<section class="tgroup"><div class="eyebrow">Trust</div><div class="tcard habs">
-    ${row('Bank accounts checked this week',`${h.checked} of ${h.accts}`,'all',h.checked===h.accts,'A weekly check keeps left to spend matching your bank.')}
+    ${row('Bank accounts checked this week',`${h.checked} of ${h.accts}`,'All',h.checked===h.accts,'A weekly check keeps left to spend matching your bank.')}
   </div></section>`:''}
   </div>`;
 }
@@ -345,19 +345,19 @@ function habitsView(){
 // [topic, question, answer (simple HTML), extra search words, [button label, data-act, data-k]]
 const FAQ_TOPICS=[['start','Getting started','home'],['add','Adding entries','list'],['budget','Month plan','budget'],['bills','Bills & reminders','bell'],['wallet','Money: accounts, cards, loans','card'],['family','Family & sharing','users'],['data','Import, export & backup','upload'],['delete','Deleting & restoring','backup'],['privacy','Privacy & security','shield'],['app','App & troubleshooting','gear']];
 const FAQ=[
- ['start','What does "Left to spend" mean?','It is the money you started the month with, plus income received, minus everything paid out so far. Tap the big number on Home to see exactly how it adds up.','left to spend balance home number how calculated',['See how it adds up','breakdown','']],
- ['start','How is the "a day" amount worked out?','Paisa takes what\'s left, adds income still to come, subtracts bills, EMIs and budgets you haven\'t paid yet, then divides by the days left in the month. It\'s what you can spend each day without missing a planned payment.','per day daily amount safe to spend',null],
+ ['start','What does “Left to spend” mean?','It is the money you started the month with, plus income received, minus everything paid out so far. Tap the big number on Home to see exactly how it adds up.','left to spend balance home number how calculated',['See how it adds up','breakdown','']],
+ ['start','How is the “a day” amount worked out?','Paisa takes what\'s left, adds income still to come, subtracts bills, EMIs and budgets you haven\'t paid yet, then divides by the days left in the month. It\'s what you can spend each day without missing a planned payment.','per day daily amount safe to spend',null],
  ['start','What is the line under my number on Today?','It\'s your pace. The marigold mark shows how far through the month you are; the dark bar shows how much of your free-to-spend money is used. If the bar runs ahead of the mark, Paisa says how far ahead of pace you are, so you can slow down early instead of finding out at month-end.','pace line bar ribbon marigold ahead behind',null],
  ['start','What should I do first?','Log what you spend with the <b>+</b> button, mark bills paid when they go out, and check Home once a day. Paisa shows what needs you under <b>Needs you</b>, so you don\'t have to look everywhere.','first steps begin setup tutorial',['Add an entry','fab','']],
- ['start','What does "Needs you" show?','Only things that need an action: overdue bills, budgets that have gone over, and repeats waiting for a tap. Heads-ups you don\'t need can be hidden for the month with ×.','needs you attention alerts warnings red dot badge',null],
+ ['start','What does “Needs you” show?','Only things that need an action: overdue bills, budgets that have gone over, and repeats waiting for a tap. Heads-ups you don\'t need can be hidden for the month with ×.','needs you attention alerts warnings red dot badge',null],
  ['start','What is the monthly wrap?','At the start of a new month Paisa shows a short summary of last month: what you saved, where you went over, and a one-tap way to raise a budget that was too low.','wrap summary last month recap',null],
- ['start','What is "Your habits"?','A page in More that shows the few habits that keep your number true: how fast you add entries (goal 5 seconds), how many days a week you log (goal 4), months closed with every bill done, and late payments. It\'s worked out on your phone from your own entries.','habits progress stats speed days logged',['Your habits','go','habits']],
+ ['start','What is “Your habits”?','A page in More that shows the few habits that keep your number true: how fast you add entries (goal 5 seconds), how many days a week you log (goal 4), months closed with every bill done, and late payments. It\'s worked out on your phone from your own entries.','habits progress stats speed days logged',['Your habits','go','habits']],
 
  ['add','How do I add an expense or income?','Tap <b>+</b>, type the amount on the keypad and pick a category. Switch between <b>Expense</b>, <b>Income</b> and <b>Self transfer</b> at the top. Tap the line under the categories to change the date, payment mode, account or note.','add entry log spend record salary',['Add an entry','fab','']],
  ['add','How do I edit or delete an entry?','Open <b>Entries</b> and tap the entry to edit it. On a phone you can also swipe it right to edit, or left to delete. Deleted entries can be restored from Recently deleted for 30 days.','edit change fix wrong mistake swipe remove',['Open Entries','go','transactions']],
- ['add','Why does Paisa pick a category for me?','It remembers the category you used for the same amount, time of day or note (like "Swiggy"). The guess is only a suggestion. Tap another category to change it.','guess auto category suggestion merchant memory',null],
+ ['add','Why does Paisa pick a category for me?','It remembers the category you used for the same amount, time of day or note (like “Swiggy”). The guess is only a suggestion. Tap another category to change it.','guess auto category suggestion merchant memory',null],
  ['add','How do I split one payment across categories?','In Add entry, open the details line under the categories and tap <b>Split across categories</b>. Add each part. The parts must add up to the total before you can save.','split multiple categories one bill',null],
- ['add','Can I type an entry instead of using the keypad?','Yes. In Add entry tap <b>Type or paste instead</b> and write something like "350 swiggy", "salary 150000" or "2.5k rent", or paste a bank SMS. If Paisa is sure of the category, Done saves it straight away; if it\'s only a guess, check it and tap Save.','type text paste sms quick fast keyboard words',null],
+ ['add','Can I type an entry instead of using the keypad?','Yes. In Add entry tap <b>Type or paste instead</b> and write something like “350 swiggy”, “salary 150000” or “2.5k rent”, or paste a bank SMS. If Paisa is sure of the category, Done saves it straight away; if it\'s only a guess, check it and tap Save.','type text paste sms quick fast keyboard words',null],
  ['add','What is a Self transfer?','Money moved between your own accounts, like salary account to savings, or paying your credit card. It changes account balances but not what\'s left to spend.','self transfer move money between accounts own',null],
  ['add','How do I record a credit card bill without counting it twice?','If you log card purchases as expenses, pay the card bill as a <b>Self transfer</b> to the card, not as an expense. Paisa warns you if you try, with a one-tap <b>Pay card instead</b>, and marks the Credit card bill paid.','credit card bill payment double count twice',null],
  ['add','How do I make an entry repeat every month?','In Add entry, open the details and tick <b>Repeats every month</b>. On that day each month it appears on Home for a one-tap confirm. Manage repeats in Money → Repeats.','repeat recurring monthly salary sip rent automatic',['Open Repeats','goplan','recurring']],
@@ -365,22 +365,22 @@ const FAQ=[
 
  ['budget','How do I change my budgets?','Open <b>Month</b> and tap <b>Edit budgets</b> to plan the whole month at once, or tap a category to change just that one. You can apply a change to one month only, or to this and future months.','change budget limit plan amount',['Open Month','go','budget']],
  ['budget','My month starts on salary day, not the 1st. Can I change that?','Yes. In Settings → Budget setup, set <b>Month starts on day</b> (for example 25). Every screen, report and export follows it.','start day month salary date 25th cycle',['Budget setup','prefsec','budget']],
- ['budget','What is "Money at the start" and how do I correct it?','It is what you had when the month began, carried over from last month. If it doesn\'t match your bank, open Month and tap <b>Starting money</b> to set it for that month.','opening balance starting money carry over correct',['Open Month','go','budget']],
+ ['budget','What is “Money at the start” and how do I correct it?','It is what you had when the month began, carried over from last month. If it doesn\'t match your bank, open Month and tap <b>Starting money</b> to set it for that month.','opening balance starting money carry over correct',['Open Month','go','budget']],
  ['budget','How do I add, rename, archive or delete a category?','On Month, tap <b>+ Add a category</b> under a section, or tap a category to rename it, set a due day or archive it. <b>Delete</b> lets you move its entries to another category or delete them too.','category add rename archive remove delete move',['Open Month','go','budget']],
- ['budget','What are the sections Income, Savings, Bills, Expenses and Debt?','They group your categories. Savings and Debt/EMIs count as money going out, so "left to spend" stays honest. Bills and Debt can have due days for reminders.','sections savings debt emi expenses bills income',null],
+ ['budget','What are the sections Income, Savings, Bills, Expenses and Debt?','They group your categories. Savings and Debt/EMIs count as money going out, so “left to spend” stays honest. Bills and Debt can have due days for reminders.','sections savings debt emi expenses bills income',null],
  ['budget','What do Commitments, Savings and Free to spend mean?','<b>Commitments</b> are bills and EMIs that go out every month. <b>Savings</b> is what you plan to put away. <b>Free to spend</b> is what\'s left of the money you have after both, for everyday things. Everyday categories don\'t need limits: watch the free-to-spend number instead.','commitments savings free to spend plan month three parts',['Open Month','go','budget']],
- ['budget','Why does Paisa suggest a different "money at the start"?','If you\'ve added bank accounts, Paisa compares what your banks held when the month began (minus card bills still owed) with the figure carried over. If they differ, Needs you offers <b>Use banks</b> so the month starts from the real amount.','money at the start banks different suggestion use banks opening',null],
+ ['budget','Why does Paisa suggest a different “money at the start”?','If you\'ve added bank accounts, Paisa compares what your banks held when the month began (minus card bills still owed) with the figure carried over. If they differ, Needs you offers <b>Use banks</b> so the month starts from the real amount.','money at the start banks different suggestion use banks opening',null],
  ['budget','Where can I see the whole year?','Tap the chart icon at the top left of Home for the Yearly report: income, outflow, savings rate and month-by-month totals. You can export it from there.','year yearly report annual savings rate chart',['Yearly report','go','reports']],
 
  ['bills','How do I track a bill or EMI?','Give a Bills or Debt category a due day on the Month tab. It then appears in Bills & EMIs with its status, and on Home when it\'s due or overdue. Tap <b>Paid</b> when it goes out.','bill emi due date track rent electricity',['Bills & EMIs','go','bills']],
  ['bills','How do I skip a bill this month?','In Bills & EMIs tap <b>Skip</b> next to it. It won\'t count as overdue and you can undo it any time that month.','skip bill not this month',['Bills & EMIs','go','bills']],
  ['bills','How do reminders work?','Turn them on in Settings → Reminders. You can get bill reminders before due dates, an evening nudge to log the day\'s spending, and a weekly summary, each at a time you choose.','reminder notification push alert time',['Reminders','prefsec','reminders']],
  ['bills','Reminders don\'t work on my iPhone. Why?','On iPhone, notifications only work when Paisa is installed: open it in Safari, tap Share → <b>Add to Home Screen</b>, open it from the home screen, then turn on reminders. You need iOS 16.4 or later.','iphone ios notification not working safari home screen',['Install the app','prefsec','install']],
- ['bills','Reminders say "Blocked in phone settings".','Notifications were turned off for Paisa in your phone or browser settings. Turn them back on there (on iPhone: Settings → Notifications → Paisa), then reopen the app.','blocked denied notification permission',['Reminders','prefsec','reminders']],
+ ['bills','Reminders say “Blocked in phone settings”.','Notifications were turned off for Paisa in your phone or browser settings. Turn them back on there (on iPhone: Settings → Notifications → Paisa), then reopen the app.','blocked denied notification permission',['Reminders','prefsec','reminders']],
 
  ['wallet','How do I add my bank account?','Money → <b>+ Add</b> → Bank account. Pick the bank and type the balance your bank app shows today. Only the last 4 digits are kept, never the full account number.','bank account add savings salary',['Open Money','go','plan']],
  ['wallet','My account balance doesn\'t match the bank. What do I do?','Open the account and tap <b>Check balance</b>. If it differs, type what your bank shows and Paisa adjusts. Small gaps usually mean an entry wasn\'t logged.','balance wrong mismatch check correct',['Open Money','go','plan']],
- ['wallet','Why does Paisa ask "Does HDFC show ₹X?" every week?','A quick weekly check keeps left to spend true. If the bank shows less, tap Next and log the difference as the spending you missed (it goes into your budget), or only correct the balance for things like bank charges.','weekly check balance ask question does show',null],
+ ['wallet','Why does Paisa ask “Does HDFC show ₹X?” every week?','A quick weekly check keeps left to spend true. If the bank shows less, tap Next and log the difference as the spending you missed (it goes into your budget), or only correct the balance for things like bank charges.','weekly check balance ask question does show',null],
  ['wallet','How do I link a credit card to its bill?','Open the card in Money and pick <b>Budget line that pays this card</b>. Then paying the card with a self transfer marks that bill paid, even if you rename it, and Paisa warns if a payment would count spending twice.','link card bill budget line pays credit card',['Credit cards','goplan','cards']],
  ['wallet','How do I track a credit card?','Money → <b>+ Add</b> → Credit card, with the statement and due days. Each month tap <b>Add statement</b> with the amount, and Paisa shows the due date and what\'s unpaid.','credit card statement due limit',['Credit cards','goplan','cards']],
  ['wallet','How do loans and payoff dates work?','Add a loan with what\'s still owed, the interest rate and the EMI. Paisa works out when it ends and the interest left, and updates as you log EMIs.','loan emi payoff interest home personal',['Loans','goplan','loans']],
@@ -399,9 +399,9 @@ const FAQ=[
  ['data','How do I back up and move to a new phone?','Settings → Import, export & backup → Back up saves one file with everything. On the new phone, open the same section and restore it. With Google sign-in your data syncs automatically, so no file is needed.','backup restore new phone move transfer',['Back up','prefsec','data']],
 
  ['delete','How do I delete entries for a period or category?','Settings → Data → <b>Delete data</b>. Choose what (entries, budgets, bill marks, cards…), which period, and narrow it down by category, account, person, amount or how it was added. You see a preview before anything is deleted.','delete remove clear period category bulk many',['Delete data','deldata','']],
- ['delete','I imported the wrong file. How do I undo it?','Delete data → Entries → pick the period → under "How it was added" choose <b>Imported</b>. Only imported entries are removed.','wrong import undo remove imported',['Delete data','deldata','']],
+ ['delete','I imported the wrong file. How do I undo it?','Delete data → Entries → pick the period → under “How it was added” choose <b>Imported</b>. Only imported entries are removed.','wrong import undo remove imported',['Delete data','deldata','']],
  ['delete','Can I get deleted data back?','Yes, for 30 days. Settings → Data → <b>Recently deleted</b> lists every delete; tap Restore. Right after deleting you can also tap Undo.','restore undo recover deleted trash bin',['Recently deleted','prefsec','trash']],
- ['delete','Will deleting old entries change this month\'s numbers?','Not by default. "Keep later months and bank balances as they are" is on, so only the period you delete changes. Turn it off to recalculate every month after it.','balance change later months recalculate carry',null],
+ ['delete','Will deleting old entries change this month\'s numbers?','Not by default. “Keep later months and bank balances as they are” is on, so only the period you delete changes. Turn it off to recalculate every month after it.','balance change later months recalculate carry',null],
  ['delete','How do I select several entries and delete them?','Open Entries, tap <b>Select</b>, tick the entries (or <b>All shown</b>) and tap Delete.','select multiple entries bulk',['Open Entries','go','transactions']],
  ['delete','How do I start over?','Delete data → <b>Start fresh</b> clears every entry, bill mark, card, loan, goal, account and investment, but keeps your categories, budgets and family. It can be restored from Recently deleted for 30 days.','start fresh reset clear everything over',['Delete data','deldata','']],
 
@@ -430,12 +430,12 @@ function faqMark(html,q){
 }
 function faqItem(i,open){
   const[t,q,a,,act]=FAQ[i];
-  const btn=act?(act[1]==='link'?`<a class="pillbtn sm" href="${act[2]}">${act[0]} ›</a>`:`<button class="pillbtn sm" data-act="${act[1]}" data-k="${act[2]}">${act[0]} ›</button>`):'';
+  const btn=act?(act[1]==='link'?`<a class="pillbtn sm" href="${act[2]}">${act[0]}</a>`:`<button class="pillbtn sm" data-act="${act[1]}" data-k="${act[2]}">${act[0]}</button>`):'';
   return`<details class="faq" ${open?'open':''}><summary><span>${faqMark(esc(q),HELPQ)}</span>${CHEV}</summary><div class="fa"><p>${faqMark(a,HELPQ)}</p>${btn}</div></details>`;
 }
 function helpView(){
   return topbar('Help & FAQ',{month:false,back:'more'})+`<div class="stack">
-  <label class="msearch">${ui('search',20)}<input id="help-q" type="search" placeholder="Search, e.g. reminders, import, delete" value="${esc(HELPQ)}" data-helpq autocomplete="off" aria-label="Search help"></label>
+  <label class="msearch">${ui('search',20)}<input id="help-q" type="search" placeholder="Search: reminders, import, delete…" value="${esc(HELPQ)}" data-helpq autocomplete="off" aria-label="Search help"></label>
   <div class="hscroll" style="margin-top:-4px">${[['','All'],...FAQ_TOPICS.map(([k,l])=>[k,l])].map(([k,l])=>`<button class="chip ${HELPT===k?'':'outline'}" data-act="helptopic" data-k="${k}" aria-pressed="${HELPT===k}">${l}</button>`).join('')}</div>
   <div id="helpres">${helpResults()}</div></div>`;
 }
@@ -546,7 +546,7 @@ function renderStm(){
     :`<p class="small" style="margin:14px 0 0">Everything on this statement is already in Paisa. Nice.</p><button class="btn primary block" style="margin-top:12px" data-act="close">Done</button>`}`);
 }
 async function stmLoad(file){
-  STM.acct=$('#stm-acct')?$('#stm-acct').value:STM.acct;const r=await stmRead(file);if(!r)return;
+  STM.acct=$('#stm-acct')?$('#stm-acct').value:STM.acct;{const l=document.querySelector('label[for=stm-file]');if(l){l.setAttribute('aria-busy','true');l.lastChild.textContent=' Reading statement…'}}const r=await stmRead(file);if(!r)return;
   STM={...STM,step:'review',rows:stmMatch(r.rows,STM.acct),closing:r.closing,lastDate:r.lastDate};renderStm();
 }
 async function stmSave(){
