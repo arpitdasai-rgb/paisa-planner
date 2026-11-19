@@ -178,7 +178,11 @@ async function quickSave(){
   if(q.repeat&&!q.id){const day=Number(q.date.slice(8));store.set('recurring',uid(),{cat:q.cat,amt,day,mode:q.mode,acct,note:q.note||'',active:true}).then(()=>log('added','repeat',c.name)).catch(()=>{})}
   const inThisMonth=keyOf(obj.date)===curKey()&&c.section!=='income';
   toast(`${q.id?'Updated':'Saved'} ${fmt(amt)} · ${c.name}.${q.repeat&&!q.id?' It will repeat on the '+ordinal(Number(q.date.slice(8)))+' each month.':inThisMonth?' '+dailyLine():''}`,{ms:4200});
-  if(!q.id&&!q.repeat)setTimeout(()=>{if(!$('#sheetRoot').innerHTML)afterSaveAsk({...obj})},900);
+  if(!q.id){track('entry_added',{method:q.src==='share'?'text':q.src==='recurring'?'repeat':q.qtext?'text':'keypad',secs:obj.secs||null});
+    if(q.title&&/^Mark /.test(q.title)){const cc=D.cats[q.cat];if(cc&&cc.dueDay)track('bill_paid',{days_late:daysBetween(dueDate(cc,keyOf(obj.date)),obj.date)})}}
+  const firstEver=!q.id&&!lsGet('paisa-installstep')&&Object.keys(D.tx).length<=2;
+  if(firstEver)setTimeout(()=>{if(!$('#sheetRoot').innerHTML)openInstallStep()},900);
+  else if(!q.id&&!q.repeat)setTimeout(()=>{if(!$('#sheetRoot').innerHTML)afterSaveAsk({...obj})},900);
 }
 function quickDelete(){
   const q=QA;if(!q||!q.id)return;closeSheet();deleteTx(q.id);

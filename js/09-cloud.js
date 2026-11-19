@@ -125,6 +125,7 @@ function showSignIn(msg){
     <p class="si-p">Plan the month, log spending in seconds and never miss a bill or EMI. One budget for the whole family.</p>
     <button class="gbtn" data-act="google">${GLOGO}<span>Continue with Google</span></button>
     ${msg?`<p class="si-err" role="alert">${esc(msg)}</p>`:''}
+    <button class="link si-try" data-act="trytry">${(()=>{try{const o=JSON.parse(lsGet('paisa-local')||'null');return o&&o.settings&&o.settings.main}catch(e){return false}})()?'Keep using it on this phone without signing in':'Try it first, without signing in'}</button>
     <p class="small muted si-fine">We only receive your name, Gmail address and profile photo, never your inbox. <a href="privacy.html">Privacy</a> and <a href="terms.html">Terms</a>.</p>
   </main>`);
 }
@@ -164,7 +165,7 @@ async function startCloud(){
     if(!DOCS_READY){STARTED=null;return screen(`<div class="empty-state" style="padding-top:26vh"><h2>Can't load your family budget</h2><p>${esc(isNetErr(e)?'Check your internet connection.':errMsg(e))}</p><button class="btn" data-act="reload">Try again</button></div>`)}
     stale=true;scheduleRender();
   }
-  await loadMembers();flushOut();syncPush().then(on=>{if(route==='prefs')scheduleRender();if(!on)setTimeout(()=>checkReminders(),1200)});
+  await loadMembers();flushOut();checkSchema();setTimeout(()=>{if(!$('#sheetRoot').innerHTML)memberWelcome()},900);syncPush().then(on=>{if(route==='prefs')scheduleRender();if(!on)setTimeout(()=>checkReminders(),1200)});
 }
 window.addEventListener('online',()=>{if(MODE==='cloud'){flushOut().then(()=>loadAllDocs().catch(()=>{}))}});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden&&MODE==='cloud'&&navigator.onLine){loadMembers();flushOut()}});
@@ -183,8 +184,8 @@ async function cloudNoFamily(){
       <p class="small muted" style="margin:6px 0 12px">You'll join as <b>${ROLEN[i.role]}</b>: ${ROLEHELP[i.role].charAt(0).toLowerCase()+ROLEHELP[i.role].slice(1)} Expires ${new Date(i.expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}.</p>
       <div class="btns"><button class="btn primary" data-act="acceptinv" data-id="${i.id}">Join family</button><button class="btn" data-act="declineinv" data-id="${i.id}">Decline</button></div></section>`).join('')}
     <section class="card"><h2 style="margin-bottom:6px">${invs.length?'Or start your own budget':'Start your family budget'}</h2>
-      <p class="small muted" style="margin:0 0 12px">You'll be the Owner. Invite family members by their Gmail address after setup.</p>
-      <div class="field"><label for="fam-name">Budget name</label><input class="input" id="fam-name" value="Our family budget"></div>
+      <p class="small muted" style="margin:0 0 12px">You’ll be the Owner. Three quick questions, then invite your family by Gmail whenever you like.</p>
+      ${invs.length?'<div class="field"><label for="fam-name">Budget name</label><input class="input" id="fam-name" value="Our family budget"></div>':''}
       ${localN?`<label class="check" style="border:0"><input type="checkbox" id="fam-copy" checked><span class="small">Copy the budget already on this device (${localN-1} entries)</span></label>`:''}
       <button class="btn primary block" data-act="createfam">Create family budget</button></section>
     <button class="link" data-act="signout" style="align-self:center">Sign out</button>
@@ -194,10 +195,11 @@ async function acceptInvite(id,el){
   el.disabled=true;el.textContent='Joining…';
   const {error}=await SB.rpc('accept_invite',{p_invite:id});
   if(error){toast(errMsg(error));return cloudNoFamily()}
+  track('invite_accepted',{});
   const {data}=await SB.auth.getUser();afterSignIn(data.user);
 }
 async function createFamily(el){
-  const name=val('fam-name').trim()||'Our family budget';const copy=$('#fam-copy')&&$('#fam-copy').checked;
+  const name=(val('fam-name')||'').trim()||'Our family budget';const copy=$('#fam-copy')&&$('#fam-copy').checked;
   el.disabled=true;el.textContent='Creating…';
   const {data:fid,error}=await SB.rpc('create_family',{p_name:name});
   if(error){toast(errMsg(error));el.disabled=false;el.textContent='Create family budget';return}

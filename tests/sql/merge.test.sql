@@ -59,4 +59,17 @@ select pg_temp.check((select data #>> '{b,rent}' from public.docs where col='mon
 select pg_temp.act_as('00000000-0000-0000-0000-00000000000b', 'member@gmail.com');
 insert into public.docs (family_id, col, id, data) values (public.my_family(), 'trash', 't1', '{"label":"x"}');
 select pg_temp.check(exists (select 1 from public.docs where col='trash' and id='t1'), 'member can save to Recently deleted');
+-- v5: anyone can add usage counts and feedback, nobody can read them back; the version check answers 5
+reset role;
+select pg_temp.check(public.paisa_schema_version()=5,'schema version is 5');
+set role anon;
+insert into public.events (install,name,props) values ('abcdefgh12','entry_added','{"method":"text","secs":3}');
+insert into public.feedback (install,screen,text) values ('abcdefgh12','home','could not find salary day');
+do $$ begin perform 1 from public.events; raise exception 'FAILED: anon read usage counts';
+exception when insufficient_privilege then raise notice 'ok  usage counts and feedback can be added but not read';
+end $$;
+do $$ begin insert into public.feedback (install,screen,text) values ('x','home','short id'); raise exception 'FAILED: bad install id accepted';
+exception when check_violation then raise notice 'ok  malformed rows are refused';
+end $$;
+reset role;
 \echo ALL SQL CHECKS PASSED

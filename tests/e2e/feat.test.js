@@ -9,11 +9,11 @@ const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.messag
 await p.addInitScript(()=>{Object.defineProperty(navigator,'canShare',{value:undefined})});
 const U=URL;const S=OUT+'/';const log=(...a)=>console.log(...a);
 await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="150000"]');await p.click('[data-act=onb-go]');
-for(const k of ['rent','home'])await p.click(`[data-act=onb-tile][data-k=${k}]`);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');
+for(const k of ['rent','home'])await p.click(`[data-act=onb-tile][data-k=${k}]`);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');
 log('font in use:',await p.evaluate(()=>getComputedStyle(document.querySelector('.hero2 .big')).fontFamily),'| loaded:',await p.evaluate(async()=>{await document.fonts.ready;return document.fonts.check('700 40px Inter')}));
 // loan + clear-a-loan goal
-await p.goto(U+'#plan');await p.click('[data-act=goplan][data-k=loans]');await p.click('[data-act=editloan]');await p.fill('#l-name','Home loan');await p.fill('#l-orig','4000000');await p.fill('#l-rate','8.5');await p.fill('#l-emi','37500');await p.fill('#l-out','3200000');await p.click('[data-act=saveloan]');
-await p.click('[data-act=goplan][data-k=accounts]');await p.click('.mtile[data-k=goals]');await p.click('[data-act=newgoal][data-k=loan]');await p.fill('#g-d','2032-12');await p.click('[data-act=savegoal]');await p.waitForTimeout(200);
+await p.goto(U+'#more');await p.click('[data-act=goplan][data-k=loans]');await p.click('[data-act=editloan]');await p.fill('#l-name','Home loan');await p.fill('#l-orig','4000000');await p.fill('#l-rate','8.5');await p.fill('#l-emi','37500');await p.fill('#l-out','3200000');await p.click('[data-act=saveloan]');
+await p.goto(U+'#more');await p.click('[data-act=goplan][data-k=goals]');await p.click('[data-act=newgoal][data-k=loan]');await p.fill('#g-d','2032-12');await p.click('[data-act=savegoal]');await p.waitForTimeout(200);
 log('loan goal card:',(await p.textContent('.sect')).replace(/\s+/g,' ').trim());
 await p.click('[data-act=newgoal][data-k=save]');await p.fill('#g-name','Goa trip');await p.fill('#g-t','60000');await p.fill('#g-s','12000');await p.fill('#g-m','8000');await p.click('[data-act=savegoal]');await p.waitForTimeout(150);
 await p.screenshot({path:S+'g-goals.png',fullPage:true});

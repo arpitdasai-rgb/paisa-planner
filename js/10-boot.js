@@ -54,7 +54,7 @@ function doRestore(){
 }
 
 (async function boot(){
-  if(CLOUD){if(lsGet('paisa-pin'))showLock('unlock');cloudBoot();return}
+  if(CLOUD&&!lsGet('paisa-try')){if(lsGet('paisa-pin'))showLock('unlock');cloudBoot();return}
   startLocal();
   if(lsGet('paisa-pin'))showLock('unlock');
   setRoute();setTimeout(()=>checkReminders(),1500);

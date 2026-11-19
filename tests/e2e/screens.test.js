@@ -4,7 +4,7 @@ const {chromium,devices}=require('playwright');
 await ctx.route('**/config.js',r=>r.fulfill({contentType:'application/javascript',body:'window.PAISA_CONFIG={supabaseUrl:"",supabaseAnonKey:""};'}));
 await ctx.route('**/sw.js',r=>r.fulfill({status:404,body:''}));
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const U=URL;const S=OUT+'/';
-await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="150000"]');await p.click('[data-act=onb-go]');for(const k of['rent','sip'])await p.click(`[data-act=onb-tile][data-k=${k}]`);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.fill('#onb-open','40000');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');
+await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="150000"]');await p.click('[data-act=onb-go]');for(const k of['rent','sip'])await p.click(`[data-act=onb-tile][data-k=${k}]`);await p.click('[data-act=onb-go]');await p.fill('#onb-open','40000');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');
 const h=async()=>p.evaluate(()=>document.documentElement.scrollHeight);
 await p.goto(U+'#prefs');await p.waitForTimeout(400);
 const rows=await p.$$eval('#app .trow',e=>e.map(x=>(x.dataset.k||x.dataset.act)+': '+x.innerText.replace(/\s+/g,' ').trim()));console.log('Settings tiles:\n  '+rows.join('\n  '));console.log('settings height',await h());

@@ -80,13 +80,13 @@ document.addEventListener('click',async e=>{
     case 'saveacct':saveAccount(id);break;
     case 'archacct':confirmSheet('Remove '+esc(acctName(id))+'?','Past entries keep their history. You can add it again later.','Remove',async()=>{await store.set('accounts',id,{...D.accounts[id],archived:true,isDefault:false}).catch(()=>{});toast('Account removed.')});break;
     case 'checkacct':openCheck(id);break;
-    case 'checklog':{const v=Number(el.dataset.k);const cur=acctBalance(id),d=v-cur,cat=$('#ck-cat').value;if(!cat||!d)break;closeSheet();const now=Date.now();
+    case 'checklog':{track('bank_check',{result:'logged_gap'});const v=Number(el.dataset.k);const cur=acctBalance(id),d=v-cur,cat=$('#ck-cat').value;if(!cat||!d)break;closeSheet();const now=Date.now();
       await store.set('tx',uid(),{byName:MYNAME||'',cat,amt:Math.abs(d),date:todayISO(),mode:'UPI',note:'Found in bank check',card:'',acct:id,src:'reconcile',by:ME||'local',at:now,ub:ME||'local',uat:now}).catch(()=>{});
       await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});log('logged','bank check',`${acctName(id)} ${fmt(Math.abs(d))}`);toast(`Logged ${fmt(Math.abs(d))} · ${D.cats[cat].name}. ${acctName(id)} now matches your bank.`);break}
     case 'useopenbank':{const bs=bankStart(VM);if(bs==null)break;store.patch('months',VM,['open'],bs).then(()=>log('changed','opening balance',mLabel(VM)+' '+fmt(bs)+' from banks')).catch(()=>{});toast(`${mLong(VM)} now starts with ${fmt(bs)}, from your banks.`);break}
-    case 'checkyes':{closeSheet();await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});toast('Balance confirmed.');break}
+    case 'checkyes':{track('bank_check',{result:'matched'});closeSheet();await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});toast('Balance confirmed.');break}
     case 'checkfix':{const v=amtOrNull('ck-bal');if(v==null){toast('Enter what your bank shows.');break}if(v===acctBalance(id)){closeSheet();await store.set('accounts',id,{...D.accounts[id],checkedAt:todayISO()}).catch(()=>{});toast('Balance confirmed.');break}openCheckDiff(id,v);break}
-    case 'checkadj':{const v=Number(el.dataset.k);const cur=acctBalance(id);closeSheet();await store.set('accounts',id,{...D.accounts[id],adj:(D.accounts[id].adj||0)+(v-cur),checkedAt:todayISO()}).catch(()=>{});log('corrected','balance',acctName(id)+' to '+fmt(v));toast('Balance updated to '+fmt(v)+'.');break}
+    case 'checkadj':{track('bank_check',{result:'adjusted'});const v=Number(el.dataset.k);const cur=acctBalance(id);closeSheet();await store.set('accounts',id,{...D.accounts[id],adj:(D.accounts[id].adj||0)+(v-cur),checkedAt:todayISO()}).catch(()=>{});log('corrected','balance',acctName(id)+' to '+fmt(v));toast('Balance updated to '+fmt(v)+'.');break}
     case 'recok':confirmRec(id);break;
     case 'recskip':{store.patch('bills',curKey(),['skipRec',id],true).catch(()=>{});toast('Skipped for this month.');break}
     case 'editrec':closeSheet();openRec(id,id?{}:(el.dataset.k?{cat:el.dataset.k,amt:Number(el.dataset.amt)||null,day:Number(el.dataset.day)||1,mode:'Net banking'}:{}));break;
@@ -107,6 +107,28 @@ document.addEventListener('click',async e=>{
     case 'selcancel':SEL=null;render();break;
     case 'selall':document.querySelectorAll('#txlist .swipe[data-can="1"]').forEach(s=>SEL.add(s.dataset.id));render();break;
     case 'seldel':if(SEL&&SEL.size)openDelete({ids:[...SEL],step:3});break;
+    case 'feedback':openFeedback();break;
+    case 'fbsend':sendFeedback(el);break;
+    case 'whatsnew':openWhatsNew();break;
+    case 'wnclose':wnSaveOpt();closeSheet();break;
+    case 'wnreplan':wnSaveOpt();closeSheet();openStartMonth();break;
+    case 'startmonth':openStartMonth();break;
+    case 'smnext':await smNext();break;
+    case 'smback':smRead();SM.step=Math.max(1,SM.step-1);renderStartMonth();break;
+    case 'smdone':lsSet('paisa-start-'+SAFE()+'-'+SM.k,'1');track('month_started',{});closeSheet();SM=null;toast('Your month is planned. The number on Today now follows it.');render();break;
+    case 'smopen':smRead();SM.open=el.dataset.k;renderStartMonth();if(SM.open==='type')setTimeout(()=>{const i=$('#sm-open');if(i)i.focus()},50);break;
+    case 'smincome':{const c=D.cats[id];if(!c)break;const k=SM.k;const mc=month(k).cats.find(x=>x.id===id);const amt=Math.max(0,(mc?mc.budget-mc.actual:0));if(!amt){toast('Set the expected amount on the Month page first.');break}
+      const r=recForCat(id);const now=Date.now();await store.set('tx',uid(),{byName:MYNAME||'',cat:id,amt,date:todayISO()<mStart(k)?mStart(k):todayISO(),mode:r&&r.mode||'Net banking',note:r&&r.note||'',card:'',acct:r&&r.acct||defaultAcct(),src:r?'recurring':'manual',...(r?{rec:r.id}:{}),by:ME||'local',at:now,ub:ME||'local',uat:now}).catch(()=>{});
+      toast(`Added ${fmt(amt)} · ${c.name}.`);renderStartMonth();break}
+    case 'catchadd':openQuick({title:'Add what you remember'});break;
+    case 'catchskip':lsSet('paisa-catchup-'+el.dataset.k,'1');{const a=acctList()[0];render();if(a)setTimeout(()=>openCheck(a.id),300);else toast('Got it. Paisa counts from today.')}break;
+    case 'wfirst':closeSheet();openQuick({title:'Log one thing you spent today'});break;
+    case 'installstep':openInstallStep();break;
+    case 'installdone':{const c=$('#is-metrics');if(c&&c.checked){lsSet('paisa-metrics','1');track('metrics_on',{from:'install'})}closeSheet();break}
+    case 'schemacheck':await checkSchema();toast(updatesDue()?'Still waiting for the updates. Run the three files, then check again.':'All done. Thanks.');render();break;
+    case 'metricstoggle':lsSet('paisa-metrics',metricsOn()?null:'1');if(metricsOn())track('metrics_on',{from:'settings'});toast(metricsOn()?'Thanks. Only anonymous counts are shared.':'Off. Nothing is shared.');render();break;
+    case 'trytry':lsSet('paisa-try','1');location.reload();break;
+    case 'trysignin':lsSet('paisa-try',null);location.reload();break;
     case 'skipmain':{const m=$('#app');m.setAttribute('tabindex','-1');m.focus();break}
     case 'deldata':openDelete();break;
     case 'stmmatch':closeSheet();openStmMatch(id);break;
@@ -119,6 +141,7 @@ document.addEventListener('click',async e=>{
     case 'acctdel':closeSheet();openDelete({what:{entries:true,accounts:true},pick:{accounts:[id]},period:'all',f:{acct:id},step:2});break;
     case 'carddel':closeSheet();openDelete({what:{entries:true,cards:true},pick:{cards:[id]},period:'all',f:{acct:'card:'+id},step:2});break;
     case 'delwhat':{const k=el.dataset.k;DEL.what[k]=!DEL.what[k];if(k==='entries'||k==='cards'||k==='assets')DEL.pick={...DEL.pick};renderDelete();break}
+    case 'delallkinds':DEL.allkinds=true;renderDelete();break;
     case 'delper':delRead();DEL.period=el.dataset.k;DEL.typed='';renderDelete();break;
     case 'delkind':{delRead();const K=DEL.f.kinds,k=el.dataset.k;DEL.f.kinds=K.includes(k)?K.filter(x=>x!==k):[...K,k];renderDelete();break}
     case 'delcat':{delRead();const C=DEL.f.cats,k=el.dataset.k;DEL.f.cats=C.includes(k)?C.filter(x=>x!==k):[...C,k];renderDelete();break}

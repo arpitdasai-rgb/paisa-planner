@@ -6,7 +6,7 @@ await ctx.route('**/config.js',r=>r.fulfill({contentType:'application/javascript
 await ctx.route('**/sw.js',r=>r.fulfill({status:404,body:''}));
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
 await p.addInitScript(()=>{Object.defineProperty(window,'Notification',{value:{permission:'granted',requestPermission:async()=>'granted'},configurable:true})});
-await p.goto(URL);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="100000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');
+await p.goto(URL);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="100000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');
 const card=async()=>p.evaluate(()=>{const c=[...document.querySelectorAll('.card')].find(c=>c.textContent.includes('Reminders'));return c.textContent.replace(/\s+/g,' ').trim()});
 await p.goto(URL+'#prefs');await p.click('[data-act=prefsec][data-k=reminders]');await p.waitForTimeout(300);console.log('on-open reminders, never tested ->',(await card()).includes('Send a test')?'shows Send a test':'no test button');
 await p.click('[data-act=testnotif]');await p.waitForTimeout(500);console.log('after one test ->',(await card()).includes('Send a test')?'still shows Send a test':'test button gone');

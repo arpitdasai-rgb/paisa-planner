@@ -10,7 +10,7 @@ const U=URL;const S=OUT+'/';const log=(...a)=>console.log(...a);
 const key=async s=>{for(const ch of s)await p.click(`[data-act=key][data-k="${ch}"]`)};
 const txt=async sel=>(await p.textContent(sel)).replace(/\s+/g,' ').trim();
 // first run (salary 1,00,000 lands on the 1st)
-await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="100000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-tile][data-k=rent]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(300);
+await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="100000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-tile][data-k=rent]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');await p.waitForTimeout(300);
 log('1 To confirm on Home:',await p.$eval('.sect:has(h2:text("To confirm"))',e=>e.textContent.replace(/\s+/g,' ').trim()).catch(()=>'none'));
 await p.click('[data-act=recok]');await p.waitForTimeout(300);log('  after Confirm, still listed?',!!(await p.$('[data-act=recok]')),'| left to spend:',await txt('.hero2 .big'));
 // accounts
@@ -41,10 +41,10 @@ await p.goto(U+'#transactions');await p.waitForSelector('.swipe');log('8 entries
 await p.selectOption('#f-acct',{index:2});await p.waitForTimeout(100);log('  filter by cash account:',(await p.$$eval('.swipe .row .t',e=>e.map(x=>x.textContent))).join(', '));
 // plan: repeats, net worth, yearly
 await p.goto(U+'#plan');await p.click('.mtile[data-k=recurring]');log('9 repeats:',(await p.$$eval('.sect .row',e=>e.map(x=>x.querySelector('.t').textContent+' '+x.querySelector('.s').textContent.replace(/\s+/g,' ')))).join(' | '));
-await p.click('[data-act=goplan][data-k=accounts]');await p.click('.mtile[data-k=networth]');await p.click('[data-act=editasset]');await p.selectOption('#as-type','Fixed deposit');await p.fill('#as-name','SBI FD');await p.fill('#as-val','100000');await p.click('[data-act=saveasset]');await p.waitForTimeout(300);
+await p.goto(U+'#more');await p.click('[data-act=goplan][data-k=networth]');await p.click('[data-act=editasset]');await p.selectOption('#as-type','Fixed deposit');await p.fill('#as-name','SBI FD');await p.fill('#as-val','100000');await p.click('[data-act=saveasset]');await p.waitForTimeout(300);
 log('10 net worth:',(await txt('.bsum')),'|',(await p.$$eval('.sect:first-of-type .kv',e=>e.map(x=>x.textContent.replace(/\s+/g,' ').trim()))).join(' · '));
 await p.screenshot({path:S+'v2-networth.png',fullPage:true});
-await p.click('[data-act=goplan][data-k=accounts]');await p.click('.mtile[data-k=goals]');await p.click('[data-act=newgoal][data-k=yearly]');await p.fill('#g-name','Car insurance');await p.fill('#g-amt','24000');await p.selectOption('#g-mon','3');await p.click('[data-act=savegoal]');await p.waitForTimeout(200);
+await p.goto(U+'#more');await p.click('[data-act=goplan][data-k=goals]');await p.click('[data-act=newgoal][data-k=yearly]');await p.fill('#g-name','Car insurance');await p.fill('#g-amt','24000');await p.selectOption('#g-mon','3');await p.click('[data-act=savegoal]');await p.waitForTimeout(200);
 log('11 yearly payment:',(await p.$$eval('.sect',e=>e.map(x=>x.textContent.replace(/\s+/g,' ').trim()).filter(t=>t.includes('Car insurance'))))[0]);
 // export with accounts + net worth
 await p.goto(U+'#prefs');await p.click('[data-act=prefsec][data-k=data]');await p.click('[data-act=exp-month]');await p.click('[data-act=expinc][data-k=accounts]');await p.click('[data-act=expinc][data-k=networth]');

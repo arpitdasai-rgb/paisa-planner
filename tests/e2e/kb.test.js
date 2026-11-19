@@ -4,7 +4,7 @@ const {chromium,devices}=require('playwright');
 await ctx.route('**/config.js',r=>r.fulfill({contentType:'application/javascript',body:'window.PAISA_CONFIG={supabaseUrl:"",supabaseAnonKey:""};'}));
 await ctx.route('**/sw.js',r=>r.fulfill({status:404,body:''}));
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));const U=URL;
-await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="150000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.fill('#onb-open','40000');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');
+await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="150000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.fill('#onb-open','40000');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');
 await p.goto(U+'#more');await p.focus('#m-q');console.log('before:',await p.evaluate(()=>document.activeElement.id));
 await p.evaluate(()=>document.getElementById('fab').click());await p.waitForTimeout(300);
 console.log('after open: focused =',await p.evaluate(()=>document.activeElement.tagName+'#'+document.activeElement.id),'| page inert =',await p.evaluate(()=>document.getElementById('app').inert));

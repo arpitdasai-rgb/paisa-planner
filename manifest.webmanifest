@@ -42,6 +42,17 @@
   ],
   "shortcuts": [
     {
+      "name": "Add entry",
+      "short_name": "Add",
+      "url": "./#add",
+      "icons": [
+        {
+          "src": "icons/icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
       "name": "Bills & EMIs",
       "short_name": "Bills",
       "url": "./#bills",

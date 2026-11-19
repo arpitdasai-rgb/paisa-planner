@@ -795,6 +795,27 @@ See §16.
   - Add only measurement, a feedback button and a "More tools" grouping.
   - North Star: trusted weekly families. `CHANGELOG.md` lists everything added, changed and removed.
 
+### Stage 18: Journeys for new, existing and invited users (19 Nov)
+- **Asked for:** "do all the changes; I'm an existing user and replanning everything is confusing."
+- **Built:**
+  - Try it first;
+  - What's new;
+  - **Start / Replan the month** in 5 steps (the direct answer to "confusing");
+  - catch-up after a gap;
+  - member welcome;
+  - first entry right after setup, then install and reminders;
+  - feedback;
+  - opt-in usage counts (`v5.sql`, privacy policy updated);
+  - the Owner's "Finish database updates";
+  - the card-link nudge;
+  - one bank check a week;
+  - More tools;
+  - a 3-question setup.
+- **Checked:**
+  - a new journeys test covering every flow (including that nothing is sent while counts are off);
+  - `v5.sql` on Postgres (rows can be added but not read);
+  - all browser suites and the sweep.
+
 ---
 
 ## 16. Engineering audit (this version)

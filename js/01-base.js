@@ -217,7 +217,7 @@ function scheduleRender(){if(typing()){RENDER_WAITING=true;return}if(rq)return;r
 document.addEventListener('focusout',()=>setTimeout(()=>{if(RENDER_WAITING&&!typing()){RENDER_WAITING=false;scheduleRender()}},0));
 let LAST_ROUTE=null;
 let PLAN_KEEP=false;
-function setRoute(){let h=location.hash.slice(1);if(h!=='transactions')SEL=null;if(h!=='prefs'||!PREF_KEEP)PREFSEC=PREF_KEEP?PREFSEC:null;if(h==='add'){h='home';history.replaceState(null,'','#home');setTimeout(()=>{if(S()&&canWrite()&&!$('#sheetRoot').innerHTML)openQuick()},500)}route=ROUTES.includes(h)?h:'home';if(route==='plan'&&!PLAN_KEEP)planTab='accounts';PLAN_KEEP=false;PREF_KEEP=false;if(route!=='budget'){BEDIT=false;BDRAFT={}}window.scrollTo(0,0);render()}
+function setRoute(){let h=location.hash.slice(1);if(h!=='transactions')SEL=null;if(h!=='prefs'||!PREF_KEEP)PREFSEC=PREF_KEEP?PREFSEC:null;if(h==='add'){h='home';history.replaceState(null,'','#home');setTimeout(()=>{if(S()&&canWrite()&&!$('#sheetRoot').innerHTML)openQuick()},500)}route=ROUTES.includes(h)?h:'home';track('screen_view',{route});if(route==='plan'&&!PLAN_KEEP)planTab='accounts';PLAN_KEEP=false;PREF_KEEP=false;if(route!=='budget'){BEDIT=false;BDRAFT={}}window.scrollTo(0,0);render()}
 window.addEventListener('hashchange',setRoute);
 
 function render(){
@@ -234,10 +234,11 @@ function render(){
   renderTabs();
   const v={home:homeView,transactions:txView,budget:budgetView,plan:planView,family:MODE==='cloud'?familyCloudView:familyView,pushsetup:pushSetupView,more:moreView,bills:billsView,reports:reportsView,prefs:prefsView,help:helpView,habits:habitsView}[route]||homeView;
   const keepY=LAST_ROUTE===route?window.scrollY:0;
-  app.innerHTML=v();
+  app.innerHTML=v()+feedbackFooter();
   if(LAST_ROUTE===route&&keepY)window.scrollTo(0,keepY);LAST_ROUTE=route;
   if(route==='transactions')renderTxList();
   if(route==='home'){heroCount();petalsIfDone()}
+  journeysAfterRender();
   if(SHARED&&!render.shareDone&&S()&&(MODE!=='cloud'||DOCS_READY)){render.shareDone=true;try{history.replaceState(null,'',location.pathname+location.hash)}catch(e){}setTimeout(openShared,400)}
   if(route==='home'&&!render.wrapTried&&(MODE!=='cloud'||DOCS_READY)){render.wrapTried=true;const pw=wrapDue();if(pw)setTimeout(()=>{if(!$('#sheetRoot').innerHTML&&route==='home')openWrap(pw)},800)}
 }

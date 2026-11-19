@@ -13,12 +13,12 @@ for(const k of ['rent','home','sip','help','cc'])await p.click(`[data-act=onb-ti
 log('3 live counter after 5 taps:',(await p.textContent('#onb-left')).replace(/\s+/g,' ').trim());
 await p.fill('[data-onbtile=rent]','30000');log('  after editing rent to 30000:',(await p.textContent('.onb-num')).trim());
 await p.screenshot({path:S+'f3.png',fullPage:true});await p.click('[data-act=onb-go]');
-await p.click('[data-act=onb-hh][data-k=partner]');await p.click('[data-act=onb-go]');
+
 log('5 reveal:',(await p.textContent('.reveal-num')).trim(),'|',(await p.textContent('.onb-q')).trim());await p.screenshot({path:S+'f4.png'});
-await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');log('   setup took (incl. automation):',((Date.now()-T0)/1000).toFixed(1)+'s');
+await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');log('   setup took (incl. automation):',((Date.now()-T0)/1000).toFixed(1)+'s');
 log('6 next-step card:',await p.$('.nudge')?(await p.textContent('.nudge')).trim():'hidden while urgent items show (by design)');
 await p.screenshot({path:S+'f5.png',fullPage:true});
-async function add(amt,cat,note){await p.click('#fab');if(cat==='Salary')await p.click('[data-act=qtype][data-k=in]');for(const ch of amt)await p.click(`[data-act=key][data-k="${ch}"]`);if(cat){if(!await p.$(`.chip[data-act=qcat]:has-text("${cat}")`))await p.click('[data-act=qall]');await p.click(`.chip[data-act=qcat]:has-text("${cat}") >> nth=0`)}if(note){await p.click('[data-act=qmore]');await p.fill('#q-note',note);await p.press('#q-note','Tab')}await p.click('[data-act=qsave]');await p.waitForTimeout(250)}
+async function add(amt,cat,note){await p.waitForTimeout(950);if(await p.$('[data-act=installdone]'))await p.click('[data-act=installdone]');await p.click('#fab');if(cat==='Salary')await p.click('[data-act=qtype][data-k=in]');for(const ch of amt)await p.click(`[data-act=key][data-k="${ch}"]`);if(cat){if(!await p.$(`.chip[data-act=qcat]:has-text("${cat}")`))await p.click('[data-act=qall]');await p.click(`.chip[data-act=qcat]:has-text("${cat}") >> nth=0`)}if(note){await p.click('[data-act=qmore]');await p.fill('#q-note',note);await p.press('#q-note','Tab')}await p.click('[data-act=qsave]');await p.waitForTimeout(250)}
 await add('350','Eating out','Swiggy');log('7 toast after save:',await p.textContent('.toast'));
 await add('420','Eating out','Swiggy');
 await p.click('#fab');for(const ch of '380')await p.click(`[data-act=key][data-k="${ch}"]`);

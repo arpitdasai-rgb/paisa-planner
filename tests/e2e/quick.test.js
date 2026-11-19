@@ -5,7 +5,7 @@ await ctx.route('**/config.js',r=>r.fulfill({contentType:'application/javascript
 await ctx.route('**/sw.js',r=>r.fulfill({status:404,body:''}));
 const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));p.on('console',m=>m.type()==='error'&&!/404|Failed to load/.test(m.text())&&errs.push(m.text()));
 const U=URL;const S=OUT+'/';const log=(...a)=>console.log(...a);
-await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="100000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-tile][data-k=rent]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');
+await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="100000"]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-tile][data-k=rent]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');
 const key=async s=>{for(const ch of s)await p.click(`[data-act=key][data-k="${ch}"]`)};
 await p.click('#fab');log('opens as:',await p.$eval('[data-act=qtype][aria-pressed=true]',e=>e.textContent),'| details line:',(await p.textContent('.qmeta')).trim());
 await p.screenshot({path:S+'q-expense.png'});

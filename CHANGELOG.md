@@ -64,6 +64,33 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 - iPhone: zoom on tap, rubber-band bounce, keyboard over the number pad and over sheets.
 - New account balances off by entries from the same day; 320px layouts overflowing; toasts blocking taps; dark text on a dark card colour (19 Nov).
 
+## 19 Nov: journeys for new, existing and invited users
+
+**Added**
+- **Try it first:** use Paisa on the phone without signing in; "Sign in to share" in Settings copies it into a family budget later.
+- **What's new:** shown once to existing users after an update, with a button to replan.
+- **Start / Replan the month:** 5 steps (salary in?, starting money, bills and EMIs, savings, then free to spend). Offered on Today in a month's first 10 days, and always on the Month page.
+- **Catch up:** after 7+ days without an entry, a no-guilt card: match a statement, add what you remember, or start from today (opens a bank check).
+- **Member welcome:** an invited person's role in plain words, a first entry, then install and reminders.
+- **First run:** setup opens "Log one thing you spent today", then "Keep Paisa one tap away" (install steps for their phone and reminders).
+- **Feedback:** "Something confusing? Tell us" on main screens and in Settings; the note and screen name go to the team.
+- **Opt-in usage counts:** off by default; anonymous counts only. The privacy policy has a new section.
+- **Owner "Finish database updates"** in Settings when the database is behind (`v5.sql` adds the version check).
+- **Nudges:** "Link [card] to its bill"; an "Add entry" home-screen shortcut.
+
+**Changed**
+- Setup is 3 questions; the household question moved to the invite moment.
+- New owners skip the budget-name form (rename later).
+- The weekly bank check asks about one account a week.
+- Money keeps the everyday tiles (Repeats, Credit cards).
+- **More tools** (in More) now holds goals, loans, net worth, activity and the yearly report.
+- Delete data shows entries first, with other kinds behind "More kinds of data".
+
+**Removed from the everyday screens**
+- The spending insight card on Today.
+- Loans, goals and net worth tiles on Money (now in More tools).
+- Activity on the Family page (now in More tools).
+
 ## Proposed, not built (19 Nov replan)
 
 - **P0:** opt-in anonymous measurement, a "Tell us what's confusing" button, and a "More tools" group for unproven features (net worth, goals, loan maths, insight card, activity history, advanced delete).

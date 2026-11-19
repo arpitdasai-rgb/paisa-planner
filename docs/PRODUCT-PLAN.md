@@ -1,6 +1,6 @@
 # Paisa Planner: product replan
 
-*19 November 2026 · Owner: Arpit Das · Status: proposal, nothing below is built unless marked "Done"*
+*19 November 2026 · Owner: Arpit Das · Status: the §5 P0 additions and all 12 changes in §9 are built (Done, 19 Nov); the pilot itself is next*
 
 ## The recommendation in one paragraph
 

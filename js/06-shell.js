@@ -93,8 +93,8 @@ function homeView(){
       </section></div>`;
   }
   return `<div class="home">${topbar(S().name)}${hero}<div class="stack">
+  ${startCardHTML(VM)}${catchupHTML()}
   ${attentionHTML(VM,skipKey)}
-  ${isCur&&!needs.length&&!nextStep()?insightHTML(VM):''}
   <section class="sect"><div class="sect-head"><h2>Coming up</h2><a class="link small" href="#bills">All bills</a></div>
     ${dues.length?dues.map(b=>`<div class="row">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s">Goes out ${relDay(b.due)}</div></div><div class="amt num">${fmt(b.budget)}</div>${canWrite()?`<button class="btn sm" data-act="paybill" data-id="${b.id}">Paid</button>`:''}</div>`).join('')
       :`<p class="small muted" style="margin:4px 0 8px">Nothing else is due ${isCur?'this month':'in '+mLong(VM)}.</p>`}
@@ -159,8 +159,8 @@ function walletView(){
   ${sel?`<div class="center"><button class="btn sm ghostpill" data-act="wdetail" data-id="${sel.key}">View details</button></div>`:''}
   ${rest.length?`<div class="peeks">${rest.map(i=>pcardHTML(i,false)).join('')}</div>`:''}`
   :`<section class="empty-wallet"><p class="heroline" style="text-align:center;margin:0 auto 14px">Add your bank accounts and credit cards to see balances, dues and where money moves.</p>${canAdmin()?'<div class="center"><button class="pillbtn" data-act="editacct">Add bank account</button></div>':''}</section>`}
-  <section class="sect"><h2 style="margin-bottom:10px">Money matters</h2><div class="mtiles">
-    ${tile('loans','Loans',loans?fmt(loans)+' left':'Add')}${tile('goals','Goals',goals?goals+' active':'Set one')}${tile('recurring','Repeats',reps?reps+' monthly':'Add')}${nw!=null?tile('networth','Net worth',fmt(nw)):''}${tile('cards','Credit cards',Object.keys(D.cards).length||'Add')}
+  <section class="sect"><h2 style="margin-bottom:10px">Every month</h2><div class="mtiles">
+    ${tile('recurring','Repeats',reps?reps+' monthly':'Add')}${tile('cards','Credit cards',Object.keys(D.cards).length||'Add')}
   </div></section>`;
 }
 function openWalletDetail(key){
@@ -214,6 +214,7 @@ const MSG={
   'cat.over':    {rank:3,tone:'warn',dismiss:'month',make:c=>({title:`${c.name} is ${fmt(-c.left)} over`,detail:`Budget ${fmt(c.budget)}`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}})},
   'cat.pace':    {rank:3,tone:'warn',dismiss:'month',make:([c,over])=>({title:`${c.name} heading ${fmt(over)} over`,detail:`At this pace · budget ${fmt(c.budget)}`,act:canAdmin()?{a:'editcat',id:c.id,l:'Adjust'}:{a:'catentries',id:c.id,l:'See entries'}})},
   'cat.near':    {rank:3,tone:'warn',dismiss:'month',make:([c,days])=>({title:`${fmt(c.left)} left in ${c.name}`,detail:`For ${days} more day${days===1?'':'s'}`,act:{a:'catentries',id:c.id,l:'See entries'}})},
+  'card.link':   {rank:3,tone:'muted',dismiss:'month',make:([id,cd])=>({title:`Link ${cd.name} to its bill`,detail:'So paying the card marks the right bill paid',act:canAdmin()?{a:'editcard',id,l:'Link'}:null})},
   'card.limit':  {rank:3,tone:'muted',dismiss:'month',make:([id,cd,pct])=>({title:`${cd.name} at ${pct}% of its limit`,detail:'Under 30% is healthier for your credit score',act:{a:'wdetail',id:'card:'+id,l:'Open'}})}
 };
 const dismissed=(key,k)=>lsGet('paisa-dis-'+key+'-'+k)==='1';
@@ -226,7 +227,9 @@ function needsItems(k){
   Object.entries(D.cards).forEach(([id,cd])=>{const st=cd.stmts&&cd.stmts[k];if(cardStatus(st)==='part')add('card.part',[id,cd,st],'card.part:'+id);
     if(st&&cd.limit&&st.amt/cd.limit>.3)add('card.limit',[id,cd,Math.round(st.amt/cd.limit*100)],'card.limit:'+id)});
   recDue(k).forEach(r=>add('repeat.due',r,'repeat.due:'+r.id));
-  if(isCur&&canAdmin()){const due=acctList().filter(a=>!a.checkedAt||daysBetween(a.checkedAt,todayISO())>=7).sort((x,y)=>(x.checkedAt||'').localeCompare(y.checkedAt||''))[0];if(due)add('acct.check',due,'acct.check:'+due.id);
+  if(isCur&&canAdmin()){const linked=new Set(Object.values(D.cats).map(c=>c&&c.card).filter(Boolean));const hasBillCat=m.cats.some(c=>(c.section==='bills'||c.section==='debt')&&!c.archived);Object.entries(D.cards).forEach(([id,cd])=>{if(hasBillCat&&!linked.has(id))add('card.link',[id,cd],'card.link:'+id)})}
+  const lastCheck=acctList().map(a=>a.checkedAt||'').sort().pop()||'';const weekly=!lastCheck||daysBetween(lastCheck,todayISO())>=7;
+  if(isCur&&canAdmin()&&weekly){const due=acctList().filter(a=>!a.checkedAt||daysBetween(a.checkedAt,todayISO())>=7).sort((x,y)=>(x.checkedAt||'').localeCompare(y.checkedAt||''))[0];if(due)add('acct.check',due,'acct.check:'+due.id);
     const bs=bankStart(k);if(bs!=null&&Math.abs(bs-m.open)>=50000&&!(D.months[k]&&D.months[k].open!=null))add('month.start',[bs,m.open],'month.start')}
   m.cats.filter(c=>OUT.includes(c.section)&&c.budget>0&&c.left<0).sort((a,b)=>a.left-b.left).forEach(c=>add('cat.over',c,'cat.over:'+c.id));
   if(isCur){const total=daysBetween(mStart(k),mEnd(k))+1,gone=daysBetween(mStart(k),todayISO())+1,f=clamp(gone/total,0,1),left=total-gone;
@@ -250,7 +253,7 @@ function attentionHTML(k,skip){
 
 /* ================= Settings: tiles → sub-pages ================= */
 let PREFSEC=null,PREF_KEEP=false;
-const PREF_TITLES={trash:'Recently deleted',account:'Account',budget:'Budget setup',reminders:'Reminders',lock:'App lock',install:'Install the app',data:'Import, export & backup',about:'Privacy & terms',danger:'Danger zone'};
+const PREF_TITLES={updates:'Finish updates',trash:'Recently deleted',account:'Account',budget:'Budget setup',reminders:'Reminders',lock:'App lock',install:'Install the app',data:'Import, export & backup',about:'Privacy & terms',danger:'Danger zone'};
 function trow(act,k,ic,title,sub,extra=''){return `<button class="trow" data-act="${act}" ${k?`data-k="${k}"`:''} ${extra}><span class="ti">${ui(ic,20)}</span><span class="tt"><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span>${CHEV}</button>`}
 function tgroup(label,rows){rows=rows.filter(Boolean);return rows.length?`<section class="tgroup">${label?`<div class="eyebrow">${label}</div>`:''}<div class="tcard">${rows.join('')}</div></section>`:''}
 function prefTiles(s,hasPin){
@@ -265,7 +268,9 @@ function prefTiles(s,hasPin){
   ${tgroup('Security',[trow('prefsec','lock','lock','App lock',hasPin?'On · 4-digit PIN':'Off'),
     trow('prefsec','install','download','Install the app',STANDALONE?'Installed':'Add to home screen')])}
   ${tgroup('Data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data'),canWrite()&&acctList().length?trow('stmmatch','','bank','Match a bank statement','Add what you missed, skip what you logged'):'',canWrite()?trow('deldata','','shield','Delete data','Choose what, which period, which category'):'',trow('prefsec','trash','backup','Recently deleted',(n=>n?n+' item'+(n>1?'s':'')+' you can restore':'Restore anything deleted in the last 30 days')(Object.keys(trashAll()).length))])}
-  ${tgroup('About',[trow('go','help','doc','Help & FAQ','Search answers to common questions'),trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),IS_OWNER&&CLOUD&&!CFG.vapidPublicKey?trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner'):''])}
+  ${updatesDue()?tgroup('Needs the Owner',[trow('prefsec','updates','upload','Finish database updates','A few steps in Supabase, once')]):''}
+  ${MODE==='local'&&CLOUD?tgroup('',[trow('trysignin','','users','Sign in to share with family','Keeps everything on this phone and adds it to your family budget')]):''}
+  ${tgroup('About',[trow('whatsnew','','doc','What’s new','Today, Month and Money; replan in 5 steps'),trow('go','help','doc','Help & FAQ','Search answers to common questions'),trow('feedback','','doc','Tell us what’s confusing','Goes straight to the Paisa team'),CFG.supabaseUrl?trow('metricstoggle','','chart','Help improve Paisa',metricsOn()?'On: sharing anonymous usage counts':'Off: nothing is shared'):'',trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),IS_OWNER&&CLOUD&&!CFG.vapidPublicKey?trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner'):''])}
   ${IS_OWNER?`<section class="tgroup"><div class="tcard"><button class="trow danger" data-act="prefsec" data-k="danger"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>${MODE==='cloud'?'Delete family budget':'Delete all data'}</b><small>Can't be undone</small></span>${CHEV}</button></div></section>`:''}`;
 }
 
@@ -290,14 +295,15 @@ function familyCloudView(){
   <div class="people">${ms.map(m=>`<button class="person" data-act="memmenu" data-id="${m.id}">${av(m)}<span class="pn">${esc((m.id===ME?'You':(m.name||m.email).split(' ')[0]))}</span><span class="pr">${ROLEN[m.role]}</span></button>`).join('')}
     ${canAdmin()&&MEMBERS.length<8?`<button class="person" data-act="invsheet"><span class="avatar xl add">+</span><span class="pn">Invite</span><span class="pr">by Gmail</span></button>`:''}</div>
   ${INVITES.length?tgroup('Waiting to join',INVITES.map(i=>`<div class="trow static"><span class="ti">${ui('users',20)}</span><span class="tt"><b>${esc(i.email)}</b><small>${ROLEN[i.role]} · expires ${new Date(i.expires_at).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</small></span><button class="btn sm" data-act="copyinv" data-email="${esc(i.email)}" data-role="${i.role}">Message</button><button class="x sm" data-act="revokeinv" data-id="${i.id}" aria-label="Revoke invite">${ui('close',20)}</button></div>`)):''}
-  ${tgroup('',[trow('rolessheet','','shield','What each role can do','Owner, Admin, Member, Viewer'),canAdmin()&&trow('activitysheet','','list','Activity','Who changed what'),trow('prefsec','reminders','bell','Reminders','For everyone on their own phone')])}
+  ${tgroup('',[trow('rolessheet','','shield','What each role can do','Owner, Admin, Member, Viewer'),trow('prefsec','reminders','bell','Reminders','For everyone on their own phone')])}
   ${IS_OWNER?'<p class="small muted center" style="margin:0">To leave, first make an Admin the Owner: tap them above.</p>':'<button class="btn danger block" data-act="leave">Leave family</button>'}
   </div>`;
 }
 function familyView(){
   return topbar('Family',{month:false,back:'more'})+`<div class="stack">
   <section class="wsum"><div class="eyebrow">${esc(S().name)}</div><div class="bigc">Just you</div><div class="small muted">This budget is saved on this device</div></section>
-  <p class="heroline center" style="margin:0 auto">Sharing with family by Gmail needs family sync (Supabase). To move to another phone, back up here and restore there.</p>
+  <p class="heroline center" style="margin:0 auto">${CLOUD?'Sign in with Google to share this budget with your family. Everything you’ve added comes with you.':'Sharing with family by Gmail needs family sync (Supabase). To move to another phone, back up here and restore there.'}</p>
+  ${CLOUD?'<div class="center"><button class="pillbtn" data-act="trysignin">Sign in to share</button></div>':''}
   ${tgroup('',[trow('prefsec','data','backup','Back up and restore','Move your budget to another phone'),trow('rolessheet','','shield','What each role can do','When family sync is on')])}
   </div>`;
 }
@@ -326,6 +332,7 @@ function moreView(){
     trow('go','prefs','gear','Settings','Reminders, app lock, budget setup'),
     trow('go','habits','chart','Your habits','Logging speed, days logged, bills on time'),
     trow('go','help','doc','Help & FAQ','Answers to common questions')])}
+  ${moreToolsGroup()}
   <p class="small center muted" style="margin:6px 0 0"><a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a></p>
   </div>`;
 }

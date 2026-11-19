@@ -25,6 +25,7 @@ The full product, design and engineering map, plus the history of how the app go
 | `supabase/v2.sql` | Bank accounts, repeats, net worth, delete my account |
 | `supabase/v3.sql` | Recently deleted shared across the family |
 | `supabase/v4.sql` | Family edits merge field by field instead of overwriting |
+| `supabase/v5.sql` | Opt-in usage counts, feedback, and the schema version check |
 | `supabase/functions/send-reminders/` | Edge Function that sends bill, evening and weekly reminders |
 | `SETUP-SUPABASE.md` | Step-by-step Supabase and Google sign-in setup |
 | `tests/` | SQL, unit and browser tests; run on every push by `.github/workflows/test.yml` |

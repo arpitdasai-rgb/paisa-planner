@@ -26,6 +26,7 @@ Dashboard menus get renamed now and then. If a label below doesn't match exactly
    - `supabase/v2.sql`: bank accounts, repeats, net worth, delete my account
    - `supabase/v3.sql`: Recently deleted shared across the family
    - `supabase/v4.sql`: family edits merge field by field, so two people editing the same month both keep their changes
+   - `supabase/v5.sql`: opt-in anonymous usage counts and “Tell us what’s confusing” feedback (insert-only; read them in Table Editor → `events` and `feedback`), plus a version check so the app can tell the Owner when updates are pending
    - `supabase/push.sql`: phone push addresses for scheduled reminders
 
 The script creates:

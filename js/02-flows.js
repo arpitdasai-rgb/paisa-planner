@@ -29,7 +29,7 @@ function onbLeftHTML(){
   return `<div class="label">Left for everything else</div><div class="onb-num num ${left<0?'neg':''}">${fmt(left)}</div><div class="small muted">${left>0?`about ${fmt(Math.floor(left/30/100)*100)} a day`:'Your fixed costs are more than your income'}</div>`;
 }
 function mEndWith(k,s0){const n=addM(k,1);const[y,m]=n.split('-').map(Number);return addDays(ym(y,m)+'-'+pad(Math.min(s0,dim(y,m))),-1)}
-function onbDots(n){return `<div class="onb-dots" aria-label="Step ${n} of 4">${[1,2,3,4].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>`}
+function onbDots(n){return `<div class="onb-dots" aria-label="Step ${n} of 3">${[1,2,3].map(i=>`<i class="${i<=n?'on':''}"></i>`).join('')}</div>`}
 function onboardingHTML(){
   if(!ONB)ONB={step:1,startDay:1,income:'',sel:{},household:'me',opening:''};
   const o=ONB;const back=o.step>1?`<button class="link" data-act="onb-back">Back</button>`:'<span></span>';
@@ -58,7 +58,7 @@ function onboardingHTML(){
       return `<div class="tile ${s?'on':''}"><button class="tile-tap" data-act="onb-tile" data-k="${t.k}" aria-pressed="${!!s}">${icon(c)}<span>${t.name}</span></button>${s?`<label class="tile-amt">₹<input class="num" inputmode="numeric" data-onbtile="${t.k}" value="${esc(s.amt)}" aria-label="${t.name} amount"></label>`:''}</div>`}).join('')}</div>`,
     {a:'onb-go',l:Object.keys(o.sel).length?'Next':'Nothing fixed, skip'});
   }
-  if(o.step===4)return shell(4,`
+  if(false)return shell(4,`
     <h1 class="onb-q">Who else spends from this money?</h1>
     <p class="onb-help">You can invite them later. No forms now.</p>
     <div class="onb-stack">${[['me','Just me'],['partner','Me and my partner'],['family','The whole family']].map(([k,l])=>`<button class="ochip wide" data-act="onb-hh" data-k="${k}" aria-pressed="${o.household===k}">${l}</button>`).join('')}</div>`,{a:'onb-go',l:'Show me my number'});
@@ -89,7 +89,8 @@ async function finishOnboarding(){
   await store.set('settings','main',{name:(typeof FAMNAME!=='undefined'&&FAMNAME)||'Our family budget',startDay:sd0,startMonth,opening:isNaN(opening)?0:opening,household:o.household,createdAt:Date.now(),owner:ME||'local'}).catch(()=>{});
   log('created','budget',`${fmt(inc)} income, ${fmt(fixed)} fixed`);
   ONB=null;
-  toast('Your budget is ready. Tap + to log your first spend.');
+  lsSet('paisa-news',NEWS_V);track('setup_done',{start_day:sd0});
+  if(canWrite())setTimeout(()=>{if(!$('#sheetRoot').innerHTML)openQuick({title:'Log one thing you spent today'})},700);
 }
 function keyOfWith(ds,s0){const[y,m,d]=ds.split('-').map(Number);return d<Math.min(s0,dim(y,m))?addM(ym(y,m),-1):ym(y,m)}
 
@@ -196,7 +197,7 @@ function nextStep(){
   const loanCat=catsAll().find(c=>!c.archived&&c.section==='debt'&&LOANLIKE.test(c.name)&&!isCardBill(c)&&!Object.values(D.loans).some(l=>l.cat===c.id));
   if(canAdmin()&&loanCat)steps.push({k:'loan-'+loanCat.id,t:`See the date your ${esc(loanCat.name.replace(/\s*EMI$/i,''))} ends.`,b:'Show me',a:'loanask',id:loanCat.id});
   const hh=S()&&S().household;
-  if(MODE==='cloud'&&canAdmin()&&hh&&hh!=='me'&&MEMBERS.length<2)steps.push({k:'invite',t:`Invite ${hh==='partner'?'your partner':'your family'} so their spends count too.`,b:'Invite',a:'goinvite'});
+  if(MODE==='cloud'&&canAdmin()&&MEMBERS.length<2&&(hh&&hh!=='me'||daysBetween(iso(new Date(S().createdAt||Date.now())),todayISO())>=3))steps.push({k:'invite',t:`Invite ${hh==='partner'?'your partner':'your family'} so their spends count too.`,b:'Invite',a:'goinvite'});
   // three months of savings in a row, no goal yet
   const last3=[1,2,3].map(i=>addM(k,-i)).filter(x=>txIndex()[x]);
   if(canAdmin()&&last3.length===3&&!Object.keys(D.goals).length){const tot=last3.reduce((t,x)=>t+month(x).sec.savings.a,0);if(last3.every(x=>month(x).sec.savings.a>0))steps.push({k:'goal',t:`You've saved ${fmt(tot)} since ${mLong(last3[2])}. Give it a goal?`,b:'Make a goal',a:'editgoal'})}

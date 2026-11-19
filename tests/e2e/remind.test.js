@@ -8,7 +8,7 @@ const p=await ctx.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.messag
 const U=URL;const S=OUT+'/';const log=(...a)=>console.log(...a);
 await p.goto(U);await p.click('[data-act=onb-go]');await p.click('[data-act=onb-inc][data-k="100000"]');await p.click('[data-act=onb-go]');
 await p.click('[data-act=onb-tile][data-k=rent]');await p.fill('[data-onbtile=rent]','90000');await p.click('[data-act=onb-tile][data-k=home]');await p.fill('[data-onbtile=home]','30000');
-await p.click('[data-act=onb-go]');await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');
+await p.click('[data-act=onb-go]');await p.click('[data-act=onb-create]');await p.waitForSelector('.hero2');await p.waitForTimeout(900);if(await p.$('#sheetRoot .sheet'))await p.click('#sheetRoot [data-act=close]');
 // give two everyday categories a limit, then spend fast
 await p.goto(U+'#budget');await p.waitForSelector('.planwarn');log('Budget banner:',(await p.textContent('.planwarn')).replace(/\s+/g,' ').trim());
 await p.click('[data-act=bedit]');const ids=await p.$$eval('[data-bedit]',e=>e.map(x=>[x.dataset.bedit,x.closest('.erow').querySelector('.n').firstChild.textContent.trim()]));
