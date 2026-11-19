@@ -805,7 +805,7 @@ const ordinal=n=>n+(['th','st','nd','rd'][(n%10<4&&Math.floor(n%100/10)!==1)?n%1
   const sync=()=>{if(!vv)return;root.style.setProperty('--vvh',vv.height+'px');root.style.setProperty('--vvt',vv.offsetTop+'px')};
   if(vv){vv.addEventListener('resize',sync);vv.addEventListener('scroll',sync);sync()}
   const isField=el=>el&&/^(INPUT|SELECT|TEXTAREA)$/.test(el.tagName)&&!/^(checkbox|radio|file|button|submit)$/.test(el.type||'');
-  document.addEventListener('focusin',e=>{if(isField(e.target))document.body.classList.add('kb')});
+  document.addEventListener('focusin',e=>{if(!isField(e.target))return;document.body.classList.add('kb');const box=e.target.closest('.sscroll');if(box)setTimeout(()=>e.target.scrollIntoView({block:'nearest',behavior:'smooth'}),320)});
   document.addEventListener('focusout',()=>setTimeout(()=>{if(!isField(document.activeElement))document.body.classList.remove('kb')},50));
   // stop the page behind an open sheet from scrolling
   new MutationObserver(()=>document.body.classList.toggle('sheet-open',!!document.querySelector('#sheetRoot .scrim'))).observe(document.getElementById('sheetRoot'),{childList:true});

@@ -179,9 +179,9 @@ function renderDelete(){
       <p class="small muted" style="text-align:center;margin:8px 0 0">You can restore it from Recently deleted for 30 days.</p>`
       :`<p class="dq">Nothing to delete</p><p class="small muted">Nothing matches what you picked. Go back and change the period or filters.</p>`;
   }
-  const nav=DEL.step===3?(i>0?`<button class="btn block" style="margin-top:10px" data-act="delback">Back</button>`:'')
-    :`<div class="btns dnav">${i>0?'<button class="btn" data-act="delback">Back</button>':''}<button class="btn primary grow" data-act="delnext" ${DEL.step===0&&!Object.values(DEL.what).some(Boolean)?'disabled':''}>Next</button></div>`;
-  openSheet(head+body+nav);
+  const nav=DEL.step===3?(i>0?`<div class="snav"><button class="btn block" data-act="delback">Back</button></div>`:'')
+    :`<div class="btns snav">${i>0?'<button class="btn" data-act="delback">Back</button>':''}<button class="btn primary grow" data-act="delnext" ${DEL.step===0&&!Object.values(DEL.what).some(Boolean)?'disabled':''}>Next</button></div>`;
+  openSheet(head+`<div class="sscroll">${body}</div>`+nav);
 }
 function delRead(){
   const g=id=>{const e=$('#'+id);return e?e.value:null};const F0=DEL.f;

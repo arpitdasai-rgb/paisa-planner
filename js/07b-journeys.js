@@ -94,9 +94,9 @@ function renderStartMonth(){
     body=`<p class="label" style="margin:4px 0 0">Free to spend in ${mLong(k)}</p><div class="reveal-num num ${P.free<0?'neg':''}">${fmt(P.free)}</div>
       <p class="onb-help" style="margin:4px 0 14px">${P.free>0?`About <b class="num">${fmt(Math.floor(P.freeLeft/Math.max(1,daysLeft)/100)*100)} a day</b> for the ${daysLeft} days left, after bills, EMIs and savings.`:'Bills, EMIs and savings add up to more than the money you have. Lower one of them, or plan for income still to come.'}</p>
       <div class="kv"><span>Money in</span><b class="num">${fmt(P.inAvail)}</b></div><div class="kv"><span>Bills and EMIs</span><b class="num">−${fmt(P.commit).replace('−','')}</b></div><div class="kv"><span>Savings</span><b class="num">−${fmt(P.save).replace('−','')}</b></div>`}
-  const nav=n<5?`<div class="btns dnav">${n>1?'<button class="btn" data-act="smback">Back</button>':''}<button class="btn primary grow" data-act="smnext">${n===4?'See my plan':'Next'}</button></div>`
-    :`<div class="btns dnav"><button class="btn" data-act="smback">Back</button><button class="btn primary grow" data-act="smdone">Done</button></div>`;
-  openSheet(head+body+nav);
+  const nav=n<5?`<div class="btns snav">${n>1?'<button class="btn" data-act="smback">Back</button>':''}<button class="btn primary grow" data-act="smnext">${n===4?'See my plan':'Next'}</button></div>`
+    :`<div class="btns snav"><button class="btn" data-act="smback">Back</button><button class="btn primary grow" data-act="smdone">Done</button></div>`;
+  openSheet(head+`<div class="sscroll">${body}</div>`+nav);
 }
 function smRead(){document.querySelectorAll('[data-sm]').forEach(i=>{SM.draft[i.dataset.sm]=i.value});const o=$('#sm-open');if(o)SM.openAmt=o.value}
 async function smApply(){

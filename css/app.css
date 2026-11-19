@@ -749,3 +749,15 @@ a{text-underline-offset:3px;text-decoration-thickness:1px}
 .steps{margin:4px 0 6px;padding-left:20px;line-height:1.6}.steps li{margin:2px 0}
 .fbk{text-align:center;margin:18px 0 6px}
 .si-try{margin-top:2px}
+
+/* ===== Multi-step sheets on phones (Nov 19): header fixed, questions scroll, buttons in flow at the bottom.
+   Sticky footers inside a scrolling sheet misbehave on iPhone once the keyboard opens, so none are used. */
+.sheet:has(> .sscroll){display:flex;flex-direction:column;overflow:hidden}
+.sheet:has(> .sscroll)>*{flex:none}
+.sheet>.sscroll{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;margin:0 calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding:2px max(16px,env(safe-area-inset-left,0px)) 8px;scroll-padding-bottom:16px}
+.snav{margin-top:6px;padding-top:12px;border-top:1px solid var(--line);background:var(--surface)}
+.snav.btns{flex-wrap:nowrap}
+body.kb .sheet{padding-bottom:10px}
+/* the whole screen stays dimmed behind a sheet, including behind the keyboard's toolbar */
+body.sheet-open::before{content:"";position:fixed;inset:0;height:auto;z-index:39;background:rgba(10,16,14,.45);pointer-events:none}
+body.sheet-open .scrim{background:transparent}

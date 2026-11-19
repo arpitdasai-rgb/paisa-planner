@@ -86,6 +86,9 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 - **More tools** (in More) now holds goals, loans, net worth, activity and the yearly report.
 - Delete data shows entries first, with other kinds behind "More kinds of data".
 
+**Fixed after real use (iPhone)**
+- Replan and Delete data with the keyboard open: the Back/Next bar floated mid-sheet and the page showed through. The sheet now has a fixed header, a scrolling middle and buttons at the bottom, so they sit right above the keyboard. A focused field scrolls into view, and the whole screen stays dimmed behind the sheet.
+
 **Removed from the everyday screens**
 - The spending insight card on Today.
 - Loans, goals and net worth tiles on Money (now in More tools).
