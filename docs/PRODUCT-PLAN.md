@@ -140,3 +140,91 @@ Anonymous, opt-in on the Settings → Privacy row, counts only, no amounts or no
 - **Pilot data.** Is DPDP-compliant consent for usage events covered by the current privacy policy, or does it need an update? *(Legal; the policy should say so before the events go live.)*
 
 *Deliberately left out: pricing maths, a full PRD for "More tools", and a go-to-market plan beyond the pilot. Ask for any of them.*
+
+---
+
+## 9. What to change, by user and by flow (19 Nov)
+
+**Frame**
+- **Users:** a new family opening the link for the first time; you and other existing users who've lived through three redesigns; a family member who was invited.
+- **Outcome:** more families reach the first value moment and keep logging. Metrics: activation rate and trusted weekly families (§6).
+- **Riskiest assumption:** most drop-off happens before people see value (the sign-in wall, setup forms) and at the month boundary, not inside the core screens.
+- **Stage fit:** these are the changes that decide whether the 5-family pilot teaches us anything. Everything else waits.
+
+### Recommendation
+
+Make **12 changes**, ranked below, plus the three P0 additions in §5 (measurement, feedback button, More tools). Five are needed before the pilot. The two biggest are both about the first five minutes:
+- let a new person **try Paisa before signing in**;
+- **welcome an invited family member** properly.
+
+### By user
+
+**New user (has the link, never opened it)**
+
+| # | What they hit today | Change | Priority |
+|---|---|---|---|
+| 1 | Google sign-in before seeing anything | **"Try it first"** on the sign-in screen: device-only mode on the same link. "Turn on family sharing" later copies everything across (the copy already exists in Create family). | P0 |
+| 2 | A "budget name" form, then 4 setup steps, then the number | Skip the name form (default "Our family budget", editable later). Setup becomes 3 questions: salary day, income, fixed payments. The household question moves to the invite moment. | P1 |
+| 3 | Anyone not on Google's test-user list can't sign in, if the consent screen is still in Testing | Confirm it's published (In production). Not code; it blocks the pilot. | P0 (you) |
+| 4 | Reveal, then an empty Today | After the reveal, open Add entry straight away: "Log one thing you spent today." The first entry is part of activation. | P1 |
+| 5 | Install and reminders found later, by accident | After the first entry, one install step written for their phone (Safari: Share → Add to Home Screen; Chrome: Install), then turn on bill reminders. | P1 |
+
+**Invited family member**
+
+| # | What they hit today | Change | Priority |
+|---|---|---|---|
+| 6 | They join and land in someone else's budget with no explanation, no reminders and the app not installed | A 3-card welcome: who invited them and their role in plain words ("You can add entries and edit your own; income is hidden"); log your first spend; install and turn on reminders. | P0 (a second person logging is a key assumption) |
+
+**Existing user (you, already set up)**
+
+| # | What they hit today | Change | Priority |
+|---|---|---|---|
+| 7 | Tabs renamed, a new Month page and new features, with no notice | A one-time "What's new" sheet after an update (3 lines, linked to Help). | P0 (cheap) |
+| 8 | Database updates (`v3.sql`, `v4.sql`) and the reminder-service redeploy still pending; the app quietly falls back | An Owner-only "Finish updates" row in Settings that appears only when the app detects the fallback, with the exact steps | P1 |
+| 9 | Card bills still matched by name | One Needs-you heads-up: "Link Magnus to its bill so payments mark it paid." | P1 |
+| 10 | The weekly bank check asks about every account at once after the update | One account per week, oldest first | P1 (quick) |
+
+### By flow
+
+| Flow | Today | Change | Priority |
+|---|---|---|---|
+| **Daily: log** | Strong: keypad, type or paste, repeats | Add an "Add entry" home-screen shortcut (long-press the icon). Keep the rest. | P1 (cheap) |
+| **Weekly: check** | Bank check in Needs you; weekly push summary | No change before the pilot. If checks get skipped, merge them into one "Sunday check": the week's summary, accounts and next week's bills. | After pilot |
+| **Monthly: salary day** | Pieces scattered: wrap card, "Use banks" heads-up, plan banner, repeats to confirm | **11. A "Start [month]" flow:** confirm salary arrived → starting money from banks → review commitments → set savings → see free to spend. Replaces the scattered pieces. The month boundary is where the habit is won or lost. | P1 (biggest change) |
+| **Returning after a gap** (7+ days without an entry) | Today shows stale numbers and a long Needs-you list | **12. A no-guilt "Catch up" card:** match a bank statement, add what you remember, or "start fresh from today" (marks the gap, keeps the plan). Aimed straight at the riskiest assumption. | P1 |
+
+### Ranked (ICE: impact × confidence × ease, 1–10 each)
+
+| Rank | Change | I | C | E | Score |
+|---|---|---|---|---|---|
+| 1 | #3 Confirm Google sign-in is published | 9 | 9 | 10 | 810 |
+| 2 | #1 Try it first (no sign-in) | 9 | 8 | 7 | 504 |
+| 3 | #7 What's new sheet | 5 | 8 | 9 | 360 |
+| 4 | #6 Member welcome | 8 | 6 | 7 | 336 |
+| 5 | #10 Stagger bank checks | 4 | 8 | 9 | 288 |
+| 6 | #12 Catch-up card | 8 | 5 | 6 | 240 |
+| 7 | #4 First entry right after setup | 6 | 7 | 8 | 336 → after #6 for pilot order |
+| 8 | #11 Start-the-month flow | 9 | 6 | 4 | 216 |
+| 9 | #2 Shorter setup | 6 | 6 | 6 | 216 |
+| 10 | #5 Install and reminders step | 6 | 6 | 7 | 252 |
+| 11 | #9 Link-your-card heads-up | 4 | 7 | 8 | 224 |
+| 12 | #8 Finish-updates row | 4 | 7 | 6 | 168 |
+
+**Order to build:**
+- **Now, before the pilot:** #3 (you), #1, #7, #6, plus §5's measurement, feedback button and More tools.
+- **During week 1, cheap:** #4, #5, #10.
+- **Next, if the pilot confirms the problem:** #11 Start the month, #12 Catch up, #2 shorter setup.
+- **Later:** #8, #9, the Sunday check.
+
+**Key trade-off:** "Try it first" means some people never create an account, so we can't see them in family-level metrics. We accept that: a person who never starts is worse than a person we can't count. The opt-in usage counts still work in device-only mode.
+
+**Not doing now:**
+- A tutorial or slideshow (people skip them; we teach at the moment of need instead).
+- Gamification or streaks (they reward opening the app, not a true number).
+- A redesign of the core screens (the design-craft pass just finished).
+- Social login beyond Google (no evidence anyone needs it).
+
+### Open questions
+- **Is the Google consent screen published (In production)?** *(You, in Google Cloud.)*
+- **Should device-only users be able to try reminders?** Push needs an account today. *(Engineering: possible with an anonymous subscription, but it's a privacy decision for you.)*
+- **Which 5 families, and does each have one person who runs the money?** *(You.)*
