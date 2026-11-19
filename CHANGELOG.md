@@ -100,8 +100,11 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 |---|---|---|
 | `schema.sql`, `push.sql`, `v2.sql`, `v3.sql` | Before 19 Nov | By hand in the SQL Editor |
 | `v4.sql` (field-by-field merges) | 19 Nov 2026 | Supabase connector, recorded as migration `v4_field_merges` |
-| `v5.sql` (usage counts, feedback, version check) | Not yet | The connector's confirmation got no answer in time; nothing was applied |
-| `v6.sql` (security hardening from the advisors) | Not yet | Waiting on `v5` |
+| `v5.sql` (usage counts, feedback, version check) | 19 Nov 2026 | Supabase connector, recorded as migration `v5_counts_feedback_version` |
+| `v6.sql` (security hardening from the advisors) | 19 Nov 2026 | Supabase connector, recorded as migration `v6_security_hardening` |
+| `send-reminders` function (uses the shared `money-core.js`, card statement reminders) | 19 Nov 2026 | Supabase connector, version 3, JWT check off (it checks its own cron secret) |
+
+Checked after applying: signed-out callers can no longer run any family function; signed-in people still can; the sign-up helper can't be called; anyone can send feedback or counts but nobody can read them through the app. Security advisors left with three expected notes: signed-in people can run the family functions (that's how the app works; each checks who's calling), `pg_net` sits in the public schema (moving it risks the reminder schedule), and leaked-password protection (not used: sign-in is Google only).
 
 ## Proposed, not built (19 Nov replan)
 
