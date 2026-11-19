@@ -201,14 +201,16 @@ Make **12 changes**, ranked below, plus the three P0 additions in §5 (measureme
 | 2 | #1 Try it first (no sign-in) | 9 | 8 | 7 | 504 |
 | 3 | #7 What's new sheet | 5 | 8 | 9 | 360 |
 | 4 | #6 Member welcome | 8 | 6 | 7 | 336 |
-| 5 | #10 Stagger bank checks | 4 | 8 | 9 | 288 |
-| 6 | #12 Catch-up card | 8 | 5 | 6 | 240 |
-| 7 | #4 First entry right after setup | 6 | 7 | 8 | 336 → after #6 for pilot order |
-| 8 | #11 Start-the-month flow | 9 | 6 | 4 | 216 |
-| 9 | #2 Shorter setup | 6 | 6 | 6 | 216 |
-| 10 | #5 Install and reminders step | 6 | 6 | 7 | 252 |
-| 11 | #9 Link-your-card heads-up | 4 | 7 | 8 | 224 |
+| 5 | #4 First entry right after setup | 6 | 7 | 8 | 336 |
+| 6 | #10 Stagger bank checks | 4 | 8 | 9 | 288 |
+| 7 | #5 Install and reminders step | 6 | 6 | 7 | 252 |
+| 8 | #12 Catch-up card | 8 | 5 | 6 | 240 |
+| 9 | #9 Link-your-card heads-up | 4 | 7 | 8 | 224 |
+| 10 | #11 Start-the-month flow | 9 | 6 | 4 | 216 |
+| 11 | #2 Shorter setup | 6 | 6 | 6 | 216 |
 | 12 | #8 Finish-updates row | 4 | 7 | 6 | 168 |
+
+ICE favours cheap items. #11 and #12 score lower only because they take more work, but they carry the highest impact on the riskiest assumption, which is why they lead the "Next" list.
 
 **Order to build:**
 - **Now, before the pilot:** #3 (you), #1, #7, #6, plus §5's measurement, feedback button and More tools.
