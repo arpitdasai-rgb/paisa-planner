@@ -1,6 +1,6 @@
 # Paisa Planner: product, design and engineering map
 
-*Version: paisa-v30 · 13 November 2026 · Owner: Arpit Das*
+*Version: paisa-v31 · 19 November 2026 · Owner: Arpit Das*
 
 This document maps everything about Paisa Planner, in this order:
 1. **Product:** why it exists, who it's for, what it does.
@@ -780,6 +780,20 @@ See §16.
 - **Thinking:** money is emotional, so calm first and inform second. Time is the hidden variable behind any balance. The look should be Indian without being ornamental.
 - **Built:** the bahi-khata direction (§3.1): paper and ink palette with a night-ledger dark mode; Fraunces for numbers and titles; the pace ribbon; the count-up; petals when every bill is done; ruled ledger touches; card colours from Indian pigments; the gullak mark and a new app icon (the old blue icon dated from before both redesigns); the policy pages in the same palette.
 - **Checked:** a new accessibility test (axe-core WCAG 2.1 A/AA on 11 screens in both themes, plus a contrast check of every text colour). It found and fixed five real issues: wrong roles on the This month / Recent switch and the Money strip, spoken labels that didn't match visible text, and a table that a keyboard couldn't reach. Plus the full suite, the every-button sweep, narrow screens and layout shift.
+
+### Stage 17: Design-craft pass and product replan (19 Nov)
+- **Design-craft (a design skill):** critiqued every surface against its purpose and polished it.
+  - Sentence-case labels instead of tracked capitals; SVG icons instead of text glyphs.
+  - An ink focus ring with a marigold halo, and a skip button.
+  - Tabular figures; balanced headings.
+  - Sign-in rebuilt as the one persuasive screen, with the coin dropping into the gullak.
+  - Fixed a dark-on-dark card colour, and added press and hover states everywhere.
+  - Removed "· You" for solo budgets and the ruled hero lines.
+  - Checked with the full suite, the sweep, accessibility, keyboard and narrow screens.
+- **Product replan (a product skill):** `docs/PRODUCT-PLAN.md`.
+  - Stop adding features and run a 4-week pilot with 5 families.
+  - Add only measurement, a feedback button and a "More tools" grouping.
+  - North Star: trusted weekly families. `CHANGELOG.md` lists everything added, changed and removed.
 
 ---
 
