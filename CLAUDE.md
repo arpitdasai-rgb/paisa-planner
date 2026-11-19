@@ -7,7 +7,7 @@ Mobile-first monthly budget PWA for Indian families: one "left to spend" number,
 - `docs/PRODUCT-PLAN.md`: current ranked product plan. `CHANGELOG.md`: what changed.
 
 ## Stack
-- Plain HTML/CSS/JS, **no build step**: the repo root is the site. Scripts load in order: `js/01-base.js` … `js/10-boot.js` (classic scripts, not modules).
+- Plain HTML/CSS/JS, **no build step**: the repo root is the site. Scripts load in the order listed in `index.html`: `js/01-base.js` … `js/07-tools.js`, `js/07b-journeys.js`, `js/08-events.js` … `js/10-boot.js` (classic scripts, not modules; a new file must also be added to `SHELL` in `sw.js`).
 - Supabase (Postgres + RLS + Edge Functions) for family mode; device-only mode when `config.js` is empty.
 - Money rules shared by app and reminder service: `supabase/functions/_shared/money-core.js`.
 - Hosted on GitHub Pages from `main`.
