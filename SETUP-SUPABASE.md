@@ -107,7 +107,7 @@ Row-level security enforces the PRD's role table on the server:
 
 ## Scheduled reminders
 
-Reminders while the app is closed come from the `send-reminders` Edge Function, run every hour by a `pg_cron` job. The Owner sets it up once from the app: **Settings → Reminders → Reminder setup**. That page creates the keys on the phone and lists each step (secrets, deploying the function, the schedule). After any change to `supabase/functions/send-reminders/index.ts` or `supabase/functions/_shared/money-core.js`, deploy the function again. The function imports the shared money rules: `supabase functions deploy send-reminders` (CLI) bundles `../_shared/money-core.js` automatically; in the dashboard editor, add `money-core.js` as a second file and change the import to `./money-core.js`.
+Reminders while the app is closed come from the `send-reminders` Edge Function, run every hour by a `pg_cron` job. The Owner sets it up once from the app: **Settings → Reminders → Reminder setup**. That page creates the keys on the phone and lists each step (secrets, deploying the function, the schedule). The schedule password is stored in Supabase's Vault as `paisa_cron_secret` and must match the function's `CRON_SECRET`; to change it, put the new value in both places, Vault first and then the function secret, saved right after one another. After any change to `supabase/functions/send-reminders/index.ts` or `supabase/functions/_shared/money-core.js`, deploy the function again. The function imports the shared money rules: `supabase functions deploy send-reminders` (CLI) bundles `../_shared/money-core.js` automatically; in the dashboard editor, add `money-core.js` as a second file and change the import to `./money-core.js`.
 
 ## Not included yet
 

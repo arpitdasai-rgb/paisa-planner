@@ -74,7 +74,7 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 - What's new and the replan FAQ answer describe the new flows. App version `paisa-v35`.
 
 **Fixed**
-- **Reminder schedule timing out.** Supabase's scheduler gave up after 5 seconds, and a cold start plus the work took just over that, so since about 20:30 on 19 Nov no hourly run finished. The live job now waits up to 30 seconds (first run after the fix: 200 OK). The schedule the app gives Owners in Reminder setup includes the longer wait too.
+- **Reminder schedule timing out.** Supabase's scheduler gave up after 5 seconds, and a cold start plus the work took just over that, so since about 20:30 on 19 Nov no hourly run finished. The live job now waits up to 30 seconds (first run after the fix: 200 OK). The schedule the app gives Owners in Reminder setup includes the longer wait too, and stores the schedule password in the Vault instead of inside the job.
 
 **Tests**
 - Updated journeys (one-screen plan, live preview, step-by-step and back, save), sheet-with-keyboard, delete, statement match, feature and money suites for the new layout. `ONLY=feat,del npm run test:e2e` runs chosen suites.
@@ -118,7 +118,8 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 | `v5.sql` (usage counts, feedback, version check) | 19 Nov 2026 | Supabase connector, recorded as migration `v5_counts_feedback_version` |
 | `v6.sql` (security hardening from the advisors) | 19 Nov 2026 | Supabase connector, recorded as migration `v6_security_hardening` |
 | `send-reminders` function (uses the shared `money-core.js`, card statement reminders) | 19 Nov 2026 | Supabase connector, version 3, JWT check off (it checks its own cron secret) |
-| Reminder schedule (`paisa-hourly`): wait up to 30 s instead of 5 s | 20 Nov 2026 | Supabase connector, `cron.alter_job`; secret left unchanged |
+| Reminder schedule (`paisa-hourly`): wait up to 30 s instead of 5 s | 20 Nov 2026 | Supabase connector, `cron.alter_job` |
+| Schedule password changed; now kept in the Vault (`paisa_cron_secret`) and read by the job, not written into it | 20 Nov 2026 | New value made inside the database; the Owner pasted it into the function's `CRON_SECRET`. Checked: new password accepted, a wrong one refused |
 
 Checked after applying: signed-out callers can no longer run any family function; signed-in people still can; the sign-up helper can't be called; anyone can send feedback or counts but nobody can read them through the app. Security advisors left with three expected notes: signed-in people can run the family functions (that's how the app works; each checks who's calling), `pg_net` sits in the public schema (moving it risks the reminder schedule), and leaked-password protection (not used: sign-in is Google only).
 

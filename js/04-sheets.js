@@ -762,7 +762,7 @@ function cronSQL(){
   const job=(name,cron,kind)=>`select cron.schedule('${name}', '${cron}', $job$
   select net.http_post(
     url := '${url}',
-    headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','${sec}'),
+    headers := jsonb_build_object('Content-Type','application/json','x-cron-secret',(select decrypted_secret from vault.decrypted_secrets where name='paisa_cron_secret')),
     body := jsonb_build_object('kind','${kind}'),
     timeout_milliseconds := 30000)  -- a cold start can take more than the 5-second default
 $job$);`;
@@ -770,6 +770,9 @@ $job$);`;
 -- each person gets reminders at the times they picked in Settings → Reminders.
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
+-- the schedule password lives in the encrypted Vault, not in the job itself
+delete from vault.secrets where name = 'paisa_cron_secret';
+select vault.create_secret('${sec}', 'paisa_cron_secret', 'Must match the send-reminders CRON_SECRET');
 select cron.unschedule(jobname) from cron.job where jobname like 'paisa-%';
 ${job('paisa-hourly','30 * * * *','auto')}`;
 }
