@@ -1,4 +1,5 @@
 const {OUT,XLSX_JS,XLSX_NODE,URL}=require('./_env');
+const prefMore=async p=>{if(!(await p.$('#pref-more')))await p.click('[data-act=prefmore]');await p.waitForTimeout(100)};
 const {chromium,devices}=require('playwright');const fs=require('fs');
 const seed=fs.readFileSync(OUT+'/seed.json','utf8');
 (async()=>{const b=await chromium.launch();const ctx=await b.newContext({...devices['iPhone 13']});
@@ -21,7 +22,7 @@ const csv=['HDFC BANK Ltd. Statement of account','','Date,Narration,Chq./Ref.No.
  `${fmtD(0)},NEFT CR-ACME CORP-REFUND,4129,${fmtD(0)},,1500.00,${(bal0-499-640+1500).toFixed(2)}`].join('\n');
 fs.writeFileSync(OUT+'/hdfc.csv',csv);
 
-await p.goto(U+'#prefs');await p.waitForTimeout(200);await p.click('[data-act=stmmatch]');await p.waitForTimeout(200);
+await p.goto(U+'#prefs');await p.waitForTimeout(200);await prefMore(p);await p.click('[data-act=stmmatch]');await p.waitForTimeout(200);
 await p.setInputFiles('#stm-file',OUT+'/hdfc.csv');await p.waitForSelector('.dsum',{timeout:10000});await p.waitForTimeout(200);
 log('review:',(await p.textContent('#sheetRoot .sheet')).replace(/\s+/g,' ').slice(0,300));
 log('missing rows:',await p.$$eval('.stmrow',e=>e.map(x=>x.querySelector('.t').textContent+' → '+x.querySelector('select').selectedOptions[0].textContent+' '+x.querySelector('b').textContent)).then(a=>a.join(' | ')));

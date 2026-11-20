@@ -37,14 +37,17 @@ log('  whats-new shown to a brand-new user:',!!(await p.$('.wn')));await ctx.clo
 ({ctx,p}=await open({pre:tryMode}));sent.events.length=0;
 await p.goto(URL+'#home');await p.waitForSelector('.wn',{timeout:5000});log('2 existing user sees:',(await p.textContent('#sheetRoot h2')).trim());
 const evBefore=sent.events.length;
-await p.click('[data-act=wnreplan]');await p.waitForSelector('.dq');log('  replan step 1:',(await p.textContent('.dq')).trim());
-await p.click('[data-act=smnext]');log('  step 2:',(await p.textContent('.dq')).trim(),'| options:',await p.$$eval('.smopt b',e=>e.map(x=>x.textContent).join(' / ')));
-await p.click('[data-act=smopen][data-k=type]');await p.fill('#sm-open','50000');await p.click('[data-act=smnext]');
-log('  step 3:',(await p.textContent('.dq')).trim(),'| rows:',await p.$$eval('[data-sm]',e=>e.length));
-const rentId=await p.evaluate(()=>Object.keys(D.cats).find(k=>D.cats[k].name==='Rent'));await p.fill(`[data-sm="${rentId}"]`,'40000');await p.click('[data-act=smnext]');
-log('  step 4:',(await p.textContent('.dq')).trim());await p.click('[data-act=smnext]');
-const plan=(await p.textContent('#sheetRoot .sheet')).replace(/\s+/g,' ');log('  result:',plan.slice(0,160));
-await p.click('[data-act=smdone]');await p.waitForTimeout(300);
+await p.click('[data-act=wnreplan]');await p.waitForSelector('.qp-hero');
+const free0=(await p.textContent('.qp-num')).trim();log('  replan opens on one screen:',(await p.textContent('#sheetRoot h2')).trim(),'| free:',free0,'| note:',(await p.textContent('.qp-note')).trim());
+assert(!!(await p.$('[data-act=smsave]'))&&!!(await p.$('[data-act=smsteps]')),'one screen has Save plan and Step by step');
+await p.click('[data-act=smexp][data-k=open]');await p.click('[data-act=smopen][data-k=type]');await p.fill('#sm-open','50000');
+await p.click('[data-act=smexp][data-k=bills]');log('  bills open for editing:',await p.$$eval('[data-sm]',e=>e.length));
+const rentId=await p.evaluate(()=>Object.keys(D.cats).find(k=>D.cats[k].name==='Rent'));await p.fill(`[data-sm="${rentId}"]`,'40000');
+const free1=(await p.textContent('.qp-num')).trim();log('  free updates as you type:',free0,'→',free1);assert(free0!==free1,'free to spend previews the change');
+// the 5-step walkthrough is still there, and keeps what was typed
+await p.click('[data-act=smsteps]');await p.waitForSelector('.dq');log('  step by step:',(await p.textContent('.dq')).trim());
+await p.click('[data-act=smquick]');await p.waitForSelector('.qp-hero');log('  back on one screen, rent still typed:',await p.inputValue(`[data-sm="${rentId}"]`).catch(()=>'(collapsed)'));
+await p.click('[data-act=smsave]');await p.waitForTimeout(300);log('  toast:',(await p.textContent('#toastRoot')).trim());
 const after=await p.evaluate(()=>({open:month(curKey()).open,rent:budgetOf({...D.cats[Object.keys(D.cats).find(k=>D.cats[k].name==='Rent')],id:Object.keys(D.cats).find(k=>D.cats[k].name==='Rent')},curKey())}));
 log('  saved: starting money',after.open/100,'| rent',after.rent/100);assert(after.open===5000000&&after.rent===4000000,'replan saves starting money and bills');
 log('  counts sent while switched off:',sent.events.length-evBefore);assert(sent.events.length===evBefore,'nothing is sent unless switched on');
@@ -58,7 +61,7 @@ log('  feedback received:',JSON.stringify(sent.feedback[0]||{}).slice(0,120));as
 await ctx.close();
 
 // 3. returning after a gap; weekly check pacing; card link nudge
-({ctx,p}=await open({pre:()=>{try{localStorage.setItem('paisa-try','1');localStorage.setItem('paisa-news','2026-11-19')}catch(e){}}}));
+({ctx,p}=await open({pre:()=>{try{localStorage.setItem('paisa-try','1');localStorage.setItem('paisa-news','2026-11-19b')}catch(e){}}}));
 await p.goto(URL+'#home');await p.waitForTimeout(400);
 await p.evaluate(()=>{const o=JSON.parse(localStorage.getItem('paisa-local'));const old=Date.now()-10*864e5;Object.values(o.tx).forEach(t=>t.at=old);const ids=Object.keys(o.accounts);o.accounts[ids[0]].checkedAt=addDays(todayISO(),-2);o.accounts[ids[1]].checkedAt=addDays(todayISO(),-20);localStorage.setItem('paisa-local',JSON.stringify(o))});
 await p.reload();await p.waitForTimeout(500);
@@ -69,7 +72,7 @@ await p.click('[data-act=catchskip]');await p.waitForTimeout(400);log('  Start f
 await ctx.close();
 
 // 4. member welcome renders for a member (simulated)
-({ctx,p}=await open({pre:()=>{try{localStorage.setItem('paisa-try','1');localStorage.setItem('paisa-news','2026-11-19')}catch(e){}}}));
+({ctx,p}=await open({pre:()=>{try{localStorage.setItem('paisa-try','1');localStorage.setItem('paisa-news','2026-11-19b')}catch(e){}}}));
 await p.goto(URL+'#home');await p.waitForTimeout(400);
 await p.evaluate(()=>{MODE='cloud';FID='fam1';IS_OWNER=false;ROLE='Member';memberWelcome()});await p.waitForTimeout(200);
 log('4 member welcome:',(await p.textContent('#sheetRoot .sheet')).replace(/\s+/g,' ').slice(0,150));

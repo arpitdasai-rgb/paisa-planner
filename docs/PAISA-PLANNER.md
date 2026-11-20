@@ -816,6 +816,17 @@ See §16.
   - `v5.sql` on Postgres (rows can be added but not read);
   - all browser suites and the sweep.
 
+### Stage 19: Simpler flows (20 Nov)
+- **Asked for:** rate the flows for simplicity, then "do all 3 fixes".
+- **Rating that drove it:** logging 8.5/10, setup 8, Today 7, bills 7, family 6.5, replan 5.5, Money 5, Settings 4.5. Replan, Settings and too many concepts were the drag.
+- **Built:**
+  - **one-screen replan** (`renderQuickPlan` in `js/07b-journeys.js`): last month carried forward, live free-to-spend preview (`smPreview`), expandable groups, Save plan always visible; the 5-step walkthrough stays as **Step by step**;
+  - **Settings in three groups** (`prefTiles` in `js/06-shell.js`) with **Everything else** folded (`PREF_MORE`, remembered in `paisa-prefmore`);
+  - **Today one thing at a time** (catch-up or start card, `attentionHTML` limit);
+  - **progressive disclosure:** Self transfer only with two places to move money; credit-card tiles only once a card exists.
+- **Also fixed:** the reminder schedule's 5-second timeout (now 30 s live and in the Owner's setup SQL).
+- **Checked:** all 21 browser suites including the sweep; screenshots light and dark at iPhone size.
+
 ---
 
 ## 16. Engineering audit (this version)

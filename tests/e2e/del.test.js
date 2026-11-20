@@ -1,4 +1,5 @@
 const {OUT,XLSX_JS,XLSX_NODE,URL}=require('./_env');
+const prefMore=async p=>{if(!(await p.$('#pref-more')))await p.click('[data-act=prefmore]');await p.waitForTimeout(100)};
 const {chromium,devices}=require('playwright');
 const seed=require('fs').readFileSync(OUT+'/seed.json','utf8');
 (async()=>{const b=await chromium.launch();const ctx=await b.newContext({...devices['iPhone 13']});
@@ -15,7 +16,7 @@ await ev(()=>{const k=addM(curKey(),-1);const d=mStart(k);const c=n=>Object.keys
 await p.waitForTimeout(300);
 log('start: entries',await ntx(),'| this month opens at',await ev(()=>fmt(month(curKey()).open)),'| HDFC',await ev(()=>fmt(acctBalance(acctList()[0].id))));
 // 1. from Settings
-await p.goto(U+'#prefs');await p.waitForTimeout(300);await p.click('[data-act=deldata]');await p.waitForTimeout(200);
+await p.goto(U+'#prefs');await p.waitForTimeout(300);await prefMore(p);await p.click('[data-act=deldata]');await p.waitForTimeout(200);
 log('1 step 1 types:',(await p.$$eval('[data-act=delwhat]',e=>e.map(x=>x.innerText.split('\n')[0]))).join(', '));await p.screenshot({path:S+'d1.png'});
 await p.click('[data-act=delnext]');await p.click('[data-act=delper][data-k=last]');log('  last month:',await p.textContent('#del-count'));await p.screenshot({path:S+'d2.png'});
 await p.click('[data-act=delnext]');await p.click('.chip[data-act=delcat]:has-text("Eating out")');await p.click('.chip[data-act=delcat]:has-text("Shopping")');log('  2 categories:',await p.textContent('#del-count'));
@@ -24,7 +25,7 @@ await p.click('[data-act=delnext]');await p.waitForTimeout(200);log('  preview:'
 await p.click('[data-act=delgo]');await p.waitForTimeout(400);
 log('  after: entries',await ntx(),'| this month opens at',await ev(()=>fmt(month(curKey()).open)),'| HDFC',await ev(()=>fmt(acctBalance(acctList()[0].id))),'| toast:',await p.textContent('.toast'));
 // 2. Recently deleted + restore
-await p.goto(U+'#prefs');await p.waitForTimeout(300);log('2 tile:',(await p.textContent('[data-act=prefsec][data-k=trash]')).replace(/\s+/g,' '));
+await p.goto(U+'#prefs');await p.waitForTimeout(300);await prefMore(p);log('2 tile:',(await p.textContent('[data-act=prefsec][data-k=trash]')).replace(/\s+/g,' '));
 await p.click('[data-act=prefsec][data-k=trash]');await p.waitForTimeout(200);await p.screenshot({path:S+'d5.png'});
 await p.click('[data-act=trashrestore]');await p.waitForTimeout(400);log('  restored: entries',await ntx(),'| opens at',await ev(()=>fmt(month(curKey()).open)),'| HDFC',await ev(()=>fmt(acctBalance(acctList()[0].id))),'| trash left',await ev(()=>Object.keys(trashAll()).length));
 // 3. recalculate mode
@@ -50,10 +51,10 @@ await p.$eval('[data-act=clearmonth]',e=>e.click());await p.waitForTimeout(200);
 // 8. account: delete with entries opens filtered
 await p.goto(U+'#plan');await p.waitForTimeout(300);await ev(()=>openAccount(acctList()[1].id));await p.waitForTimeout(200);await p.click('[data-act=acctdel]');await p.waitForTimeout(200);log('8 account delete:',await p.textContent('#del-count'));await p.click('[data-act=close]');
 // 9. start fresh
-await p.goto(U+'#prefs');await p.waitForTimeout(200);await p.click('[data-act=deldata]');await p.click('[data-act=delfresh]');await p.waitForTimeout(200);await p.screenshot({path:S+'d7.png'});
+await p.goto(U+'#prefs');await p.waitForTimeout(200);await prefMore(p);await p.click('[data-act=deldata]');await p.click('[data-act=delfresh]');await p.waitForTimeout(200);await p.screenshot({path:S+'d7.png'});
 log('9 fresh button disabled:',await p.$eval('#fr-go',e=>e.disabled));await p.fill('#fr-type','fresh');await p.fill('#fr-open','50000');await p.click('#fr-go');await p.waitForTimeout(500);
 log('  after: entries',await ntx(),'| cats',await ev(()=>Object.keys(D.cats).length),'| accounts',await ev(()=>Object.keys(D.accounts).length),'| left',await ev(()=>fmt(month(curKey()).left)),'| starts',await ev(()=>S().startMonth));
-await p.goto(U+'#prefs');await p.waitForTimeout(200);await p.click('[data-act=prefsec][data-k=trash]');await p.waitForTimeout(200);log('  recently deleted rows:',await p.$$eval('.trow.static',e=>e.length));
+await p.goto(U+'#prefs');await p.waitForTimeout(200);await prefMore(p);await p.click('[data-act=prefsec][data-k=trash]');await p.waitForTimeout(200);log('  recently deleted rows:',await p.$$eval('.trow.static',e=>e.length));
 await p.click('[data-act=trashrestore] >> nth=0');await p.waitForTimeout(500);log('  undo fresh -> entries',await ntx(),'| accounts',await ev(()=>Object.keys(D.accounts).length),'| starts',await ev(()=>S().startMonth));
 // 10. reload keeps trash (local mode)
 await p.reload();await p.waitForTimeout(500);log('10 trash after reload:',await ev(()=>Object.keys(trashAll()).length),'| in backup:',await ev(()=>'trash' in {...D,trash:{}}));

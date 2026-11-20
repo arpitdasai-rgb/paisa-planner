@@ -58,7 +58,9 @@ function renderQuick(){
   const cardName=QA.mode==='Card'&&QA.card&&D.cards[QA.card]?' · '+esc(D.cards[QA.card].name):'';
   const acctBit=!xf&&QA.mode!=='Card'&&QA.acct?' · '+esc(acctName(QA.acct)):'';
   const amtTxt=QA.amt?INR.format(Number(QA.amt.split('.')[0]))+(QA.amt.includes('.')?'.'+QA.amt.split('.')[1]:''):'0';
-  const types=hideInc()?[['out','Expense'],['xfer','Self transfer']]:[['out','Expense'],['in','Income'],['xfer','Self transfer']];
+  // Self transfer only makes sense with two places to move money between (accounts or cards)
+  const canXfer=xf||accts.length+cardsL.length>=2;
+  const types=[['out','Expense'],...(hideInc()?[]:[['in','Income']]),...(canXfer?[['xfer','Self transfer']]:[])];
   const head=QA.title||editing
     ?`<div class="sheet-h"><h2>${editing?(xf?'Edit transfer':'Edit entry'):esc(QA.title)}</h2><button class="x" data-act="close" aria-label="Close">${ui('close',20)}</button></div>`
     :`<div class="sheet-h"><div class="seg qtype" role="group" aria-label="Entry type">${types.map(([k,l])=>`<button data-act="qtype" data-k="${k}" aria-pressed="${QA.type===k}">${l}</button>`).join('')}</div><button class="x" data-act="close" aria-label="Close">${ui('close',20)}</button></div>`;
@@ -761,7 +763,8 @@ function cronSQL(){
   select net.http_post(
     url := '${url}',
     headers := jsonb_build_object('Content-Type','application/json','x-cron-secret','${sec}'),
-    body := jsonb_build_object('kind','${kind}'))
+    body := jsonb_build_object('kind','${kind}'),
+    timeout_milliseconds := 30000)  -- a cold start can take more than the 5-second default
 $job$);`;
   return `-- Paisa Planner reminder schedule: runs at the top of every hour (India time);
 -- each person gets reminders at the times they picked in Settings → Reminders.

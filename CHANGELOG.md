@@ -64,6 +64,21 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 - iPhone: zoom on tap, rubber-band bounce, keyboard over the number pad and over sheets.
 - New account balances off by entries from the same day; 320px layouts overflowing; toasts blocking taps; dark text on a dark card colour (19 Nov).
 
+## 20 Nov: simpler flows (one-screen replan, calmer Settings, one thing at a time)
+
+**Changed**
+- **Replan is one screen.** "Plan November" shows free to spend, with last month's plan carried over and the lines that changed named. Tap **Change** on starting money, bills or savings to edit just that; the number updates as you type. **Save plan** is always visible. The 5-step walkthrough is still there behind **Step by step**.
+- **Settings has three groups:** Your family, Reminders, and **Everything else** (folded away: help, backup, app lock, privacy, delete). The choice to keep it open is remembered.
+- **Today shows one thing at a time:** catch-up or the month's start card, never both; the next-step nudge hides while either shows; "Needs you" shows the most urgent one or two with "Show N more".
+- **Card and transfer features appear only when they apply:** "Self transfer" needs two accounts or cards; the Credit cards tile and row appear once a card exists (add one from Money → + Add).
+- What's new and the replan FAQ answer describe the new flows. App version `paisa-v35`.
+
+**Fixed**
+- **Reminder schedule timing out.** Supabase's scheduler gave up after 5 seconds, and a cold start plus the work took just over that, so since about 20:30 on 19 Nov no hourly run finished. The live job now waits up to 30 seconds (first run after the fix: 200 OK). The schedule the app gives Owners in Reminder setup includes the longer wait too.
+
+**Tests**
+- Updated journeys (one-screen plan, live preview, step-by-step and back, save), sheet-with-keyboard, delete, statement match, feature and money suites for the new layout. `ONLY=feat,del npm run test:e2e` runs chosen suites.
+
 ## 19 Nov: journeys for new, existing and invited users
 
 **Added**
@@ -103,6 +118,7 @@ Grouped by the kind of change, newest work last within each group. Dates are 202
 | `v5.sql` (usage counts, feedback, version check) | 19 Nov 2026 | Supabase connector, recorded as migration `v5_counts_feedback_version` |
 | `v6.sql` (security hardening from the advisors) | 19 Nov 2026 | Supabase connector, recorded as migration `v6_security_hardening` |
 | `send-reminders` function (uses the shared `money-core.js`, card statement reminders) | 19 Nov 2026 | Supabase connector, version 3, JWT check off (it checks its own cron secret) |
+| Reminder schedule (`paisa-hourly`): wait up to 30 s instead of 5 s | 20 Nov 2026 | Supabase connector, `cron.alter_job`; secret left unchanged |
 
 Checked after applying: signed-out callers can no longer run any family function; signed-in people still can; the sign-up helper can't be called; anyone can send feedback or counts but nobody can read them through the app. Security advisors left with three expected notes: signed-in people can run the family functions (that's how the app works; each checks who's calling), `pg_net` sits in the public schema (moving it risks the reminder schedule), and leaked-password protection (not used: sign-in is Google only).
 

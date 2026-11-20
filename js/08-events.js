@@ -116,6 +116,11 @@ document.addEventListener('click',async e=>{
     case 'smnext':await smNext();break;
     case 'smback':smRead();SM.step=Math.max(1,SM.step-1);renderStartMonth();break;
     case 'smdone':lsSet('paisa-start-'+SAFE()+'-'+SM.k,'1');track('month_started',{});closeSheet();SM=null;toast('Your month is planned. The number on Today now follows it.');render();break;
+    case 'prefmore':PREF_MORE=!PREF_MORE;lsSet('paisa-prefmore',PREF_MORE?'1':null);render();{const b=document.querySelector('[data-act=prefmore]');if(b)b.focus()}break;
+    case 'smexp':smRead();SM.exp[el.dataset.k]=!SM.exp[el.dataset.k];renderStartMonth();{const f=document.querySelector(`[data-act=smexp][data-k="${el.dataset.k}"]`);if(f)f.focus()}break;
+    case 'smsteps':smRead();SM.mode='steps';SM.step=1;track('replan_steps',{});renderStartMonth();break;
+    case 'smquick':smRead();SM.mode='quick';renderStartMonth();break;
+    case 'smsave':{smRead();if(!(await smSaveOpen()))break;await smApply();const k=SM.k;lsSet('paisa-start-'+SAFE()+'-'+k,'1');track('month_started',{how:'quick'});closeSheet();SM=null;render();toast(`Plan saved. ${fmt(planParts(month(k)).free)} free to spend in ${mLong(k)}.`);break}
     case 'smopen':smRead();SM.open=el.dataset.k;renderStartMonth();if(SM.open==='type')setTimeout(()=>{const i=$('#sm-open');if(i)i.focus()},50);break;
     case 'smincome':{const c=D.cats[id];if(!c)break;const k=SM.k;const mc=month(k).cats.find(x=>x.id===id);const amt=Math.max(0,(mc?mc.budget-mc.actual:0));if(!amt){toast('Set the expected amount on the Month page first.');break}
       const r=recForCat(id);const now=Date.now();await store.set('tx',uid(),{byName:MYNAME||'',cat:id,amt,date:todayISO()<mStart(k)?mStart(k):todayISO(),mode:r&&r.mode||'Net banking',note:r&&r.note||'',card:'',acct:r&&r.acct||defaultAcct(),src:r?'recurring':'manual',...(r?{rec:r.id}:{}),by:ME||'local',at:now,ub:ME||'local',uat:now}).catch(()=>{});
@@ -253,6 +258,7 @@ document.addEventListener('input',e=>{
   else if('frtype' in t.dataset){const g=$('#fr-go');if(g)g.disabled=t.value.trim().toUpperCase()!=='FRESH'}
   else if(t.dataset.msearch!=null){moreSearch(t.value)}
   else if(t.dataset.splitAmt!=null&&QA&&QA.split){qSyncSplit();const tot=parseAmt(QA.amt)||0,sum=QA.split.reduce((s,r)=>{const v=parseAmt(r.amt);return s+(isNaN(v)?0:v)},0);const l=$('#split-left');if(l){l.textContent=sum===tot?'Adds up':(tot-sum>0?fmt(tot-sum)+' left to assign':fmt(sum-tot)+' too much');l.className='small '+(sum===tot?'':'over')}const b=document.querySelector('[data-act=qsave]');if(b)b.disabled=sum!==tot||!tot}
+  else if((t.dataset.sm!=null||t.dataset.smopen!=null)&&SM&&SM.mode==='quick'){smRefreshHero()}
   else if(t.dataset.bedit){BDRAFT[t.dataset.bedit]=t.value;const s=$('#bsum');if(s)s.innerHTML=bsumHTML(month(VM))}
   else if(t.dataset.prepay){const id=t.dataset.prepay;const l=D.loans[id];const P=loanOutstanding(l);const L=parseAmt(t.value);const out=$('#ppo-'+id);if(!out)return;
     if(!(L>0)){out.textContent='';return}

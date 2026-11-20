@@ -83,7 +83,7 @@ function homeView(){
     <p class="heroline">${line}${waitInc&&m.left<=0?'. Below zero only because that income isn\'t logged yet':''}</p>
     ${isCur?paceHTML(m):''}
     ${cta}
-    ${isCur&&!needs.some(n=>n.rank===1)?nextStepHTML():''}
+    ${isCur&&!needs.some(n=>n.rank===1)&&!catchupHTML()&&!startCardHTML(VM)?nextStepHTML():''}
   </section>`;
   if(HVIEW==='recent'){
     const list=Object.entries(D.tx).map(([id,x])=>({...x,id})).filter(x=>x&&x.date&&(!hideInc()||isXfer(x)||!(D.cats[x.cat]&&D.cats[x.cat].section==='income'))).sort((a,b)=>b.date.localeCompare(a.date)||(b.at||0)-(a.at||0)).slice(0,15);
@@ -93,8 +93,7 @@ function homeView(){
       </section></div>`;
   }
   return `<div class="home">${topbar(S().name)}${hero}<div class="stack">
-  ${startCardHTML(VM)}${catchupHTML()}
-  ${attentionHTML(VM,skipKey)}
+  ${(()=>{const top=catchupHTML()||startCardHTML(VM);return top+attentionHTML(VM,skipKey,top?1:2)})()}
   <section class="sect"><div class="sect-head"><h2>Coming up</h2><a class="link small" href="#bills">All bills</a></div>
     ${dues.length?dues.map(b=>`<div class="row">${icon(b)}<div class="grow"><div class="t">${esc(b.name)}</div><div class="s">Goes out ${relDay(b.due)}</div></div><div class="amt num">${fmt(b.budget)}</div>${canWrite()?`<button class="btn sm" data-act="paybill" data-id="${b.id}">Paid</button>`:''}</div>`).join('')
       :`<p class="small muted" style="margin:4px 0 8px">Nothing else is due ${isCur?'this month':'in '+mLong(VM)}.</p>`}
@@ -160,7 +159,7 @@ function walletView(){
   ${rest.length?`<div class="peeks">${rest.map(i=>pcardHTML(i,false)).join('')}</div>`:''}`
   :`<section class="empty-wallet"><p class="heroline" style="text-align:center;margin:0 auto 14px">Add your bank accounts and credit cards to see balances, dues and where money moves.</p>${canAdmin()?'<div class="center"><button class="pillbtn" data-act="editacct">Add bank account</button></div>':''}</section>`}
   <section class="sect"><h2 style="margin-bottom:10px">Every month</h2><div class="mtiles">
-    ${tile('recurring','Repeats',reps?reps+' monthly':'Add')}${tile('cards','Credit cards',Object.keys(D.cards).length||'Add')}
+    ${tile('recurring','Repeats',reps?reps+' monthly':'Add')}${Object.keys(D.cards).length?tile('cards','Credit cards',Object.keys(D.cards).length):''}
   </div></section>`;
 }
 function openWalletDetail(key){
@@ -240,19 +239,19 @@ function needsItems(k){
 }
 // kept for older callers (Home badge, tests)
 function attentionItems(k){return needsItems(k)}
-function attentionHTML(k,skip){
+function attentionHTML(k,skip,limit=3){
   const items=needsItems(k).filter(i=>i.key!==skip);
   if(!items.length)return `<p class="calm"><span class="dot" style="color:var(--good)"></span>Nothing needs you. Bills and budgets are on track.</p>`;
-  const shown=ATT_ALL?items:items.slice(0,3);
+  const shown=ATT_ALL?items:items.slice(0,limit);
   const lead=i=>i.cat?icon(i.cat):`<span class="dot" style="color:var(--${i.tone==='bad'?'bad':i.tone==='warn'?'warn':'muted'})"></span>`;
   return `<section class="attn" aria-label="Needs you"><div class="attn-h">Needs you · ${items.length}</div>
     ${shown.map(i=>`<div class="attn-item">${lead(i)}<div class="grow"><div class="nt">${esc(i.title)}</div><div class="nd">${esc(i.detail)}</div></div>
       <div class="nacts">${i.alt?`<button class="link small" data-act="${i.alt.a}" data-id="${i.alt.id}">${i.alt.l}</button>`:''}${i.act?`<button class="btn sm ${i.rank===1||i.rank===2?'primary':''}" data-act="${i.act.a}" ${i.act.id?`data-id="${i.act.id}"`:''} ${i.act.k?`data-k="${i.act.k}"`:''}>${i.act.l}</button>`:''}${i.dismiss?`<button class="x sm" data-act="dismsg" data-k="${esc(i.key)}" aria-label="Hide until next month">${ui('close',20)}</button>`:''}</div></div>`).join('')}
-    ${items.length>3?`<button class="link small" data-act="attall" style="padding:8px 0">${ATT_ALL?'Show fewer':'Show all '+items.length}</button>`:''}</section>`;
+    ${items.length>limit?`<button class="link small" data-act="attall" style="padding:8px 0">${ATT_ALL?'Show fewer':`Show ${items.length-limit} more`}</button>`:''}</section>`;
 }
 
 /* ================= Settings: tiles → sub-pages ================= */
-let PREFSEC=null,PREF_KEEP=false;
+let PREFSEC=null,PREF_KEEP=false,PREF_MORE=lsGet('paisa-prefmore')==='1';
 const PREF_TITLES={updates:'Finish updates',trash:'Recently deleted',account:'Account',budget:'Budget setup',reminders:'Reminders',lock:'App lock',install:'Install the app',data:'Import, export & backup',about:'Privacy & terms',danger:'Danger zone'};
 function trow(act,k,ic,title,sub,extra=''){return `<button class="trow" data-act="${act}" ${k?`data-k="${k}"`:''} ${extra}><span class="ti">${ui(ic,20)}</span><span class="tt"><b>${title}</b>${sub?`<small>${sub}</small>`:''}</span>${CHEV}</button>`}
 function tgroup(label,rows){rows=rows.filter(Boolean);return rows.length?`<section class="tgroup">${label?`<div class="eyebrow">${label}</div>`:''}<div class="tcard">${rows.join('')}</div></section>`:''}
@@ -262,16 +261,19 @@ function prefTiles(s,hasPin){
   const famSub=MODE==='cloud'?`${MEMBERS.length||1} member${MEMBERS.length===1?'':'s'} · you're ${ROLE}`:'Only on this device';
   return `${MODE==='cloud'?`<button class="profile" data-act="prefsec" data-k="account"><div class="avatar lg">${esc((MYNAME||EMAIL||'?')[0].toUpperCase())}</div><span class="tt"><b>${esc(MYNAME)}</b><small>${esc(EMAIL)}</small></span>${CHEV}</button>`
     :`<div class="profile"><div class="mark" style="width:52px;height:52px;border-radius:16px">${GULLAK}</div><span class="tt"><b>${esc(s.name)}</b><small>Saved on this device</small></span></div>`}
-  ${tgroup('Budget',[canAdmin()&&trow('prefsec','budget','budget','Budget setup',`${esc(s.name)} · month starts on the ${ordinal(s.startDay||1)}`),
-    trow('go','family','users','Family & sharing',famSub),
-    trow('prefsec','reminders','bell','Reminders',remSub)])}
-  ${tgroup('Security',[trow('prefsec','lock','lock','App lock',hasPin?'On · 4-digit PIN':'Off'),
-    trow('prefsec','install','download','Install the app',STANDALONE?'Installed':'Add to home screen')])}
-  ${tgroup('Data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data'),canWrite()&&acctList().length?trow('stmmatch','','bank','Match a bank statement','Add what you missed, skip what you logged'):'',canWrite()?trow('deldata','','shield','Delete data','Choose what, which period, which category'):'',trow('prefsec','trash','backup','Recently deleted',(n=>n?n+' item'+(n>1?'s':'')+' you can restore':'Restore anything deleted in the last 30 days')(Object.keys(trashAll()).length))])}
   ${updatesDue()?tgroup('Needs the Owner',[trow('prefsec','updates','upload','Finish database updates','A few steps in Supabase, once')]):''}
   ${MODE==='local'&&CLOUD?tgroup('',[trow('trysignin','','users','Sign in to share with family','Keeps everything on this phone and adds it to your family budget')]):''}
-  ${tgroup('About',[trow('whatsnew','','doc','What’s new','Today, Month and Money; replan in 5 steps'),trow('go','help','doc','Help & FAQ','Search answers to common questions'),trow('feedback','','doc','Tell us what’s confusing','Goes straight to the Paisa team'),CFG.supabaseUrl?trow('metricstoggle','','chart','Help improve Paisa',metricsOn()?'On: sharing anonymous usage counts':'Off: nothing is shared'):'',trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),IS_OWNER&&CLOUD&&!CFG.vapidPublicKey?trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner'):''])}
-  ${IS_OWNER?`<section class="tgroup"><div class="tcard"><button class="trow danger" data-act="prefsec" data-k="danger"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>${MODE==='cloud'?'Delete family budget':'Delete all data'}</b><small>Can't be undone</small></span>${CHEV}</button></div></section>`:''}`;
+  ${tgroup('Your family',[trow('go','family','users','Family & sharing',famSub),
+    canAdmin()&&trow('prefsec','budget','budget','Budget setup',`${esc(s.name)} · month starts on the ${ordinal(s.startDay||1)}`)])}
+  ${tgroup('Reminders',[trow('prefsec','reminders','bell','Bill reminders',remSub),
+    !STANDALONE&&trow('prefsec','install','download','Install the app','Needed for reminders on iPhone'),
+    IS_OWNER&&CLOUD&&!CFG.vapidPublicKey&&trow('go','pushsetup','bell','Reminder setup','One-time, for the Owner')])}
+  <section class="tgroup"><div class="tcard"><button class="trow" data-act="prefmore" aria-expanded="${PREF_MORE}" aria-controls="pref-more"><span class="ti">${ui('list',20)}</span><span class="tt"><b>Everything else</b><small>Help, backup, app lock, privacy, delete</small></span><span class="pm-chev ${PREF_MORE?'up':''}" aria-hidden="true">${CHEV}</span></button></div></section>
+  ${PREF_MORE?`<div id="pref-more">
+  ${tgroup('Help',[trow('go','help','doc','Help & FAQ','Search answers to common questions'),trow('feedback','','doc','Tell us what’s confusing','Goes straight to the Paisa team'),trow('whatsnew','','doc','What’s new','The latest changes')])}
+  ${tgroup('Your data',[canAdmin()?trow('prefsec','data','upload','Import, export & backup','Excel, CSV, PDF report, backup file'):trow('prefsec','data','backup','Back up','Save a copy of your data'),canWrite()&&acctList().length?trow('stmmatch','','bank','Match a bank statement','Add what you missed, skip what you logged'):'',trow('prefsec','trash','backup','Recently deleted',(n=>n?n+' item'+(n>1?'s':'')+' you can restore':'Restore anything deleted in the last 30 days')(Object.keys(trashAll()).length)),canWrite()?trow('deldata','','shield','Delete data','Choose what, which period, which category'):''])}
+  ${tgroup('Privacy & security',[trow('prefsec','lock','lock','App lock',hasPin?'On · 4-digit PIN':'Off'),STANDALONE?trow('prefsec','install','download','Install the app','Installed'):'',trow('prefsec','about','shield','Privacy & terms','What we store and your choices'),CFG.supabaseUrl?trow('metricstoggle','','chart','Help improve Paisa',metricsOn()?'On: sharing anonymous usage counts':'Off: nothing is shared'):''])}
+  ${IS_OWNER?`<section class="tgroup"><div class="tcard"><button class="trow danger" data-act="prefsec" data-k="danger"><span class="ti">${ui('shield',20)}</span><span class="tt"><b>${MODE==='cloud'?'Delete family budget':'Delete all data'}</b><small>Can't be undone</small></span>${CHEV}</button></div></section>`:''}</div>`:''}`;
 }
 
 /* ================= Family ================= */
@@ -327,7 +329,7 @@ function moreView(){
   <section class="sect nob"><div class="circles">${[FEATURES[0],FEATURES[1],FEATURES[2],FEATURES[3]].map(circle).join('')}</div></section>
   ${tgroup('Manage',[trow('go','family','users','Family & sharing',MODE==='cloud'?`${MEMBERS.length||1} member${MEMBERS.length===1?'':'s'}`:'Only on this device'),
     trow('goplan','recurring','repeat','Repeats',`${recList().length} every month`),
-    trow('goplan','cards','card','Credit cards',Object.keys(D.cards).length?Object.keys(D.cards).length+' added':'Track statements and dues'),
+    Object.keys(D.cards).length&&trow('goplan','cards','card','Credit cards',Object.keys(D.cards).length+' added'),
     trow('prefsec','data','upload','Import & export','Excel, CSV, PDF, backup'),
     trow('go','prefs','gear','Settings','Reminders, app lock, budget setup'),
     trow('go','habits','chart','Your habits','Logging speed, days logged, bills on time'),

@@ -47,7 +47,7 @@ await p.screenshot({path:S+'v2-networth.png',fullPage:true});
 await p.goto(U+'#more');await p.click('[data-act=goplan][data-k=goals]');await p.click('[data-act=newgoal][data-k=yearly]');await p.fill('#g-name','Car insurance');await p.fill('#g-amt','24000');await p.selectOption('#g-mon','3');await p.click('[data-act=savegoal]');await p.waitForTimeout(200);
 log('11 yearly payment:',(await p.$$eval('.sect',e=>e.map(x=>x.textContent.replace(/\s+/g,' ').trim()).filter(t=>t.includes('Car insurance'))))[0]);
 // export with accounts + net worth
-await p.goto(U+'#prefs');await p.click('[data-act=prefsec][data-k=data]');await p.click('[data-act=exp-month]');await p.click('[data-act=expinc][data-k=accounts]');await p.click('[data-act=expinc][data-k=networth]');
+await p.goto(U+'#prefs');await p.waitForTimeout(200);if(!(await p.$('#pref-more')))await p.click('[data-act=prefmore]');await p.click('[data-act=prefsec][data-k=data]');await p.click('[data-act=exp-month]');await p.click('[data-act=expinc][data-k=accounts]');await p.click('[data-act=expinc][data-k=networth]');
 const dl=p.waitForEvent('download',{timeout:15000});await p.click('[data-act=expgo]');const d=await dl;await d.saveAs(S+'v2.xlsx');const X=require(XLSX_NODE);const wb=X.readFile(S+'v2.xlsx');
 log('12 export sheets:',wb.SheetNames.join(', '),'| entries header:',X.utils.sheet_to_json(wb.Sheets['Entries'],{header:1})[0].join(','));
 log('   transfer row:',JSON.stringify(X.utils.sheet_to_json(wb.Sheets['Entries'],{header:1}).find(r=>r[1]==='Self transfer')));

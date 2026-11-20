@@ -18,7 +18,7 @@ log('loan goal card:',(await p.textContent('.sect')).replace(/\s+/g,' ').trim())
 await p.click('[data-act=newgoal][data-k=save]');await p.fill('#g-name','Goa trip');await p.fill('#g-t','60000');await p.fill('#g-s','12000');await p.fill('#g-m','8000');await p.click('[data-act=savegoal]');await p.waitForTimeout(150);
 await p.screenshot({path:S+'g-goals.png',fullPage:true});
 // export picker
-await p.goto(U+'#prefs');await p.click('[data-act=prefsec][data-k=data]');await p.click('[data-act=exp-month]');await p.waitForSelector('#exp-sum');log('export default:',await p.textContent('#exp-sum'));
+await p.goto(U+'#prefs');await p.waitForTimeout(200);if(!(await p.$('#pref-more')))await p.click('[data-act=prefmore]');await p.click('[data-act=prefsec][data-k=data]');await p.click('[data-act=exp-month]');await p.waitForSelector('#exp-sum');log('export default:',await p.textContent('#exp-sum'));
 await p.click('[data-act=expper][data-k=all]');await p.click('[data-act=expinc][data-k=loans]');await p.click('[data-act=expinc][data-k=goals]');log('after picking Everything + loans + goals:',await p.textContent('#exp-sum'));
 await p.screenshot({path:S+'g-export.png'});
 let dl=p.waitForEvent('download',{timeout:15000}).catch(e=>null);await p.click('[data-act=expgo]');let d=await dl;
@@ -28,7 +28,7 @@ dl=p.waitForEvent('download',{timeout:8000}).catch(()=>null);await p.click('[dat
 // import check, using a CSV like the old tracker
 const csv='Date,Category,Amount,Mode,Note\n2026-08-03,Salary,120000,Net banking,\n2026-08-05,Rent,25000,UPI,\n2026-08-09,Kirana store,3200,UPI,\n2026-08-15,SIP,15000,Auto-debit,\n2026-09-03,Salary,120000,Net banking,\n2026-09-06,Kirana store,2800,UPI,\n2026-09-20,Car loan EMI,12000,Auto-debit,\nbad row,,,,\n';
 fs.writeFileSync(S+'old.csv',csv);
-await p.reload();await p.goto(U+'#prefs');await p.click('[data-act=prefsec][data-k=data]');await p.waitForSelector('#imp-file',{state:'attached'});await p.setInputFiles('#imp-file',S+'old.csv');await p.waitForSelector('.sheet .reveal-num',{timeout:15000}).catch(()=>{});
+await p.reload();await p.goto(U+'#prefs');await p.waitForTimeout(200);if(!(await p.$('#pref-more')))await p.click('[data-act=prefmore]');await p.click('[data-act=prefsec][data-k=data]');await p.waitForSelector('#imp-file',{state:'attached'});await p.setInputFiles('#imp-file',S+'old.csv');await p.waitForSelector('.sheet .reveal-num',{timeout:15000}).catch(()=>{});
 log('import intro:',(await p.textContent('.sheet').catch(()=>'no sheet')).replace(/\s+/g,' ').slice(0,200));
 await p.screenshot({path:S+'g-imp1.png'});await p.click('[data-act=impnext]');
 log('import categories step:',(await p.$$eval('[data-impsec]',e=>e.map(s=>s.dataset.impsec+'→'+s.value))).join(', '));

@@ -18,7 +18,8 @@ const run = (file) => new Promise((resolve) => {
 });
 await new Promise((r) => server.listen(port, r));
 const seed = await run('seed.js'); if (!seed.ok) { console.log(seed.out); process.exit(1); }
-const files = fs.readdirSync(dir).filter((f) => f.endsWith('.test.js')).sort();
+const only = (process.env.ONLY || '').split(',').filter(Boolean); // e.g. ONLY=feat,del runs just those
+const files = fs.readdirSync(dir).filter((f) => f.endsWith('.test.js') && (!only.length || only.some((o) => f.startsWith(o)))).sort();
 if (process.argv.includes('sweep')) files.push('sweep.js');
 let failed = 0;
 for (const f of files) { const r = await run(f); console.log(`${r.ok ? 'pass' : 'FAIL'}  ${f}  (${r.secs}s)`); if (!r.ok) { failed++; console.log(r.out.split('\n').slice(-25).join('\n')); } }
